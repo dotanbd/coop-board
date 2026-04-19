@@ -480,7 +480,7 @@ export default function App() {
                       
                       {assignment.isOptional && (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 text-slate-500 text-xs font-semibold rounded-md border border-slate-200">
-                          רשות
+                          תאריך רשות
                         </span>
                       )}
                       
@@ -611,7 +611,7 @@ export default function App() {
                   onChange={e => setFormData({...formData, isOptional: e.target.checked})}
                 />
                 <label htmlFor="isOptional" className="text-sm font-medium text-slate-700 cursor-pointer">
-                  מטלת רשות (לא חובה)
+                  תאריך אופציונלי (רשות)
                 </label>
               </div>
 
