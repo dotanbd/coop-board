@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Calendar, Clock, Plus, CheckCircle2, Bell, RefreshCw, AlertCircle, Edit2, Trash2, Tag, BookType, Copy } from 'lucide-react';
+import { BookOpen, Calendar, Clock, Plus, CheckCircle2, Bell, RefreshCw, AlertCircle, Edit2, Trash2, Tag, BookType, Copy, Filter } from 'lucide-react';
 
 // Make sure to change this to your VM's public IP address when deploying
-const API_BASE_URL = 'http://129.159.139.53:8000/api';
+const API_BASE_URL = 'http://123.45.67.89:8000/api'; // REPLACE WITH YOUR IP
 
 // --- TypeScript Interfaces ---
 interface Assignment {
@@ -39,6 +39,10 @@ export default function App() {
   const [syncing, setSyncing] = useState<boolean>(false);
   const [syncMessage, setSyncMessage] = useState<string>('');
   
+  // Filtering State
+  const [activeTypeFilter, setActiveTypeFilter] = useState<string>('All');
+  const assignmentTypes = ['All', 'Assignment', 'Webwork', 'Exam'];
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -100,8 +104,10 @@ export default function App() {
 
   const handleCourseCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, ''); 
-    if (val.length > 7) val = val.slice(0, 7);
+    
+    // FIX: Strip leading zeros FIRST, before enforcing the 7 digit limit
     val = val.replace(/^0+(?=\d)/, ''); 
+    if (val.length > 7) val = val.slice(0, 7);
 
     const knownName = coursesMap[val] || '';
     
@@ -236,7 +242,12 @@ export default function App() {
     }
   };
 
-  const filteredAssignments = assignments.filter(a => myCourses.includes(a.courseCode));
+  // Filter based on BOTH selected courses and the active type filter
+  const filteredAssignments = assignments.filter(a => {
+    const isCourseSelected = myCourses.includes(a.courseCode);
+    const isTypeSelected = activeTypeFilter === 'All' || a.type === activeTypeFilter;
+    return isCourseSelected && isTypeSelected;
+  });
 
   const formatDateTime = (isoString: string) => {
     const date = new Date(isoString);
@@ -248,7 +259,8 @@ export default function App() {
     if (date.toDateString() === today.toDateString()) dateStr = 'Today';
     else if (date.toDateString() === tomorrow.toDateString()) dateStr = 'Tomorrow';
 
-    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // FIX: Using hour12: false for 24-hour format
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     return `${dateStr} at ${timeStr}`;
   };
 
@@ -351,6 +363,28 @@ export default function App() {
 
         {/* Main Content: Assignments Board */}
         <div className="flex-1">
+          
+          {/* Type Filters */}
+          <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex items-center gap-2 mr-2 text-slate-500">
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-semibold">Filter:</span>
+            </div>
+            {assignmentTypes.map(type => (
+              <button
+                key={type}
+                onClick={() => setActiveTypeFilter(type)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                  activeTypeFilter === type 
+                    ? 'bg-slate-800 text-white shadow-sm' 
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+
           {loading ? (
              <div className="flex justify-center items-center h-40">
                <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
@@ -364,8 +398,12 @@ export default function App() {
           ) : filteredAssignments.length === 0 ? (
             <div className="bg-white border border-slate-200 border-dashed rounded-xl p-12 text-center">
               <CheckCircle2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-1">No upcoming deadlines!</h3>
-              <p className="text-slate-500 text-sm">You're all caught up for the selected courses, or no tasks have been added.</p>
+              <h3 className="text-lg font-medium text-slate-900 mb-1">No tasks found!</h3>
+              <p className="text-slate-500 text-sm">
+                {activeTypeFilter !== 'All' 
+                  ? `No upcoming ${activeTypeFilter.toLowerCase()}s for the selected courses.`
+                  : "You're all caught up for the selected courses, or no tasks have been added."}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
