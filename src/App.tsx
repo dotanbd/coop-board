@@ -211,6 +211,9 @@ export default function App() {
         });
         if (!res.ok) throw new Error("Failed to update");
         const updated: Assignment = await res.json();
+        // Fix timezone issue by ensuring deadline ends with 'Z' for UTC
+        if (!updated.deadline.endsWith('Z')) updated.deadline += 'Z';
+
         setAssignments(prev => prev.map(a => a.id === currentEditId ? updated : a).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()));
       } else {
         const res = await fetch(`${API_BASE_URL}/assignments`, {
@@ -220,6 +223,9 @@ export default function App() {
         });
         if (!res.ok) throw new Error("Failed to create");
         const added: Assignment = await res.json();
+        // Fix timezone issue by ensuring deadline ends with 'Z' for UTC
+        if (!added.deadline.endsWith('Z')) added.deadline += 'Z';
+
         setAssignments(prev => [...prev, added].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()));
         
         if (!availableCourses.includes(payload.courseCode)) {
@@ -611,7 +617,7 @@ export default function App() {
                   onChange={e => setFormData({...formData, isOptional: e.target.checked})}
                 />
                 <label htmlFor="isOptional" className="text-sm font-medium text-slate-700 cursor-pointer">
-                  תאריך אופציונלי (רשות)
+                  תאריך אופציונלי
                 </label>
               </div>
 
