@@ -254,8 +254,7 @@ export default function App() {
     setSyncing(true);
     setSyncMessage('');
     
-    const baseHost = API_BASE_URL.replace('/api', ''); 
-    const feedUrl = `${baseHost}/api/calendar/feed.ics?courses=${myCourses.join(',')}`;
+    const feedUrl = `${API_BASE_URL}/calendar/feed.ics?courses=${myCourses.join(',')}`;
 
     try {
       const textArea = document.createElement("textarea");
