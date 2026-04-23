@@ -1,18 +1,62 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BookOpen, Calendar, Clock, Plus, CheckCircle, Bell, RefreshCw, AlertCircle, Edit, Trash, Tag, Book, Copy, Filter, Circle, Sun, Moon, LogIn, User, Search, X, Check, Paperclip, FileText, Upload, XCircle, Lightbulb, Calculator, Shield, Settings } from 'lucide-react';
+import { 
+  BookOpen, Calendar, Clock, Plus, CheckCircle, RefreshCw, 
+  AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon, 
+  LogIn, User, Search, X, Check, Paperclip, FileText, Upload, 
+  XCircle, Lightbulb, Calculator, Shield, Settings 
+} from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.PROD ? 'https://api.ecetechnion.me/api/v2' : 'http://localhost:8001/api/v2';
+// --- Production API Configuration ---
+// We use window.location.hostname logic to avoid "import.meta" target environment build errors
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined' && window.location.hostname === 'board.ecetechnion.me') {
+    return 'https://api.ecetechnion.me/api/v2';
+  }
+  return 'http://localhost:8001/api/v2';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 // --- TypeScript Interfaces ---
 interface Attachment { id: number; filename: string; url: string; uploader_id: number; category: string; }
 interface Assignment { id: number; title: string; courseCode: string; type: string; deadline: string; isOptional: boolean; isCompleted: boolean; grade: number | null; attachments: Attachment[]; }
 interface UserProfile { id: number; email: string; name: string; picture: string; role: string; }
-interface CourseSyllabus { name: string; hw_weight: number; hw_keep: number; hw_magen: boolean; ww_weight: number; ww_keep: number; ww_magen: boolean; exam_weight: number; exam_magen: boolean; }
+
+interface CourseSyllabus { 
+  name: string; 
+  hw_weight: number; 
+  hw_keep: number; 
+  hw_magen: boolean; 
+  ww_weight: number; 
+  ww_keep: number; 
+  ww_magen: boolean; 
+  exam_weight: number; 
+  exam_magen: boolean; 
+}
+
 interface CoursesMap { [key: string]: CourseSyllabus; }
-interface AssignmentFormData { title: string; courseCode: string; courseName: string; type: string; deadline: string; time: string; isOptional: boolean; }
+
+interface AssignmentFormData { 
+  title: string; 
+  courseCode: string; 
+  courseName: string; 
+  type: string; 
+  deadline: string; 
+  time: string; 
+  isOptional: boolean; 
+}
+
 interface CourseTheme { startBorder: string; hover: string; badgeBg: string; badgeText: string; badgeBorder: string; dot: string; }
 
+interface GradeSummary {
+  earned: string;
+  possible: string;
+  isMagen: boolean;
+  unconfigured: boolean;
+}
+
 const typeTranslations: Record<string, string> = { 'All': 'הכל', 'Assignment': 'גיליון', 'Webwork': 'וובוורק', 'Exam': 'מבחן' };
+
 const courseThemes: CourseTheme[] = [
   { startBorder: 'border-s-blue-500', hover: 'hover:border-blue-300 dark:hover:border-blue-400', badgeBg: 'bg-blue-100 dark:bg-blue-900/30', badgeText: 'text-blue-800 dark:text-blue-300', badgeBorder: 'border-blue-200 dark:border-blue-800/50', dot: 'bg-blue-500' },
   { startBorder: 'border-s-emerald-500', hover: 'hover:border-emerald-300 dark:hover:border-emerald-400', badgeBg: 'bg-emerald-100 dark:bg-emerald-900/30', badgeText: 'text-emerald-800 dark:text-emerald-300', badgeBorder: 'border-emerald-200 dark:border-emerald-800/50', dot: 'bg-emerald-500' },
@@ -38,7 +82,11 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => { if (typeof window !== 'undefined') return localStorage.getItem('theme') as 'light' | 'dark' || 'light'; return 'light'; });
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => { 
+    if (typeof window !== 'undefined') return localStorage.getItem('theme') as 'light' | 'dark' || 'light'; 
+    return 'light'; 
+  });
+
   const [loading, setLoading] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTypeFilter, setActiveTypeFilter] = useState<string>('All');
@@ -48,14 +96,18 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [currentEditId, setCurrentEditId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<AssignmentFormData>({ title: '', courseCode: '', courseName: '', type: 'Assignment', deadline: '', time: '', isOptional: false });
+  const [formData, setFormData] = useState<AssignmentFormData>({ 
+    title: '', courseCode: '', courseName: '', type: 'Assignment', deadline: '', time: '', isOptional: false 
+  });
 
-  // Course Settings State
+  // Course Settings Modal State
   const [isCourseModalOpen, setIsCourseModalOpen] = useState<boolean>(false);
   const [editingCourseCode, setEditingCourseCode] = useState<string | null>(null);
-  const [courseFormData, setCourseFormData] = useState<CourseSyllabus>({ name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false });
+  const [courseFormData, setCourseFormData] = useState<CourseSyllabus>({ 
+    name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false 
+  });
 
-  // File Upload State
+  // File Interaction State
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [editingFileId, setEditingFileId] = useState<number | null>(null);
   const [editFileName, setEditFileName] = useState<string>('');
@@ -64,7 +116,11 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const urlToken = urlParams.get('token');
-      if (urlToken) { localStorage.setItem('teaspoon_jwt', urlToken); setToken(urlToken); window.history.replaceState({}, document.title, window.location.pathname); }
+      if (urlToken) { 
+        localStorage.setItem('teaspoon_jwt', urlToken); 
+        setToken(urlToken); 
+        window.history.replaceState({}, document.title, window.location.pathname); 
+      }
     }
   }, []);
 
@@ -81,25 +137,25 @@ export default function App() {
     try {
       const headers: HeadersInit = {}; if (token) headers['Authorization'] = `Bearer ${token}`;
       const [coursesRes, assignmentsRes] = await Promise.all([ fetch(`${API_BASE_URL}/courses`), fetch(`${API_BASE_URL}/assignments`, { headers }) ]);
+      
       if (!coursesRes.ok || !assignmentsRes.ok) throw new Error("Network error");
       
-      const fetchedCoursesMap = await coursesRes.json();
-      const mappedCoursesMap: CoursesMap = {};
-      
-      Object.entries(fetchedCoursesMap).forEach(([k, v]: [string, any]) => {
-          mappedCoursesMap[k] = {
-              name: v.name,
-              hw_weight: v.hw_weight,
+      const rawMap = await coursesRes.json();
+      const mappedMap: CoursesMap = {};
+      Object.entries(rawMap).forEach(([k, v]: [string, any]) => {
+          mappedMap[k] = {
+              name: v.name || '',
+              hw_weight: v.hw_weight || 0,
               hw_keep: v.hw_keep !== undefined ? v.hw_keep : (v.hw_drop || 0), 
               hw_magen: v.hw_magen || false,
-              ww_weight: v.ww_weight,
+              ww_weight: v.ww_weight || 0,
               ww_keep: v.ww_keep !== undefined ? v.ww_keep : (v.ww_drop || 0),
               ww_magen: v.ww_magen || false,
-              exam_weight: v.exam_weight,
+              exam_weight: v.exam_weight || 0,
               exam_magen: v.exam_magen || false
           };
       });
-      setCoursesMap(mappedCoursesMap);
+      setCoursesMap(mappedMap);
 
       let fetchedAssignments: Assignment[] = await assignmentsRes.json();
 
@@ -110,7 +166,10 @@ export default function App() {
             setUserProfile(await userRes.json());
             const dbCourses = await userCoursesRes.json(); setMyCourses(dbCourses); setVisibleCourses(dbCourses);
           } else throw new Error("Unauthorized");
-        } catch (e) { localStorage.removeItem('teaspoon_jwt'); setToken(null); }
+        } catch (e: any) { 
+            localStorage.removeItem('teaspoon_jwt'); 
+            setToken(null); 
+        }
       } else {
         const localCourses = JSON.parse(localStorage.getItem('guest_courses') || '[]');
         const localCompletions = JSON.parse(localStorage.getItem('guest_completions') || '[]');
@@ -119,7 +178,7 @@ export default function App() {
         fetchedAssignments = fetchedAssignments.map(a => ({ ...a, isCompleted: localCompletions.includes(a.id), grade: localGrades[a.id] ?? null }));
       }
       setAssignments(fetchedAssignments.map(a => ({ ...a, deadline: a.deadline.endsWith('Z') ? a.deadline : `${a.deadline}Z` })).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()));
-    } catch (error: any) { setFetchError('שגיאת תקשורת עם שרת V2.'); } finally { setLoading(false); }
+    } catch (error: any) { setFetchError('שגיאת תקשורת עם השרת.'); } finally { setLoading(false); }
   }, [token]);
 
   useEffect(() => { fetchAllData(); }, [fetchAllData]);
@@ -151,7 +210,7 @@ export default function App() {
         ww_drop: courseFormData.ww_keep
     };
 
-    try { await fetch(`${API_BASE_URL}/courses/${editingCourseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) }); } catch (err) {}
+    try { await fetch(`${API_BASE_URL}/courses/${editingCourseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) }); } catch (err: any) { }
   };
 
   // --- Assignment Functions ---
@@ -183,8 +242,8 @@ export default function App() {
     setIsModalOpen(true);
   };
   const handleDelete = async (id: number) => {
-    if (!window.confirm("למחוק מטלה זו ואת כל קבציה?")) return;
-    try { const res = await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }}); if (!res.ok) throw new Error("Failed"); setAssignments(prev => prev.filter(a => a.id !== id)); } catch (error) { alert("שגיאה במחיקה."); }
+    if (!window.confirm("למחוק מטלה זו?")) return;
+    try { await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }}); setAssignments(prev => prev.filter(a => a.id !== id)); } catch (error: any) { alert("שגיאה במחיקה."); }
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!token) return;
@@ -195,34 +254,26 @@ export default function App() {
       }
       await fetch(`${API_BASE_URL}/assignments${isEditing ? `/${currentEditId}` : ''}`, { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
       fetchAllData(); setIsModalOpen(false); if (!myCourses.includes(payload.courseCode)) handleAddCourse(payload.courseCode);
-    } catch (error) { alert("שגיאה בשמירה."); }
+    } catch (error: any) { alert("שגיאה בשמירה."); }
   };
 
-  // --- Grade Calculation Logic (Updated "Keep Top X" Rules) ---
-  const calculateCourseGrade = (code: string) => {
+  // --- Grade Calculation Logic ---
+  const calculateCourseGrade = (code: string): GradeSummary | null => {
     const syllabus = coursesMap[code] || { name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false };
     const courseAssignments = assignments.filter(a => a.courseCode === code);
     if (courseAssignments.length === 0 || !courseAssignments.some(a => a.grade !== null)) return null;
 
     const processCategory = (type: string, weight: number, keepCount: number) => {
       if (weight === 0) return { earned: 0, possible: 0, rawAvg: undefined };
-      
       const items = courseAssignments.filter(a => a.type === type);
       const gradedItems = items.filter(a => a.grade !== null);
       if (gradedItems.length === 0) return { earned: 0, possible: weight, rawAvg: undefined }; 
 
       const actualKeep = keepCount > 0 ? keepCount : Math.max(1, gradedItems.length);
       let grades = gradedItems.map(a => a.grade as number).sort((a, b) => b - a); 
-      
-      if (keepCount > 0) {
-        while (grades.length < actualKeep) {
-          grades.push(0);
-        }
-      }
-
+      if (keepCount > 0) { while (grades.length < actualKeep) { grades.push(0); } }
       const keptGrades = grades.slice(0, actualKeep);
       const avg = keptGrades.reduce((sum, g) => sum + g, 0) / actualKeep;
-
       return { earned: (avg / 100) * weight, possible: weight, rawAvg: avg };
     };
 
@@ -237,26 +288,20 @@ export default function App() {
 
     if (exam.possible > 0 && exam.rawAvg !== undefined) {
       if (syllabus.hw_magen && hw.possible > 0 && hw.rawAvg !== undefined && hw.rawAvg < exam.rawAvg) {
-        final_exam_possible += hw.possible;
-        final_exam_earned += (exam.rawAvg / 100) * hw.possible;
-        final_hw_possible = 0; final_hw_earned = 0;
-        isMagenActive = true;
+        final_exam_possible += hw.possible; final_exam_earned += (exam.rawAvg / 100) * hw.possible;
+        final_hw_possible = 0; final_hw_earned = 0; isMagenActive = true;
       }
       if (syllabus.ww_magen && ww.possible > 0 && ww.rawAvg !== undefined && ww.rawAvg < exam.rawAvg) {
-        final_exam_possible += ww.possible;
-        final_exam_earned += (exam.rawAvg / 100) * ww.possible;
-        final_ww_possible = 0; final_ww_earned = 0;
-        isMagenActive = true;
+        final_exam_possible += ww.possible; final_exam_earned += (exam.rawAvg / 100) * ww.possible;
+        final_ww_possible = 0; final_ww_earned = 0; isMagenActive = true;
       }
     }
 
     const totalEarned = final_hw_earned + final_ww_earned + final_exam_earned;
     const totalPossible = final_hw_possible + final_ww_possible + final_exam_possible;
 
-    // Fallback unweighted average if syllabus is fully empty (0 weights)
     if (totalPossible === 0) {
         const gradedItems = courseAssignments.filter(a => a.grade !== null);
-        if (gradedItems.length === 0) return null;
         const avg = gradedItems.reduce((sum, a) => sum + (a.grade as number), 0) / gradedItems.length;
         return { earned: avg.toFixed(1), possible: '100', isMagen: false, unconfigured: true };
     }
@@ -267,14 +312,12 @@ export default function App() {
   // --- MinIO ---
   const handleFileUpload = async (assignmentId: number, e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     if (!e.target.files || e.target.files.length === 0 || !token) return;
-    const file = e.target.files[0]; const inputElement = e.target; 
-    setUploadingId(assignmentId);
-    const formData = new FormData(); formData.append('file', file); formData.append('category', category);
+    const file = e.target.files[0]; const inputElement = e.target; setUploadingId(assignmentId);
+    const fd = new FormData(); fd.append('file', file); fd.append('category', category);
     try {
-      const res = await fetch(`${API_BASE_URL}/assignments/${assignmentId}/attachments`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-      if (!res.ok) throw new Error("Upload failed");
+      await fetch(`${API_BASE_URL}/assignments/${assignmentId}/attachments`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
       await fetchAllData();
-    } catch (err) { alert("שגיאה בהעלאת הקובץ."); } finally { setUploadingId(null); inputElement.value = ''; }
+    } catch (err: any) { alert("שגיאה בהעלאה."); } finally { setUploadingId(null); inputElement.value = ''; }
   };
   const handleRenameAttachment = async (assignmentId: number, attachmentId: number) => {
     if (!token || !editFileName.trim()) return;
@@ -283,12 +326,12 @@ export default function App() {
     const finalName = editFileName.includes('.') ? editFileName : `${editFileName}${extension}`;
     setAssignments(prev => prev.map(a => a.id === assignmentId ? { ...a, attachments: (a.attachments || []).map(att => att.id === attachmentId ? { ...att, filename: finalName } : att) } : a));
     setEditingFileId(null);
-    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ filename: finalName }) }); } catch (err) { fetchAllData(); }
+    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ filename: finalName }) }); } catch (err: any) { fetchAllData(); }
   };
   const handleDeleteAttachment = async (assignmentId: number, attachmentId: number) => {
-    if (!token || !window.confirm("למחוק קובץ זה?")) return;
+    if (!token || !window.confirm("למחוק קובץ?")) return;
     setAssignments(prev => prev.map(a => a.id === assignmentId ? { ...a, attachments: (a.attachments || []).filter(att => att.id !== attachmentId) } : a));
-    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); } catch (err) { fetchAllData(); }
+    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); } catch (err: any) { fetchAllData(); }
   };
 
   const searchResults = Object.entries(coursesMap).filter(([code, syl]) => { if (!searchQuery) return false; return code.includes(searchQuery) || (syl.name && syl.name.toLowerCase().includes(searchQuery.toLowerCase())); }).slice(0, 5);
@@ -359,14 +402,12 @@ export default function App() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
-        {/* Sidebar */}
         <aside className="w-full md:w-72 flex flex-col gap-6 shrink-0 relative">
           <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors relative z-20">
             <h2 className="font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2"><BookOpen className="w-5 h-5 text-slate-700 dark:text-slate-300" /> הקורסים שלי</h2>
-            
             <div className="relative mb-6">
               <div className="relative">
-                <input type="text" placeholder="חיפוש קורס מהטכניון..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-slate-100" />
+                <input type="text" placeholder="חיפוש קורס..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-slate-100" />
                 <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
               </div>
               {isSearchFocused && searchQuery && (
@@ -376,11 +417,10 @@ export default function App() {
                       <div className="flex justify-between items-center w-full"><span className="text-sm font-bold text-slate-800 dark:text-slate-100">{syl.name}</span>{myCourses.includes(code) && <CheckCircle className="w-4 h-4 text-emerald-500" />}</div>
                       <span className="text-xs text-slate-500">{code}</span>
                     </button>
-                  )) : (<div className="px-4 py-3 text-sm text-slate-500 text-center">לא נמצאו קורסים מתאימים</div>)}
+                  )) : (<div className="px-4 py-3 text-sm text-slate-500 text-center">לא נמצאו קורסים</div>)}
                 </div>
               )}
             </div>
-
             <div className="space-y-2 max-h-64 overflow-y-auto pe-2">
               {myCourses.map(code => {
                 const courseTheme = getCourseTheme(code);
@@ -397,8 +437,8 @@ export default function App() {
                       </div>
                     </label>
                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      {token && (<button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all" title="הגדרות קורס"><Settings className="w-4 h-4" /></button>)}
-                      <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all focus:opacity-100" title="הסרת קורס לצמיתות"><X className="w-4 h-4" /></button>
+                      {token && (<button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all"><Settings className="w-4 h-4" /></button>)}
+                      <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all focus:opacity-100"><X className="w-4 h-4" /></button>
                     </div>
                   </div>
                 );
@@ -407,7 +447,6 @@ export default function App() {
           </div>
         </aside>
 
-        {/* Main Content */}
         <div className="flex-1 relative z-10 flex flex-col min-h-full">
           <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
             <div className="flex items-center gap-2 ms-2 text-slate-500 dark:text-slate-400"><Filter className="w-4 h-4" /><span className="text-sm font-semibold">סינון:</span></div>
@@ -416,7 +455,7 @@ export default function App() {
 
           {loading ? ( <div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div> ) 
           : fetchError ? ( <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div> ) 
-          : filteredAssignments.length === 0 ? ( <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">לא נמצאו מטלות לקורסים המסומנים!</h3></div> ) 
+          : filteredAssignments.length === 0 ? ( <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">אין מטלות</h3></div> ) 
           : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start">
               {filteredAssignments.map((assignment) => {
@@ -425,14 +464,14 @@ export default function App() {
                   <div key={assignment.id} className={`relative p-5 rounded-xl border-s-4 shadow-sm group flex flex-col justify-between ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted)}`}>
                     {token && (
                       <div className="absolute top-4 end-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors" title="עריכה"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors" title="מחיקה"><Trash className="w-4 h-4" /></button>
+                        <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
                       </div>
                     )}
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-3 pe-16">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
-                          <Book className="w-3 h-3" /> {assignment.courseCode}
+                           {assignment.courseCode}
                         </span>
                         <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
                           <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
@@ -440,7 +479,7 @@ export default function App() {
                       </div>
                       
                       <div className="flex items-start gap-3 mb-1">
-                        <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5" title={assignment.isCompleted ? "סומן כהושלם (לחץ לביטול)" : "סמן כהושלם"}>
+                        <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5">
                           {assignment.isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <Circle className="w-5 h-5" />}
                         </button>
                         <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
@@ -448,9 +487,7 @@ export default function App() {
                       <p className={`text-xs mb-4 ms-8 ${assignment.isCompleted ? 'text-slate-400 dark:text-slate-500' : 'text-slate-500 dark:text-slate-400'}`}>{coursesMap[assignment.courseCode]?.name}</p>
                       
                       <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                        <div className="flex items-center gap-2 text-sm font-medium"><Clock className="w-4.5 h-4.5" /> <span>{formatDateTime(assignment.deadline)}</span></div>
-                        
-                        {/* ✨ NEW: Grade Input */}
+                        <div className="flex items-center gap-2 text-sm font-medium"><Clock className="w-4 h-4" /> <span>{formatDateTime(assignment.deadline)}</span></div>
                         <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
                           <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
                           <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
@@ -478,30 +515,29 @@ export default function App() {
             </div>
           )}
 
-          {/* ✨ GRADING DASHBOARD FOOTER WIDGET */}
           {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
             <div className="mt-12 border-t border-slate-200 dark:border-slate-700 pt-8 mb-4">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> מצב ציונים (מצטבר)</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> מצב ציונים</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {visibleCourses.map(code => {
-                  const projected = calculateCourseGrade(code);
-                  if (!projected) return null;
-                  const theme = getCourseTheme(code);
+                  const summary = calculateCourseGrade(code);
+                  if (!summary) return null;
+                  const themeObj = getCourseTheme(code);
                   return (
-                    <div key={`grade-${code}`} className={`p-4 rounded-xl border ${theme.badgeBg} ${theme.badgeBorder} shadow-sm`}>
+                    <div key={`grade-${code}`} className={`p-4 rounded-xl border ${themeObj.badgeBg} ${themeObj.badgeBorder} shadow-sm`}>
                        <div className="flex justify-between items-start mb-3">
                          <div className="flex flex-col">
-                           <span className={`font-bold ${theme.badgeText} text-sm line-clamp-1`}>{coursesMap[code]?.name}</span>
-                           <span className={`text-xs ${theme.badgeText} opacity-70`} dir="ltr">{code}</span>
+                           <span className={`font-bold ${themeObj.badgeText} text-sm line-clamp-1`}>{coursesMap[code]?.name}</span>
+                           <span className={`text-xs ${themeObj.badgeText} opacity-70`} dir="ltr">{code}</span>
                          </div>
                          <div className="flex gap-1">
-                           {projected.unconfigured && <span title="יש להגדיר משקלים בהגדרות הקורס לחישוב הציון האמיתי" className="cursor-help"><AlertCircle className={`w-4 h-4 mt-0.5 shrink-0 text-orange-500`} /></span>}
-                           {projected.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 mt-0.5 shrink-0 ${theme.badgeText}`} /></span>}
-                         </div>
+                           {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון משוקלל" className="cursor-help"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-orange-500" /></span>}
+                           {summary.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 mt-0.5 shrink-0 ${themeObj.badgeText}`} /></span>}
+                       </div>
                        </div>
                        <div className="flex items-baseline gap-1.5" dir="ltr">
-                         <span className={`text-3xl font-black leading-none ${theme.badgeText}`}>{projected.earned}</span>
-                         <span className={`text-lg font-medium leading-none ${theme.badgeText} opacity-60 mb-0.5`}>/ {projected.possible}</span>
+                         <span className={`text-3xl font-black leading-none ${themeObj.badgeText}`}>{summary.earned}</span>
+                         <span className={`text-lg font-medium leading-none ${themeObj.badgeText} opacity-60 mb-0.5`}>/ {summary.possible}</span>
                        </div>
                     </div>
                   );
@@ -512,10 +548,10 @@ export default function App() {
         </div>
       </main>
 
-      {/* Assignment Edit Modal */}
+      {/* Assignment Modal */}
       {isModalOpen && token && (
         <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-slate-100 dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
             <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{isEditing ? 'עריכת מטלה' : 'הוספת מטלה חדשה'}</h2><button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -523,9 +559,8 @@ export default function App() {
                 <div className="col-span-2 sm:col-span-1"><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">סוג המטלה</label><select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option value="Assignment">גיליון</option><option value="Webwork">וובוורק</option><option value="Exam">מבחן</option></select></div>
               </div>
               
-              {/* ✨ RESTORED: Course Name Field logic */}
               {formData.courseCode.length > 0 && (
-                <div className="animate-in slide-in-from-top-2 duration-300">
+                <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שם הקורס {coursesMap[formData.courseCode] ? '(מילוי אוטומטי)' : '(קורס חדש)'}</label>
                   <input required type="text" placeholder="לדוגמה: פיזיקה 1פ" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${coursesMap[formData.courseCode] ? 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400' : 'bg-white dark:bg-slate-900 border-blue-300 dark:border-blue-700 text-slate-800 dark:text-slate-100'}`} value={formData.courseName} readOnly={!!coursesMap[formData.courseCode]} onChange={e => setFormData({...formData, courseName: e.target.value})} />
                 </div>
@@ -536,46 +571,35 @@ export default function App() {
                 <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">תאריך הגשה</label><input required type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.deadline} onChange={e => setFormData({...formData, deadline: e.target.value})} /></div>
                 <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שעה (רשות)</label><input type="time" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} /></div>
               </div>
-              <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">{isEditing ? 'שמירת שינויים' : 'הוספה ללוח'}</button></div>
+              <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
             </form>
           </div>
         </div>
       )}
 
-      {/* ✨ NEW: Course Syllabus Settings Modal */}
+      {/* Syllabus Modal */}
       {isCourseModalOpen && token && (
         <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 border border-slate-100 dark:border-slate-700">
-            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><Settings className="w-5 h-5 text-slate-500" /> הגדרות סילבוס: {editingCourseCode}</h2><button onClick={() => setIsCourseModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
+            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><Settings className="w-5 h-5 text-slate-500" /> הגדרות סילבוס</h2><button onClick={() => setIsCourseModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
             <form onSubmit={handleSaveCourseSettings} className="p-6 space-y-4">
               <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שם הקורס</label><input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.name} onChange={e => setCourseFormData({...courseFormData, name: e.target.value})} /></div>
-              
-              {/* ✨ MODAL LAYOUT: Checkboxes inline with Categories */}
               <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל גיליונות (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.hw_weight} onChange={e => setCourseFormData({...courseFormData, hw_weight: parseInt(e.target.value)||0})} /></div>
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר גיליונות תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.hw_keep} onChange={e => setCourseFormData({...courseFormData, hw_keep: parseInt(e.target.value)||0})} /></div>
-                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16">
-                  <input type="checkbox" checked={courseFormData.hw_magen} onChange={e => setCourseFormData({...courseFormData, hw_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן
-                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.hw_magen} onChange={e => setCourseFormData({...courseFormData, hw_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
               </div>
-
               <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל וובוורק (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_weight} onChange={e => setCourseFormData({...courseFormData, ww_weight: parseInt(e.target.value)||0})} /></div>
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר וובוורקים תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_keep} onChange={e => setCourseFormData({...courseFormData, ww_keep: parseInt(e.target.value)||0})} /></div>
-                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16">
-                  <input type="checkbox" checked={courseFormData.ww_magen} onChange={e => setCourseFormData({...courseFormData, ww_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן
-                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.ww_magen} onChange={e => setCourseFormData({...courseFormData, ww_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
               </div>
-
               <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
                  <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל בוחן אמצע (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.exam_weight} onChange={e => setCourseFormData({...courseFormData, exam_weight: parseInt(e.target.value)||0})} /></div>
                  <div></div>
-                 <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16">
-                  <input type="checkbox" checked={courseFormData.exam_magen} onChange={e => setCourseFormData({...courseFormData, exam_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן
-                </label>
+                 <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.exam_magen} onChange={e => setCourseFormData({...courseFormData, exam_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
               </div>
-
-              <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsCourseModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירת סילבוס</button></div>
+              <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsCourseModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
             </form>
           </div>
         </div>
