@@ -309,6 +309,38 @@ export default function App() {
     return { earned: totalEarned.toFixed(1), possible: totalPossible.toFixed(1), isMagen: isMagenActive, unconfigured: false };
   };
 
+  // --- Calendar Sync ---
+  const exportToCalendar = () => {
+    let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Teaspoon//IL\n";
+    
+    filteredAssignments.forEach(a => {
+      if (!a.deadline) return;
+      const d = new Date(a.deadline);
+      const pad = (n: number) => n < 10 ? '0' + n : n;
+      const fmt = (date: Date) => `${date.getUTCFullYear()}${pad(date.getUTCMonth() + 1)}${pad(date.getUTCDate())}T${pad(date.getUTCHours())}${pad(date.getUTCMinutes())}${pad(date.getUTCSeconds())}Z`;
+      
+      icsContent += "BEGIN:VEVENT\n";
+      icsContent += `UID:${a.id}@teaspoon\n`;
+      icsContent += `DTSTAMP:${fmt(new Date())}\n`;
+      icsContent += `DTSTART:${fmt(d)}\n`;
+      icsContent += `DTEND:${fmt(d)}\n`;
+      icsContent += `SUMMARY:${a.courseCode} - ${a.title}\n`;
+      // Optional: Add a description or reminder
+      icsContent += `DESCRIPTION:${typeTranslations[a.type]} בקורס ${coursesMap[a.courseCode]?.name || a.courseCode}\n`;
+      icsContent += "END:VEVENT\n";
+    });
+    
+    icsContent += "END:VCALENDAR";
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', 'teaspoon_assignments.ics');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // --- MinIO ---
   const handleFileUpload = async (assignmentId: number, e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     if (!e.target.files || e.target.files.length === 0 || !token) return;
