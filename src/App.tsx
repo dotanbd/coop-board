@@ -167,7 +167,7 @@ export default function App() {
             setUserProfile(await userRes.json());
             const dbCourses = await userCoursesRes.json(); setMyCourses(dbCourses); setVisibleCourses(dbCourses);
           } else throw new Error("Unauthorized");
-        } catch (e: any) { 
+        } catch { 
             localStorage.removeItem('teaspoon_jwt'); 
             setToken(null); 
         }
@@ -179,7 +179,7 @@ export default function App() {
         fetchedAssignments = fetchedAssignments.map(a => ({ ...a, isCompleted: localCompletions.includes(a.id), grade: localGrades[a.id] ?? null }));
       }
       setAssignments(fetchedAssignments.map(a => ({ ...a, deadline: a.deadline.endsWith('Z') ? a.deadline : `${a.deadline}Z` })).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()));
-    } catch (error: any) { setFetchError('שגיאת תקשורת עם השרת.'); } finally { setLoading(false); }
+    } catch { setFetchError('שגיאת תקשורת עם השרת.'); } finally { setLoading(false); }
   }, [token]);
 
   useEffect(() => { fetchAllData(); }, [fetchAllData]);
@@ -211,7 +211,7 @@ export default function App() {
         ww_drop: courseFormData.ww_keep
     };
 
-    try { await fetch(`${API_BASE_URL}/courses/${editingCourseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) }); } catch (err: any) { }
+    try { await fetch(`${API_BASE_URL}/courses/${editingCourseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) }); } catch { }
   };
 
   // --- Assignment Functions ---
@@ -244,7 +244,7 @@ export default function App() {
   };
   const handleDelete = async (id: number) => {
     if (!window.confirm("למחוק מטלה זו?")) return;
-    try { await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }}); setAssignments(prev => prev.filter(a => a.id !== id)); } catch (error: any) { alert("שגיאה במחיקה."); }
+    try { await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }}); setAssignments(prev => prev.filter(a => a.id !== id)); } catch { alert("שגיאה במחיקה."); }
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!token) return;
@@ -255,7 +255,7 @@ export default function App() {
       }
       await fetch(`${API_BASE_URL}/assignments${isEditing ? `/${currentEditId}` : ''}`, { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
       fetchAllData(); setIsModalOpen(false); if (!myCourses.includes(payload.courseCode)) handleAddCourse(payload.courseCode);
-    } catch (error: any) { alert("שגיאה בשמירה."); }
+    } catch { alert("שגיאה בשמירה."); }
   };
 
   // --- Grade Calculation Logic ---
@@ -328,7 +328,7 @@ export default function App() {
     navigator.clipboard.writeText(calendarUrl).then(() => {
       setIsCalendarCopied(true);
       setTimeout(() => setIsCalendarCopied(false), 2000);
-    }).catch(err => {
+    }).catch(() => {
       alert("שגיאה בהעתקת הקישור ליומן. אנא נסה שוב.");
     });
   };
@@ -341,7 +341,7 @@ export default function App() {
     try {
       await fetch(`${API_BASE_URL}/assignments/${assignmentId}/attachments`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd });
       await fetchAllData();
-    } catch (err: any) { alert("שגיאה בהעלאה."); } finally { setUploadingId(null); inputElement.value = ''; }
+    } catch { alert("שגיאה בהעלאה."); } finally { setUploadingId(null); inputElement.value = ''; }
   };
   const handleRenameAttachment = async (assignmentId: number, attachmentId: number) => {
     if (!token || !editFileName.trim()) return;
@@ -350,12 +350,12 @@ export default function App() {
     const finalName = editFileName.includes('.') ? editFileName : `${editFileName}${extension}`;
     setAssignments(prev => prev.map(a => a.id === assignmentId ? { ...a, attachments: (a.attachments || []).map(att => att.id === attachmentId ? { ...att, filename: finalName } : att) } : a));
     setEditingFileId(null);
-    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ filename: finalName }) }); } catch (err: any) { fetchAllData(); }
+    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ filename: finalName }) }); } catch { fetchAllData(); }
   };
   const handleDeleteAttachment = async (assignmentId: number, attachmentId: number) => {
     if (!token || !window.confirm("למחוק קובץ?")) return;
     setAssignments(prev => prev.map(a => a.id === assignmentId ? { ...a, attachments: (a.attachments || []).filter(att => att.id !== attachmentId) } : a));
-    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); } catch (err: any) { fetchAllData(); }
+    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); } catch { fetchAllData(); }
   };
 
   const searchResults = Object.entries(coursesMap).filter(([code, syl]) => { if (!searchQuery) return false; return code.includes(searchQuery) || (syl.name && syl.name.toLowerCase().includes(searchQuery.toLowerCase())); }).slice(0, 5);
