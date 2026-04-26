@@ -62,7 +62,22 @@ const courseThemes: CourseTheme[] = [
   { startBorder: 'border-s-emerald-500', hover: 'hover:border-emerald-300 dark:hover:border-emerald-400', badgeBg: 'bg-emerald-100 dark:bg-emerald-900/30', badgeText: 'text-emerald-800 dark:text-emerald-300', badgeBorder: 'border-emerald-200 dark:border-emerald-800/50', dot: 'bg-emerald-500' },
   { startBorder: 'border-s-purple-500', hover: 'hover:border-purple-300 dark:hover:border-purple-400', badgeBg: 'bg-purple-100 dark:bg-purple-900/30', badgeText: 'text-purple-800 dark:text-purple-300', badgeBorder: 'border-purple-200 dark:border-purple-800/50', dot: 'bg-purple-500' },
   { startBorder: 'border-s-rose-500', hover: 'hover:border-rose-300 dark:hover:border-rose-400', badgeBg: 'bg-rose-100 dark:bg-rose-900/30', badgeText: 'text-rose-800 dark:text-rose-300', badgeBorder: 'border-rose-200 dark:border-rose-800/50', dot: 'bg-rose-500' },
-  { startBorder: 'border-s-amber-500', hover: 'hover:border-amber-300 dark:hover:border-amber-400', badgeBg: 'bg-amber-100 dark:bg-amber-900/30', badgeText: 'text-amber-800 dark:text-amber-300', badgeBorder: 'border-amber-200 dark:border-amber-800/50', dot: 'bg-amber-500' }
+  { startBorder: 'border-s-amber-500', hover: 'hover:border-amber-300 dark:hover:border-amber-400', badgeBg: 'bg-amber-100 dark:bg-amber-900/30', badgeText: 'text-amber-800 dark:text-amber-300', badgeBorder: 'border-amber-200 dark:border-amber-800/50', dot: 'bg-amber-500' },
+  { startBorder: 'border-s-indigo-500', hover: 'hover:border-indigo-300 dark:hover:border-indigo-400', badgeBg: 'bg-indigo-100 dark:bg-indigo-900/30', badgeText: 'text-indigo-800 dark:text-indigo-300', badgeBorder: 'border-indigo-200 dark:border-indigo-800/50', dot: 'bg-indigo-500' },
+  { startBorder: 'border-s-cyan-500', hover: 'hover:border-cyan-300 dark:hover:border-cyan-400', badgeBg: 'bg-cyan-100 dark:bg-cyan-900/30', badgeText: 'text-cyan-800 dark:text-cyan-300', badgeBorder: 'border-cyan-200 dark:border-cyan-800/50', dot: 'bg-cyan-500' },
+  { startBorder: 'border-s-teal-500', hover: 'hover:border-teal-300 dark:hover:border-teal-400', badgeBg: 'bg-teal-100 dark:bg-teal-900/30', badgeText: 'text-teal-800 dark:text-teal-300', badgeBorder: 'border-teal-200 dark:border-teal-800/50', dot: 'bg-teal-500' },
+  { startBorder: 'border-s-lime-500', hover: 'hover:border-lime-300 dark:hover:border-lime-400', badgeBg: 'bg-lime-100 dark:bg-lime-900/30', badgeText: 'text-lime-800 dark:text-lime-300', badgeBorder: 'border-lime-200 dark:border-lime-800/50', dot: 'bg-lime-500' },
+  { startBorder: 'border-s-green-500', hover: 'hover:border-green-300 dark:hover:border-green-400', badgeBg: 'bg-green-100 dark:bg-green-900/30', badgeText: 'text-green-800 dark:text-green-300', badgeBorder: 'border-green-200 dark:border-green-800/50', dot: 'bg-green-500' },
+  { startBorder: 'border-s-sky-500', hover: 'hover:border-sky-300 dark:hover:border-sky-400', badgeBg: 'bg-sky-100 dark:bg-sky-900/30', badgeText: 'text-sky-800 dark:text-sky-300', badgeBorder: 'border-sky-200 dark:border-sky-800/50', dot: 'bg-sky-500' },
+  { startBorder: 'border-s-violet-500', hover: 'hover:border-violet-300 dark:hover:border-violet-400', badgeBg: 'bg-violet-100 dark:bg-violet-900/30', badgeText: 'text-violet-800 dark:text-violet-300', badgeBorder: 'border-violet-200 dark:border-violet-800/50', dot: 'bg-violet-500' },
+  { startBorder: 'border-s-fuchsia-500', hover: 'hover:border-fuchsia-300 dark:hover:border-fuchsia-400', badgeBg: 'bg-fuchsia-100 dark:bg-fuchsia-900/30', badgeText: 'text-fuchsia-800 dark:text-fuchsia-300', badgeBorder: 'border-fuchsia-200 dark:border-fuchsia-800/50', dot: 'bg-fuchsia-500' },
+  { startBorder: 'border-s-pink-500', hover: 'hover:border-pink-300 dark:hover:border-pink-400', badgeBg: 'bg-pink-100 dark:bg-pink-900/30', badgeText: 'text-pink-800 dark:text-pink-300', badgeBorder: 'border-pink-200 dark:border-pink-800/50', dot: 'bg-pink-500' },
+  { startBorder: 'border-s-orange-500', hover: 'hover:border-orange-300 dark:hover:border-orange-400', badgeBg: 'bg-orange-100 dark:bg-orange-900/30', badgeText: 'text-orange-800 dark:text-orange-300', badgeBorder: 'border-orange-200 dark:border-orange-800/50', dot: 'bg-orange-500' },
+  { startBorder: 'border-s-red-500', hover: 'hover:border-red-300 dark:hover:border-red-400', badgeBg: 'bg-red-100 dark:bg-red-900/30', badgeText: 'text-red-800 dark:text-red-300', badgeBorder: 'border-red-200 dark:border-red-800/50', dot: 'bg-red-500' },
+  { startBorder: 'border-s-yellow-500', hover: 'hover:border-yellow-300 dark:hover:border-yellow-400', badgeBg: 'bg-yellow-100 dark:bg-yellow-900/30', badgeText: 'text-yellow-800 dark:text-yellow-300', badgeBorder: 'border-yellow-200 dark:border-yellow-800/50', dot: 'bg-yellow-500' },
+  { startBorder: 'border-s-slate-600', hover: 'hover:border-slate-400 dark:hover:border-slate-500', badgeBg: 'bg-slate-200 dark:bg-slate-800/30', badgeText: 'text-slate-800 dark:text-slate-200', badgeBorder: 'border-slate-300 dark:border-slate-700/50', dot: 'bg-slate-600' },
+  { startBorder: 'border-s-stone-500', hover: 'hover:border-stone-300 dark:hover:border-stone-400', badgeBg: 'bg-stone-100 dark:bg-stone-900/30', badgeText: 'text-stone-800 dark:text-stone-300', badgeBorder: 'border-stone-200 dark:border-stone-800/50', dot: 'bg-stone-500' },
+  { startBorder: 'border-s-orange-600', hover: 'hover:border-orange-400 dark:hover:border-orange-500', badgeBg: 'bg-orange-100 dark:bg-orange-900/40', badgeText: 'text-orange-900 dark:text-orange-200', badgeBorder: 'border-orange-300 dark:border-orange-800/50', dot: 'bg-orange-600' }
 ];
 
 const getCourseTheme = (courseCode: string): CourseTheme => {
@@ -551,7 +566,7 @@ export default function App() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2 mb-3 pe-16">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
-                           {assignment.courseCode}
+                           {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
                         </span>
                         <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
                           <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
@@ -564,7 +579,6 @@ export default function App() {
                         </button>
                         <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
                       </div>
-                      <p className={`text-xs mb-4 ms-8 ${assignment.isCompleted ? 'text-slate-400 dark:text-slate-500' : 'text-slate-500 dark:text-slate-400'}`}>{coursesMap[assignment.courseCode]?.name || 'קורס מותאם'}</p>
                       
                       <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
                         <div className="flex items-center gap-2 text-sm font-medium"><Clock className="w-4 h-4" /> <span>{formatDateTime(assignment.deadline)}</span></div>
