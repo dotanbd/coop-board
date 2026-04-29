@@ -9,7 +9,7 @@ import {
 // --- Production API Configuration ---
 // We use window.location.hostname logic to avoid "import.meta" target environment build errors
 const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined' && window.location.hostname === 'ecetechnion.me') {
+  if (typeof window !== 'undefined' && window.location.hostname === 'teaspoon.ecetechnion.me') {
     return 'https://api.ecetechnion.me/api/v2';
   }
   return 'http://localhost:8001/api/v2';
