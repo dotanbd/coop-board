@@ -869,7 +869,7 @@ export default function App() {
                     <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'type' ? 'rotate-180' : ''}`} />
                   </button>
                   {openFilter === 'type' && (
-                    <div className="absolute top-full right-0 mt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-50">
+                    <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-50">
                       {assignmentTypes.map(type => (
                         <button 
                           key={type} 
@@ -897,7 +897,7 @@ export default function App() {
                     <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'status' ? 'rotate-180' : ''}`} />
                   </button>
                   {openFilter === 'status' && (
-                    <div className="absolute top-full right-0 mt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-50">
+                    <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-50">
                       <button 
                         onClick={() => { setHideCompleted(false); setOpenFilter(null); }} 
                         className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ !hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
