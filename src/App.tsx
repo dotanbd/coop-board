@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   BookOpen, Calendar, Clock, Plus, CheckCircle, RefreshCw, 
   AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon, 
-  LogIn, User, Search, X, Check, Paperclip, FileText, Upload, 
+  LogIn, User, Search, X, Check, Paperclip, FileText, Upload, Coffee, 
   XCircle, Lightbulb, Calculator, Shield, Settings, ChevronDown, Heart 
 } from 'lucide-react';
 
@@ -251,6 +251,10 @@ export default function App() {
   const [newCourseName, setNewCourseName] = useState<string>('');
   const [courseCodeError, setCourseCodeError] = useState<string>('');
 
+  // Intro Modal State
+  const [showIntroModal, setShowIntroModal] = useState<boolean>(false);
+  const [dontShowAgain, setDontShowAgain] = useState<boolean>(false);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -276,6 +280,12 @@ export default function App() {
       localStorage.setItem('teaspoon_hide_completed', String(hideCompleted));
     }
   }, [hideCompleted]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('hasSeenIntro')) {
+      setShowIntroModal(true);
+    }
+  }, []);
 
   const fetchAllData = useCallback(async () => {
     setLoading(true); setFetchError(null);
@@ -1081,6 +1091,100 @@ export default function App() {
               </div>
               <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsCourseModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Intro Modal */}
+      {showIntroModal && (
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
+            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Coffee className="w-6 h-6 text-blue-500" />
+                ברוכים הבאים ל-Teaspoon!
+              </h2>
+              <button 
+                onClick={() => {
+                  setShowIntroModal(false);
+                  if (dontShowAgain) {
+                    localStorage.setItem('hasSeenIntro', 'true');
+                  }
+                }} 
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="text-center mb-6">
+                <div className="bg-slate-900 dark:bg-slate-700 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <Coffee className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-2">
+                  Teaspoon - מערכת ניהול מטלות קהילתית
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                  פלטפורמה למעקב מטלות, שיתוף פתרונות ועזרה הדדית
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <Coffee className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">ניהול כל המטלות במקום אחד עם תזכורות וסנכרון ליומן</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                  <Coffee className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">העלאת רפרנסים וגיליונות - הכל במקום אחד</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <Coffee className="w-5 h-5 text-purple-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">קהילה בסגנון ויקי - עדכונים מתבססים על משתמשי הקהילה</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                  <Coffee className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">חישוב ציונים - מעקב אוטומטי אחר הציונים המצטברים ממטלות שבוצעו</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-3 mb-4">
+                  <input 
+                    type="checkbox" 
+                    id="dontShowAgain" 
+                    checked={dontShowAgain} 
+                    onChange={(e) => setDontShowAgain(e.target.checked)} 
+                    className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 accent-blue-600 cursor-pointer" 
+                  />
+                  <label htmlFor="dontShowAgain" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                    אל תציג שוב
+                  </label>
+                </div>
+                <button 
+                  onClick={() => {
+                    setShowIntroModal(false);
+                    if (dontShowAgain) {
+                      localStorage.setItem('hasSeenIntro', 'true');
+                    }
+                  }}
+                  className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  בואו נתחיל!
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
