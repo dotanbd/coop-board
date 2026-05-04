@@ -2,8 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   BookOpen, Calendar, Clock, Plus, CheckCircle, RefreshCw, 
   AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon, 
-  LogIn, User, Search, X, Check, Paperclip, FileText, Upload, Coffee, 
-  XCircle, Lightbulb, Calculator, Shield, Settings, ChevronDown, Heart 
+  LogIn, User, Search, X, Check, Paperclip, FileText, Upload, Coffee,  
+  XCircle, Lightbulb, Calculator, Shield, Settings, ChevronDown, 
+  Heart, Users, ShieldAlert, ArrowRight, ListChecks
 } from 'lucide-react';
 
 // --- Production API Configuration ---
@@ -18,69 +19,18 @@ const getApiBaseUrl = () => {
 const API_BASE_URL = getApiBaseUrl();
 
 // --- TypeScript Interfaces ---
-interface Attachment { 
-  id: number; 
-  filename: string; 
-  url: string; 
-  uploader_id: number; 
-  category: string; 
-  likes?: number; 
-  isLikedByMe?: boolean; 
-}
-
-interface Assignment { 
-  id: number; 
-  title: string; 
-  courseCode: string; 
-  type: string; 
-  deadline: string; 
-  isOptional: boolean; 
-  isCompleted: boolean; 
-  grade: number | null; 
-  attachments: Attachment[]; 
-}
-
-interface UserProfile { 
-  id: number; 
-  email: string; 
-  name: string; 
-  picture: string; 
-  role: string; 
-  totalLikesReceived?: number; 
-}
-
-interface CourseSyllabus { 
-  name: string; 
-  hw_weight: number; 
-  hw_keep: number; 
-  hw_magen: boolean; 
-  ww_weight: number; 
-  ww_keep: number; 
-  ww_magen: boolean; 
-  exam_weight: number; 
-  exam_magen: boolean; 
-}
-
+interface Attachment { id: number; filename: string; url: string; uploader_id: number; category: string; likes?: number; isLikedByMe?: boolean; }
+interface Assignment { id: number; title: string; courseCode: string; type: string; deadline: string; isOptional: boolean; isCompleted: boolean; grade: number | null; attachments: Attachment[]; }
+interface UserProfile { id: number; email: string; name: string; picture: string; role: string; totalLikesReceived?: number; }
+interface CourseSyllabus { name: string; hw_weight: number; hw_keep: number; hw_magen: boolean; ww_weight: number; ww_keep: number; ww_magen: boolean; exam_weight: number; exam_magen: boolean; }
 interface CoursesMap { [key: string]: CourseSyllabus; }
-
-interface AssignmentFormData { 
-  title: string; 
-  courseCode: string; 
-  courseName: string; 
-  type: string; 
-  deadline: string; 
-  time: string; 
-  isOptional: boolean; 
-}
-
+interface AssignmentFormData { title: string; courseCode: string; courseName: string; type: string; deadline: string; time: string; isOptional: boolean; }
 interface CourseTheme { startBorder: string; hover: string; badgeBg: string; badgeText: string; badgeBorder: string; dot: string; }
+interface GradeSummary { earned: string; possible: string; isMagen: boolean; unconfigured: boolean; }
 
-interface GradeSummary {
-  earned: string;
-  possible: string;
-  isMagen: boolean;
-  unconfigured: boolean;
-}
+// Admin Interfaces
+interface AdminUser { id: number; name: string; email: string; role: string; picture: string; }
+interface AuditLog { id: number; user_name: string; user_email: string; action: string; entity_type: string; entity_id: string; old_data: string; new_data: string; status: string; created_at: string; }
 
 const typeTranslations: Record<string, string> = { 'All': 'הכל', 'Assignment': 'גיליון', 'Webwork': 'וובוורק', 'Exam': 'מבחן' };
 
@@ -194,9 +144,221 @@ const getCourseTheme = (courseCode: string): CourseTheme => {
   return courseThemes[Math.abs(hash) % courseThemes.length];
 };
 
+// ==========================================
+// ADMIN DASHBOARD COMPONENT
+// ==========================================
+const AdminDashboard = ({ token }: { token: string }) => {
+  const [activeTab, setActiveTab] = useState<'users' | 'logs'>('users');
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAdminData = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'users') {
+        const res = await fetch(`${API_BASE_URL}/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.ok) setUsers(await res.json());
+      } else {
+        const res = await fetch(`${API_BASE_URL}/admin/logs`, { headers: { 'Authorization': `Bearer ${token}` } });
+        if (res.ok) setLogs(await res.json());
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, token]);
+
+  useEffect(() => { fetchAdminData(); }, [fetchAdminData]);
+
+  const handleRoleChange = async (userId: number, newRole: string) => {
+    if (!window.confirm(`האם אתה בטוח שברצונך לשנות את ההרשאה ל-${newRole}?`)) return;
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    try {
+      await fetch(`${API_BASE_URL}/admin/users/${userId}/role`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ role: newRole })
+      });
+    } catch {
+      fetchAdminData();
+    }
+  };
+
+  // ✨ NEW: Approve removes the log and accepts the live changes
+  const handleApproveLog = async (logId: number) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/logs/${logId}/approve`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setLogs(prev => prev.filter(l => l.id !== logId));
+      } else {
+        alert("שגיאה באישור הפעולה.");
+      }
+    } catch {
+      alert("שגיאת תקשורת.");
+    }
+  };
+
+  // ✨ NEW: Revert restores the old data and removes the log
+  const handleRevertLog = async (logId: number) => {
+    if (!window.confirm("האם לדחות את השינוי ולשחזר את המידע המקורי? הפעולה לא ניתנת לביטול.")) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/logs/${logId}/revert`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setLogs(prev => prev.filter(l => l.id !== logId));
+      } else {
+        alert("שגיאה בשחזור הפעולה.");
+      }
+    } catch {
+      alert("שגיאת תקשורת.");
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-[calc(100vh-10rem)]">
+      {/* Admin Tabs */}
+      <div className="flex border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0 px-4 pt-4 gap-4">
+        <button onClick={() => setActiveTab('users')} className={`flex items-center gap-2 pb-3 px-2 font-bold transition-colors border-b-2 ${activeTab === 'users' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
+          <Users className="w-4 h-4" /> ניהול משתמשים
+        </button>
+        <button onClick={() => setActiveTab('logs')} className={`flex items-center gap-2 pb-3 px-2 font-bold transition-colors border-b-2 ${activeTab === 'logs' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
+          <ListChecks className="w-4 h-4" /> אישורים ממתינים {logs.length > 0 && `(${logs.length})`}
+        </button>
+      </div>
+
+      {/* Admin Content Area */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {loading ? (
+          <div className="flex justify-center items-center h-full"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div>
+        ) : activeTab === 'users' ? (
+          <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
+            <table className="w-full text-sm text-right">
+              <thead className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-900/50 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                  <th className="px-6 py-3 font-semibold">משתמש</th>
+                  <th className="px-6 py-3 font-semibold">אימייל</th>
+                  <th className="px-6 py-3 font-semibold">הרשאה נוכחית</th>
+                  <th className="px-6 py-3 font-semibold">פעולות</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                {users.map(u => (
+                  <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td className="px-6 py-4 flex items-center gap-3">
+                      <img src={u.picture} alt="" className="w-8 h-8 rounded-full bg-slate-200" referrerPolicy="no-referrer" />
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">{u.name}</span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400" dir="ltr">{u.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${
+                        u.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                        u.role === 'restricted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                        'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                      }`}>
+                        {u.role === 'admin' ? 'מנהל' : u.role === 'restricted' ? 'מוגבל' : 'משתמש רגיל'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <select 
+                        value={u.role} 
+                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200"
+                      >
+                        <option value="user">משתמש רגיל (עריכה חופשית)</option>
+                        <option value="restricted">מוגבל (קריאה בלבד)</option>
+                        <option value="admin">מנהל (גישה לפאנל זה)</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {logs.length === 0 && (
+              <div className="text-center py-16 flex flex-col items-center">
+                <CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mb-4" />
+                <h3 className="text-lg font-bold text-slate-500 dark:text-slate-400">אין שינויים הממתינים לאישור</h3>
+                <p className="text-sm text-slate-400 mt-1">כל העריכות טופלו!</p>
+              </div>
+            )}
+            
+            {logs.map(log => {
+              let parsedOld = null;
+              let parsedNew = null;
+              try { parsedOld = log.old_data ? JSON.parse(log.old_data) : null; } catch {}
+              try { parsedNew = log.new_data ? JSON.parse(log.new_data) : null; } catch {}
+
+              return (
+                <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-5 bg-white dark:bg-slate-800/50 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+                        {log.action}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{log.entity_type} #{log.entity_id}</span>
+                      <span className="text-xs text-slate-400" dir="ltr">{new Date(log.created_at).toLocaleString('he-IL')}</span>
+                    </div>
+                    
+                    <div className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                      בוצע ע"י: <span className="font-bold">{log.user_name}</span> <span className="text-xs opacity-70" dir="ltr">({log.user_email})</span>
+                    </div>
+
+                    <div className="flex items-stretch gap-4 overflow-hidden">
+                       <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs opacity-80">
+                         <div className="font-bold text-red-700 dark:text-red-400 mb-1">המידע המקורי:</div>
+                         {parsedOld && <div className="text-slate-600 dark:text-slate-400">שם: {parsedOld.title}<br/>מועד: {parsedOld.deadline}</div>}
+                       </div>
+                       <div className="flex items-center justify-center text-slate-300"><ArrowRight className="w-4 h-4" /></div>
+                       <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-3 rounded text-xs">
+                         <div className="font-bold text-emerald-700 dark:text-emerald-400 mb-1">השינוי המוצע:</div>
+                         {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">שם: {parsedNew.title}<br/>מועד: {parsedNew.deadline}</div>}
+                       </div>
+                    </div>
+                  </div>
+                  
+                  <div className="shrink-0 flex flex-row lg:flex-col gap-2 border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-slate-700 pt-4 lg:pt-0 lg:pr-4">
+                    <button 
+                      onClick={() => handleApproveLog(log.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-sm font-bold transition-colors"
+                    >
+                      <Check className="w-4 h-4" /> אשר שינוי
+                    </button>
+                    <button 
+                      onClick={() => handleRevertLog(log.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 hover:border-red-300 dark:hover:border-red-800 rounded-lg text-sm font-medium transition-colors text-slate-700 dark:text-slate-200"
+                    >
+                      <X className="w-4 h-4" /> דחה ושחזר
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+
+// ==========================================
+// MAIN APP COMPONENT
+// ==========================================
 export default function App() {
   const [token, setToken] = useState<string | null>(typeof window !== 'undefined' ? localStorage.getItem('teaspoon_jwt') : null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  // ✨ NEW: State to track if we are viewing the App or the Admin Panel
+  const [currentView, setCurrentView] = useState<'app' | 'admin'>('app');
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [coursesMap, setCoursesMap] = useState<CoursesMap>({});
@@ -336,9 +498,13 @@ export default function App() {
     } catch { setFetchError('שגיאת תקשורת עם השרת.'); } finally { setLoading(false); }
   }, [token]);
 
-  useEffect(() => { fetchAllData(); }, [fetchAllData]);
+  useEffect(() => { 
+    if (currentView === 'app') {
+      fetchAllData(); 
+    }
+  }, [fetchAllData, currentView]);
 
-  // --- Course Functions ---
+  // --- Functions ---
   const syncCourses = (newCourses: string[]) => {
     if (token) fetch(`${API_BASE_URL}/users/me/courses`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(newCourses) });
     else localStorage.setItem('guest_courses', JSON.stringify(newCourses));
@@ -368,17 +534,10 @@ export default function App() {
     e.preventDefault(); if (!token || !editingCourseCode) return;
     setCoursesMap(prev => ({ ...prev, [editingCourseCode]: courseFormData }));
     setIsCourseModalOpen(false);
-
-    const payload = {
-        ...courseFormData,
-        hw_drop: courseFormData.hw_keep,
-        ww_drop: courseFormData.ww_keep
-    };
-
+    const payload = { ...courseFormData, hw_drop: courseFormData.hw_keep, ww_drop: courseFormData.ww_keep };
     try { await fetch(`${API_BASE_URL}/courses/${editingCourseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) }); } catch { }
   };
 
-  // --- Assignment Functions ---
   const toggleCompletion = async (id: number) => {
     setAssignments(prev => prev.map(a => a.id === id ? { ...a, isCompleted: !a.isCompleted } : a));
     if (token) fetch(`${API_BASE_URL}/assignments/${id}/toggle`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
@@ -401,17 +560,8 @@ export default function App() {
   };
 
   const openAddModal = () => { 
-    setIsEditing(false); 
-    setCurrentEditId(null); 
-    setFormData({ 
-      title: '', 
-      courseCode: '', 
-      courseName: '', 
-      type: 'Assignment', 
-      deadline: '', 
-      time: '', 
-      isOptional: false 
-    }); 
+    setIsEditing(false); setCurrentEditId(null); 
+    setFormData({ title: '', courseCode: '', courseName: '', type: 'Assignment', deadline: '', time: '', isOptional: false }); 
     setIsModalOpen(true); 
   };
 
@@ -438,7 +588,6 @@ export default function App() {
     } catch { alert("שגיאה בשמירה."); }
   };
 
-  // --- Grade Calculation Logic ---
   const calculateCourseGrade = (code: string): GradeSummary | null => {
     const syllabus = coursesMap[code] || { name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false };
     const courseAssignments = assignments.filter(a => a.courseCode === code);
@@ -498,7 +647,6 @@ export default function App() {
     navigator.clipboard.writeText(calendarUrl).then(() => { setIsCalendarCopied(true); setTimeout(() => setIsCalendarCopied(false), 2000); }).catch(() => { alert("שגיאה בהעתקת הקישור ליומן. אנא נסה שוב."); });
   };
 
-  // --- Attachments & Likes ---
   const handleFileUpload = async (assignmentId: number, e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     if (!e.target.files || e.target.files.length === 0 || !token) return;
     const file = e.target.files[0]; const inputElement = e.target; setUploadingId(assignmentId);
@@ -546,28 +694,9 @@ export default function App() {
     // Optimistically update the UI instantly
     setAssignments(prev => prev.map(a => {
       if (a.id !== assignmentId) return a;
-      return {
-        ...a,
-        attachments: a.attachments.map(att => {
-          if (att.id !== attachmentId) return att;
-          return {
-            ...att,
-            likes: Math.max(0, (att.likes || 0) + increment),
-            isLikedByMe: isLiking
-          };
-        })
-      };
+      return { ...a, attachments: a.attachments.map(att => { if (att.id !== attachmentId) return att; return { ...att, likes: Math.max(0, (att.likes || 0) + increment), isLikedByMe: isLiking }; }) };
     }));
-
-    try {
-      await fetch(`${API_BASE_URL}/attachments/${attachmentId}/like`, { 
-        method: 'POST', 
-        headers: { 'Authorization': `Bearer ${token}` } 
-      });
-    } catch {
-      // Revert if it failed
-      fetchAllData();
-    }
+    try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}/like`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }); } catch { fetchAllData(); }
   };
 
   const searchResults = Object.entries(coursesMap).filter(([code, syl]) => { if (!searchQuery) return false; return code.includes(searchQuery) || (syl.name && syl.name.toLowerCase().includes(searchQuery.toLowerCase())); }).slice(0, 5);
@@ -579,16 +708,8 @@ export default function App() {
     
     if (dateRange.start || dateRange.end) {
       const assignmentDate = new Date(a.deadline).getTime();
-      if (dateRange.start) {
-        const start = new Date(dateRange.start);
-        start.setHours(0, 0, 0, 0);
-        if (assignmentDate < start.getTime()) return false;
-      }
-      if (dateRange.end) {
-        const end = new Date(dateRange.end);
-        end.setHours(23, 59, 59, 999);
-        if (assignmentDate > end.getTime()) return false;
-      }
+      if (dateRange.start) { const start = new Date(dateRange.start); start.setHours(0, 0, 0, 0); if (assignmentDate < start.getTime()) return false; }
+      if (dateRange.end) { const end = new Date(dateRange.end); end.setHours(23, 59, 59, 999); if (assignmentDate > end.getTime()) return false; }
     }
     return true;
   });
@@ -624,7 +745,6 @@ export default function App() {
         </a>
       )}
       
-      {/* Action Buttons (Likes, Edit, Delete) */}
       <div className="flex items-center gap-2 shrink-0">
         {att.category === 'solution' && (
           <button 
@@ -648,7 +768,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-12 transition-colors duration-200" dir="rtl">
-      {/* Header - relative on mobile, sticky top-0 on desktop (md) */}
+      {/* Header */}
       <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 relative md:sticky top-0 z-40 transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between">
           <div className="flex items-center gap-3 mb-4 sm:mb-0">
@@ -676,11 +796,19 @@ export default function App() {
 
             {token ? (
               <>
-                {/* ✨ NEW: Aggregated Global Likes Counter */}
                 <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-sm font-medium border border-rose-200 dark:border-rose-800/50" title="סך הלייקים שקיבלת מהקהילה">
                   <Heart className="w-4 h-4 fill-current" />
                   <span className="font-bold">{userProfile?.totalLikesReceived || 0}</span>
                 </div>
+
+                {userProfile?.role === 'admin' && (
+                  <button 
+                    onClick={() => setCurrentView(v => v === 'app' ? 'admin' : 'app')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
+                  >
+                    {currentView === 'app' ? <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</> : <><ArrowRight className="w-4 h-4" /> חזרה למערכת</>}
+                  </button>
+                )}
                 
                 <button onClick={() => { localStorage.removeItem('teaspoon_jwt'); setToken(null); setUserProfile(null); }} className="flex items-center gap-2 p-2 px-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-sm font-medium" title="התנתק"><User className="w-5 h-5" /> התנתק</button>
                 <button onClick={openAddModal} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"><Plus className="w-4 h-4" /> הוספת מטלה</button>
@@ -692,269 +820,281 @@ export default function App() {
         </div>
       </header>
 
+      {/* View Routing Logic */}
       <main className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-start">
-        {/* Right Menu - Flexes top to bottom and stays sticky on desktop */}
-        <aside className="w-full md:w-72 flex flex-col gap-6 shrink-0 md:sticky md:top-24 md:h-[calc(100vh-7rem)] z-30">
-          <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors flex-1 flex flex-col overflow-hidden relative">
-            <h2 className="font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2 shrink-0"><BookOpen className="w-5 h-5 text-slate-700 dark:text-slate-300" /> הקורסים שלי</h2>
-            <div className="relative mb-6 shrink-0">
-              <div className="relative">
-                <input type="text" placeholder="חיפוש קורס..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-slate-100" />
-                <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
-              </div>
-              
-              {isSearchFocused && searchQuery && (
-                <div className="absolute z-30 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto flex flex-col">
-                  {searchResults.length > 0 && searchResults.map(([code, syl]) => (
-                    <button key={code} onClick={() => handleAddCourse(code)} className="w-full text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-start border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors">
-                      <div className="flex justify-between items-center w-full"><span className="text-sm font-bold text-slate-800 dark:text-slate-100">{syl.name}</span>{myCourses.includes(code) && <CheckCircle className="w-4 h-4 text-emerald-500" />}</div>
-                      <span className="text-xs text-slate-500">{code}</span>
-                    </button>
-                  ))}
+        {currentView === 'admin' && token ? (
+          <div className="w-full">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+              <ShieldAlert className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+              פאנל ניהול
+            </h2>
+            <AdminDashboard token={token} />
+          </div>
+        ) : (
+          <>
+            {/* Right Menu */}
+            <aside className="w-full md:w-72 flex flex-col gap-6 shrink-0 md:sticky md:top-24 md:h-[calc(100vh-7rem)] z-30">
+              <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors flex-1 flex flex-col overflow-hidden relative">
+                <h2 className="font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2 shrink-0"><BookOpen className="w-5 h-5 text-slate-700 dark:text-slate-300" /> הקורסים שלי</h2>
+                <div className="relative mb-6 shrink-0">
+                  <div className="relative">
+                    <input type="text" placeholder="חיפוש קורס..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-slate-100" />
+                    <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
+                  </div>
                   
-                  {/* Smart Add Course Option below results */}
-                  {searchQuery && !myCourses.includes(searchQuery) && (
-                    <button 
-                      onMouseDown={(e) => { e.preventDefault(); setNewCourseCode(searchQuery); setNewCourseName(''); setCourseCodeError(''); setIsAddCourseModalOpen(true); }} 
-                      className="w-full text-right px-4 py-3 hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700 text-blue-600 dark:text-blue-400 transition-colors mt-auto"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span className="text-sm font-bold">הוסף קורס: {searchQuery}</span>
-                    </button>
+                  {isSearchFocused && searchQuery && (
+                    <div className="absolute z-30 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto flex flex-col">
+                      {searchResults.length > 0 && searchResults.map(([code, syl]) => (
+                        <button key={code} onClick={() => handleAddCourse(code)} className="w-full text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-start border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors">
+                          <div className="flex justify-between items-center w-full"><span className="text-sm font-bold text-slate-800 dark:text-slate-100">{syl.name}</span>{myCourses.includes(code) && <CheckCircle className="w-4 h-4 text-emerald-500" />}</div>
+                          <span className="text-xs text-slate-500">{code}</span>
+                        </button>
+                      ))}
+                      
+                      {searchQuery && !myCourses.includes(searchQuery) && (
+                        <button 
+                          onMouseDown={(e) => { e.preventDefault(); setNewCourseCode(searchQuery); setNewCourseName(''); setCourseCodeError(''); setIsAddCourseModalOpen(true); }} 
+                          className="w-full text-right px-4 py-3 hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700 text-blue-600 dark:text-blue-400 transition-colors mt-auto"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span className="text-sm font-bold">הוסף קורס: {searchQuery}</span>
+                        </button>
+                      )}
+                    </div>
                   )}
+                </div>
+                
+                <div className="space-y-2 flex-1 overflow-y-auto pe-2 scrollbar-thin">
+                  {myCourses.map(code => {
+                    const courseTheme = getCourseTheme(code);
+                    return (
+                      <div key={code} className="flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors group">
+                        <label className="flex items-start gap-3 cursor-pointer flex-1">
+                          <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="w-4 h-4 mt-1 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-blue-600 focus:ring-blue-500 dark:focus:ring-offset-slate-800" />
+                          <div className="flex flex-col flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${courseTheme.dot}`}></div>
+                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
+                            </div>
+                            <span className="text-xs text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 me-4 text-start" dir="ltr">{code}</span>
+                          </div>
+                        </label>
+                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          {token && (<button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all"><Settings className="w-4 h-4" /></button>)}
+                          <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all focus:opacity-100"><X className="w-4 h-4" /></button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </aside>
+
+            {/* Main Content (Assignments) */}
+            <div className="flex-1 relative z-10 flex flex-col min-h-full">
+              {/* Filter Row with Dropdowns */}
+              <div className="flex flex-wrap items-center gap-4 mb-6 relative z-20">
+                <div className="flex items-center gap-2 ms-2 text-slate-500 dark:text-slate-400">
+                  <Filter className="w-4 h-4" />
+                  <span className="text-sm font-semibold">סינון:</span>
+                </div>
+
+                {/* Type Filter */}
+                <div className="relative group">
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+                    סוג: <span className="font-bold text-blue-600 dark:text-blue-400">{typeTranslations[activeTypeFilter]}</span>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:rotate-180 transition-transform" />
+                  </button>
+                  <div className="absolute top-full right-0 mt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden flex flex-col z-50">
+                    {assignmentTypes.map(type => (
+                      <button 
+                        key={type} 
+                        onClick={() => setActiveTypeFilter(type)} 
+                        className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ activeTypeFilter === type ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
+                      >
+                        {typeTranslations[type]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Status Filter */}
+                <div className="relative group">
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+                    סטטוס: <span className="font-bold text-blue-600 dark:text-blue-400">{hideCompleted ? 'לא טופלו' : 'הכל'}</span>
+                    <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:rotate-180 transition-transform" />
+                  </button>
+                  <div className="absolute top-full right-0 mt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden flex flex-col z-50">
+                    <button 
+                      onClick={() => setHideCompleted(false)} 
+                      className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ !hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
+                    >
+                      הכל
+                    </button>
+                    <button 
+                      onClick={() => setHideCompleted(true)} 
+                      className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
+                    >
+                      לא טופלו
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dates Filter */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsDateFilterOpen(!isDateFilterOpen)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors shadow-sm ${ (dateRange.start || dateRange.end) ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700' }`}
+                  >
+                    <Calendar className={`w-4 h-4 ${ (dateRange.start || dateRange.end) ? 'text-blue-500' : 'text-slate-400' }`} />
+                    תאריכים {(dateRange.start || dateRange.end) && '(פעיל)'}
+                    <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${isDateFilterOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {isDateFilterOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setIsDateFilterOpen(false)}></div>
+                      <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 cursor-default">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
+                            <input 
+                              type="date" 
+                              value={dateRange.start} 
+                              onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
+                              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
+                            <input 
+                              type="date" 
+                              value={dateRange.end} 
+                              onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
+                              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                            />
+                          </div>
+                          {(dateRange.start || dateRange.end) && (
+                            <button 
+                              onClick={() => setDateRange({start: '', end: ''})} 
+                              className="w-full text-center text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-700 mt-2 transition-colors"
+                            >
+                              נקה תאריכים
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {loading ? ( <div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div> ) 
+              : fetchError ? ( <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div> ) 
+              : filteredAssignments.length === 0 ? ( <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">אין מטלות להצגה</h3></div> ) 
+              : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start">
+                  {filteredAssignments.map((assignment) => {
+                    const courseTheme = getCourseTheme(assignment.courseCode);
+                    return (
+                      <div key={assignment.id} className={`relative p-5 rounded-xl border-s-4 shadow-sm group flex flex-col justify-between ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)}`}>
+                        {token && (
+                          <div className="absolute top-4 end-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2 mb-3 pe-16">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
+                              {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
+                              <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-start gap-3 mb-1">
+                            <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5">
+                              {assignment.isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <Circle className="w-5 h-5" />}
+                            </button>
+                            <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
+                          </div>
+                          
+                          <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                            <div className="flex items-center gap-2 text-sm font-medium"><Clock className="w-4 h-4" /> <span>{formatDateTime(assignment.deadline)}</span></div>
+                            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
+                              <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
+                              <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 ms-8 border-t border-slate-200 dark:border-slate-700/50 pt-3">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-xs font-semibold flex items-center gap-1 text-slate-500 dark:text-slate-400"><Paperclip className="w-3 h-3" /> קבצים ({assignment.attachments?.length || 0})</span>
+                            {token && (
+                              <div className="flex items-center gap-3">
+                                <label className={`text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> מטלה</label>
+                                <label className={`text-xs flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> פתרון</label>
+                                {uploadingId === assignment.id && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
+                              </div>
+                            )}
+                          </div>
+                          {(assignment.attachments?.filter(a => a.category === 'assignment').length || 0) > 0 && (<div className="mb-3"><span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5 block">קובצי מטלה</span><div className="space-y-1.5">{assignment.attachments?.filter(a => a.category === 'assignment').map(att => renderAttachment(att, assignment.id))}</div></div>)}
+                          
+                          {(assignment.attachments?.filter(a => a.category === 'solution').length || 0) > 0 && (
+                            <div>
+                              <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-600 uppercase mb-1.5 flex items-center gap-1">
+                                <Lightbulb className="w-3 h-3" /> פתרונות ועזרים
+                              </span>
+                              <div className="space-y-1.5">
+                                {assignment.attachments?.filter(a => a.category === 'solution')
+                                  .sort((a, b) => (b.likes || 0) - (a.likes || 0)) 
+                                  .map(att => renderAttachment(att, assignment.id))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
+                <div className="mt-12 border-t border-slate-200 dark:border-slate-700 pt-8 mb-4">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> מצב ציונים</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {visibleCourses.map(code => {
+                      const summary = calculateCourseGrade(code);
+                      if (!summary) return null;
+                      const themeObj = getCourseTheme(code);
+                      return (
+                        <div key={`grade-${code}`} className={`p-4 rounded-xl border ${themeObj.badgeBg} ${themeObj.badgeBorder} shadow-sm`}>
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex flex-col">
+                              <span className={`font-bold ${themeObj.badgeText} text-sm line-clamp-1`}>{coursesMap[code]?.name || 'קורס מותאם'}</span>
+                              <span className={`text-xs ${themeObj.badgeText} opacity-70`} dir="ltr">{code}</span>
+                            </div>
+                            <div className="flex gap-1">
+                              {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון משוקלל" className="cursor-help"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-orange-500" /></span>}
+                              {summary.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 mt-0.5 shrink-0 ${themeObj.badgeText}`} /></span>}
+                          </div>
+                          </div>
+                          <div className="flex items-baseline gap-1.5" dir="ltr">
+                            <span className={`text-3xl font-black leading-none ${themeObj.badgeText}`}>{summary.earned}</span>
+                            <span className={`text-lg font-medium leading-none ${themeObj.badgeText} opacity-60 mb-0.5`}>/ {summary.possible}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-            
-            <div className="space-y-2 flex-1 overflow-y-auto pe-2 scrollbar-thin">
-              {myCourses.map(code => {
-                const courseTheme = getCourseTheme(code);
-                return (
-                  <div key={code} className="flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors group">
-                    <label className="flex items-start gap-3 cursor-pointer flex-1">
-                      <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="w-4 h-4 mt-1 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-blue-600 focus:ring-blue-500 dark:focus:ring-offset-slate-800" />
-                      <div className="flex flex-col flex-1">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${courseTheme.dot}`}></div>
-                          <span className="text-sm font-bold text-slate-700 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
-                        </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 me-4 text-start" dir="ltr">{code}</span>
-                      </div>
-                    </label>
-                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      {token && (<button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all"><Settings className="w-4 h-4" /></button>)}
-                      <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all focus:opacity-100"><X className="w-4 h-4" /></button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
-
-        <div className="flex-1 relative z-10 flex flex-col min-h-full">
-          {/* Filter Row with Dropdowns */}
-          <div className="flex flex-wrap items-center gap-4 mb-6 relative z-20">
-            <div className="flex items-center gap-2 ms-2 text-slate-500 dark:text-slate-400">
-              <Filter className="w-4 h-4" />
-              <span className="text-sm font-semibold">סינון:</span>
-            </div>
-
-            {/* Type Filter */}
-            <div className="relative group">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
-                סוג: <span className="font-bold text-blue-600 dark:text-blue-400">{typeTranslations[activeTypeFilter]}</span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:rotate-180 transition-transform" />
-              </button>
-              <div className="absolute top-full right-0 mt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden flex flex-col z-50">
-                {assignmentTypes.map(type => (
-                  <button 
-                    key={type} 
-                    onClick={() => setActiveTypeFilter(type)} 
-                    className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ activeTypeFilter === type ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
-                  >
-                    {typeTranslations[type]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Status Filter */}
-            <div className="relative group">
-              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
-                סטטוס: <span className="font-bold text-blue-600 dark:text-blue-400">{hideCompleted ? 'לא בוצע' : 'הכל'}</span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-50 group-hover:rotate-180 transition-transform" />
-              </button>
-              <div className="absolute top-full right-0 mt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden flex flex-col z-50">
-                <button 
-                  onClick={() => setHideCompleted(false)} 
-                  className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ !hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
-                >
-                  הכל
-                </button>
-                <button 
-                  onClick={() => setHideCompleted(true)} 
-                  className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
-                >
-                  לא בוצע
-                </button>
-              </div>
-            </div>
-
-            {/* Dates Filter */}
-            <div className="relative">
-              <button 
-                onClick={() => setIsDateFilterOpen(!isDateFilterOpen)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors shadow-sm ${ (dateRange.start || dateRange.end) ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700' }`}
-              >
-                <Calendar className={`w-4 h-4 ${ (dateRange.start || dateRange.end) ? 'text-blue-500' : 'text-slate-400' }`} />
-                תאריכים {(dateRange.start || dateRange.end) && '(פעיל)'}
-                <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${isDateFilterOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isDateFilterOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setIsDateFilterOpen(false)}></div>
-                  <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 cursor-default">
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
-                        <input 
-                          type="date" 
-                          value={dateRange.start} 
-                          onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
-                          className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
-                        <input 
-                          type="date" 
-                          value={dateRange.end} 
-                          onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
-                          className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
-                        />
-                      </div>
-                      {(dateRange.start || dateRange.end) && (
-                        <button 
-                          onClick={() => setDateRange({start: '', end: ''})} 
-                          className="w-full text-center text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-700 mt-2 transition-colors"
-                        >
-                          נקה תאריכים
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {loading ? ( <div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div> ) 
-          : fetchError ? ( <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div> ) 
-          : filteredAssignments.length === 0 ? ( <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">אין מטלות להצגה</h3></div> ) 
-          : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start">
-              {filteredAssignments.map((assignment) => {
-                const courseTheme = getCourseTheme(assignment.courseCode);
-                return (
-                  <div key={assignment.id} className={`relative p-5 rounded-xl border-s-4 shadow-sm group flex flex-col justify-between ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)}`}>
-                    {token && (
-                      <div className="absolute top-4 end-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
-                      </div>
-                    )}
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-3 pe-16">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
-                           {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
-                        </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
-                          <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-start gap-3 mb-1">
-                        <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5">
-                          {assignment.isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <Circle className="w-5 h-5" />}
-                        </button>
-                        <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
-                      </div>
-                      
-                      <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                        <div className="flex items-center gap-2 text-sm font-medium"><Clock className="w-4 h-4" /> <span>{formatDateTime(assignment.deadline)}</span></div>
-                        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
-                          <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
-                          <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 ms-8 border-t border-slate-200 dark:border-slate-700/50 pt-3">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-semibold flex items-center gap-1 text-slate-500 dark:text-slate-400"><Paperclip className="w-3 h-3" /> קבצים ({assignment.attachments?.length || 0})</span>
-                        {token && (
-                          <div className="flex items-center gap-3">
-                            <label className={`text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> מטלה</label>
-                            <label className={`text-xs flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> פתרון</label>
-                            {uploadingId === assignment.id && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
-                          </div>
-                        )}
-                      </div>
-                      {(assignment.attachments?.filter(a => a.category === 'assignment').length || 0) > 0 && (<div className="mb-3"><span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5 block">קבצי מטלה</span><div className="space-y-1.5">{assignment.attachments?.filter(a => a.category === 'assignment').map(att => renderAttachment(att, assignment.id))}</div></div>)}
-                      
-                      {/* ✨ NEW: Render Solutions Sorted by Likes */}
-                      {(assignment.attachments?.filter(a => a.category === 'solution').length || 0) > 0 && (
-                        <div>
-                          <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-600 uppercase mb-1.5 flex items-center gap-1">
-                            <Lightbulb className="w-3 h-3" /> פתרונות ועזרים
-                          </span>
-                          <div className="space-y-1.5">
-                            {assignment.attachments?.filter(a => a.category === 'solution')
-                              .sort((a, b) => (b.likes || 0) - (a.likes || 0)) // Sort descending by likes
-                              .map(att => renderAttachment(att, assignment.id))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
-            <div className="mt-12 border-t border-slate-200 dark:border-slate-700 pt-8 mb-4">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> מצב ציונים</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {visibleCourses.map(code => {
-                  const summary = calculateCourseGrade(code);
-                  if (!summary) return null;
-                  const themeObj = getCourseTheme(code);
-                  return (
-                    <div key={`grade-${code}`} className={`p-4 rounded-xl border ${themeObj.badgeBg} ${themeObj.badgeBorder} shadow-sm`}>
-                       <div className="flex justify-between items-start mb-3">
-                         <div className="flex flex-col">
-                           <span className={`font-bold ${themeObj.badgeText} text-sm line-clamp-1`}>{coursesMap[code]?.name || 'קורס מותאם'}</span>
-                           <span className={`text-xs ${themeObj.badgeText} opacity-70`} dir="ltr">{code}</span>
-                         </div>
-                         <div className="flex gap-1">
-                           {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון משוקלל" className="cursor-help"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-orange-500" /></span>}
-                           {summary.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 mt-0.5 shrink-0 ${themeObj.badgeText}`} /></span>}
-                       </div>
-                       </div>
-                       <div className="flex items-baseline gap-1.5" dir="ltr">
-                         <span className={`text-3xl font-black leading-none ${themeObj.badgeText}`}>{summary.earned}</span>
-                         <span className={`text-lg font-medium leading-none ${themeObj.badgeText} opacity-60 mb-0.5`}>/ {summary.possible}</span>
-                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </main>
 
       {/* Assignment Modal */}
@@ -964,8 +1104,6 @@ export default function App() {
             <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{isEditing ? 'עריכת מטלה' : 'הוספת מטלה חדשה'}</h2><button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                
-                {/* NEW COURSE DROPDOWN */}
                 <div className="col-span-2 sm:col-span-1">
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">קורס</label>
                   <select 
@@ -1007,58 +1145,24 @@ export default function App() {
             <form onSubmit={(e) => {
               e.preventDefault();
               const codeRegex = /^\d{3}0\d{3}$/;
-              if (!codeRegex.test(newCourseCode)) {
-                setCourseCodeError('קוד קורס חייב להיות בפורמט: XXX0XXX (לדוגמה: 1150204)');
-                return;
-              }
-              if (!newCourseName.trim()) {
-                setCourseCodeError('שם הקורס לא יכול להיות ריק');
-                return;
-              }
-              if (coursesMap[newCourseCode]) {
-                handleAddCourse(newCourseCode);
-              } else {
+              if (!codeRegex.test(newCourseCode)) { setCourseCodeError('קוד קורס חייב להיות בפורמט: XXX0XXX (לדוגמה: 1150204)'); return; }
+              if (!newCourseName.trim()) { setCourseCodeError('שם הקורס לא יכול להיות ריק'); return; }
+              if (coursesMap[newCourseCode]) { handleAddCourse(newCourseCode); } else {
                 if (!myCourses.includes(newCourseCode)) {
-                  const updated = [...myCourses, newCourseCode];
-                  setMyCourses(updated);
-                  setVisibleCourses(prev => [...prev, newCourseCode]);
+                  const updated = [...myCourses, newCourseCode]; setMyCourses(updated); setVisibleCourses(prev => [...prev, newCourseCode]);
                   setCoursesMap(prev => ({ ...prev, [newCourseCode]: { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false } }));
                   syncCourses(updated);
                 }
               }
-              setIsAddCourseModalOpen(false);
-              setNewCourseCode('');
-              setNewCourseName('');
-              setCourseCodeError('');
+              setIsAddCourseModalOpen(false); setNewCourseCode(''); setNewCourseName(''); setCourseCodeError('');
             }} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">קוד קורס</label>
-                <input
-                  required
-                  type="text"
-                  placeholder="לדוגמה: 1150204"
-                  maxLength={7}
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100"
-                  value={newCourseCode}
-                  onChange={(e) => {
-                    setNewCourseCode(e.target.value.toUpperCase());
-                    setCourseCodeError('');
-                  }}
-                />
+                <input required type="text" placeholder="לדוגמה: 1150204" maxLength={7} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={newCourseCode} onChange={(e) => { setNewCourseCode(e.target.value.toUpperCase()); setCourseCodeError(''); }} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שם הקורס</label>
-                <input
-                  required
-                  type="text"
-                  placeholder="לדוגמה: חשבון 1"
-                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100"
-                  value={newCourseName}
-                  onChange={(e) => {
-                    setNewCourseName(e.target.value);
-                    setCourseCodeError('');
-                  }}
-                />
+                <input required type="text" placeholder="לדוגמה: חשבון 1" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={newCourseName} onChange={(e) => { setNewCourseName(e.target.value); setCourseCodeError(''); }} />
               </div>
               {courseCodeError && <p className="text-sm text-red-600 dark:text-red-400">{courseCodeError}</p>}
               <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsAddCourseModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">הוסף</button></div>
