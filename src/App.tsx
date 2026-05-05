@@ -256,22 +256,25 @@ const AdminDashboard = ({ token }: { token: string }) => {
                     <td className="px-6 py-4 text-slate-500 dark:text-slate-400 hidden md:table-cell" dir="ltr">{u.email}</td>
                     <td className="px-4 md:px-6 py-4">
                       <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${
+                        u.role === 'owner' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
                         u.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
                         u.role === 'restricted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
                         'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                       }`}>
-                        {u.role === 'admin' ? 'מנהל' : u.role === 'restricted' ? 'מוגבל' : 'משתמש רגיל'}
+                        {u.role === 'owner' ? 'בעלים' : u.role === 'admin' ? 'מנהל' : u.role === 'restricted' ? 'מוגבל' : 'משתמש רגיל'}
                       </span>
                     </td>
                     <td className="px-4 md:px-6 py-4">
                       <select 
                         value={u.role} 
+                        disabled={u.role === 'owner'}
                         onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2 md:px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200"
+                        className={`bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2 md:px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 ${u.role === 'owner' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <option value="user">משתמש רגיל</option>
                         <option value="restricted">מוגבל (קריאה בלבד)</option>
-                        <option value="admin">מנהל מערכת</option>
+                        <option value="admin">מנהל</option>
+                        {u.role === 'owner' && <option value="owner">בעלים</option>}
                       </select>
                     </td>
                   </tr>
@@ -307,17 +310,58 @@ const AdminDashboard = ({ token }: { token: string }) => {
                       בוצע ע"י: <span className="font-bold">{log.user_name}</span> <span className="text-xs opacity-70" dir="ltr">({log.user_email})</span>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-4 overflow-hidden">
-                       <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs opacity-80">
-                         <div className="font-bold text-red-700 dark:text-red-400 mb-1">המידע המקורי:</div>
-                         {parsedOld && <div className="text-slate-600 dark:text-slate-400">שם: {parsedOld.title}<br/>מועד: {parsedOld.deadline}</div>}
-                       </div>
-                       <div className="hidden sm:flex items-center justify-center text-slate-300"><ArrowRight className="w-4 h-4" /></div>
-                       <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-3 rounded text-xs">
-                         <div className="font-bold text-emerald-700 dark:text-emerald-400 mb-1">השינוי המוצע:</div>
-                         {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">שם: {parsedNew.title}<br/>מועד: {parsedNew.deadline}</div>}
-                       </div>
-                    </div>
+                    {log.entity_type === 'COURSE' && log.action === 'CREATE' ? (
+                      <div className="flex items-stretch gap-2 sm:gap-4 overflow-hidden">
+                        <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded text-xs">
+                          <div className="font-bold text-blue-700 dark:text-blue-400 mb-1">קורס חדש שנוסף:</div>
+                          {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">שם הקורס: {parsedNew.name}<br/>קוד הקורס: {log.entity_id}</div>}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-4 overflow-hidden">
+                        {/* UPDATE ACTION - Shows Before and After */}
+                        {log.action === 'UPDATE' && (
+                          <>
+                            <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs opacity-80">
+                              <div className="font-bold text-red-700 dark:text-red-400 mb-1">המידע המקורי:</div>
+                              {parsedOld && <div className="text-slate-600 dark:text-slate-400">
+                                {log.entity_type === 'COURSE' ? `שם קורס: ${parsedOld.name}` : <>שם: {parsedOld.title}<br />מועד: {parsedOld.deadline}</>}
+                              </div>}
+                            </div>
+                            <div className="hidden sm:flex items-center justify-center text-slate-300"><ArrowRight className="w-4 h-4" /></div>
+                            <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-3 rounded text-xs">
+                              <div className="font-bold text-emerald-700 dark:text-emerald-400 mb-1">השינוי המוצע:</div>
+                              {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">
+                                {log.entity_type === 'COURSE' ? `שם קורס: ${parsedNew.name}` : <>שם: {parsedNew.title}<br />מועד: {parsedNew.deadline}</>}
+                              </div>}
+                            </div>
+                          </>
+                        )}
+
+                        {/* CREATE ACTION - Shows Only New Data */}
+                        {log.action === 'CREATE' && (
+                          <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded text-xs">
+                            <div className="font-bold text-blue-700 dark:text-blue-400 mb-1">נוצר פריט חדש:</div>
+                            {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">
+                              {log.entity_type === 'COURSE' ? `שם קורס: ${parsedNew.name}` : <>שם: {parsedNew.title}<br />מועד: {parsedNew.deadline}</>}
+                            </div>}
+                          </div>
+                        )}
+
+                        {/* DELETE ACTION - Shows Only Old Data with Warning */}
+                        {log.action === 'DELETE' && (
+                          <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs">
+                            <div className="font-bold text-red-700 dark:text-red-400 mb-1 flex items-center gap-1">
+                              <AlertCircle className="w-3.5 h-3.5" /> בקשת מחיקה לפריט:
+                            </div>
+                            {parsedOld && <div className="text-slate-600 dark:text-slate-400 font-medium line-through mt-1">
+                              שם: {parsedOld.title} <br /> מועד: {parsedOld.deadline}
+                            </div>}
+                          </div>
+                        )}
+
+                      </div>
+                    )}
                   </div>
                   
                   <div className="shrink-0 flex flex-row lg:flex-col gap-2 border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-slate-700 pt-4 lg:pt-0 lg:pr-4">
@@ -325,7 +369,7 @@ const AdminDashboard = ({ token }: { token: string }) => {
                       <Check className="w-4 h-4" /> אשר שינוי
                     </button>
                     <button onClick={() => handleRevertLog(log.id)} className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 hover:border-red-300 dark:hover:border-red-800 rounded-lg text-sm font-medium transition-colors text-slate-700 dark:text-slate-200">
-                      <X className="w-4 h-4" /> דחה ושחזר
+                      <X className="w-4 h-4" /> דחה שינוי
                     </button>
                   </div>
                 </div>
@@ -718,7 +762,7 @@ export default function App() {
           {/* ✨ Admin Panel / Header Title Side */}
           <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full md:w-auto">
             <div className="flex items-center gap-3">
-              <div className="bg-slate-900 dark:bg-slate-700 p-2 rounded-lg"><Calendar className="w-6 h-6 text-white" /></div>
+              <div className="bg-slate-900 dark:bg-slate-700 p-2 rounded-lg"><Coffee className="w-6 h-6 text-white" /></div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">Teaspoon</h1>
                 {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
@@ -726,7 +770,7 @@ export default function App() {
             </div>
 
             {/* ✨ Admin Panel Button - Now attached safely to the left of the main title block */}
-            {userProfile?.role === 'admin' && (
+            {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
               <button 
                 onClick={() => setCurrentView(v => v === 'app' ? 'admin' : 'app')}
                 className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
@@ -893,7 +937,7 @@ export default function App() {
                     onClick={() => setOpenFilter(prev => prev === 'status' ? null : 'status')}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-50"
                   >
-                    סטטוס: <span className="font-bold text-blue-600 dark:text-blue-400">{hideCompleted ? 'לא טופלו' : 'הכל'}</span>
+                    סטטוס: <span className="font-bold text-blue-600 dark:text-blue-400">{hideCompleted ? 'לא בוצעו' : 'הכל'}</span>
                     <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'status' ? 'rotate-180' : ''}`} />
                   </button>
                   {openFilter === 'status' && (
@@ -908,7 +952,7 @@ export default function App() {
                         onClick={() => { setHideCompleted(true); setOpenFilter(null); }} 
                         className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
                       >
-                        לא טופלו
+                        לא בוצעו
                       </button>
                     </div>
                   )}
