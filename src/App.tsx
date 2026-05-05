@@ -7,12 +7,17 @@ import {
   Heart, Users, ShieldAlert, ArrowRight, ArrowLeft, ListChecks, Ban
 } from 'lucide-react';
 
-// --- Production API Configuration ---
+// --- Production/Development API Configuration ---
 const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined' && window.location.hostname === 'myteaspoon.tech') {
-    return 'https://api.myteaspoon.tech/api/v2';
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname === 'myteaspoon.tech') {
+      return 'https://api.myteaspoon.tech/api/v2'; // Production
+    }
+    if (window.location.hostname === 'dev.myteaspoon.tech') {
+      return 'https://api-dev.myteaspoon.tech/api/v2'; // Staging/Dev
+    }
   }
-  return 'http://localhost:8001/api/v2';
+  return 'http://localhost:8001/api/v2'; // Local development
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -477,6 +482,7 @@ export default function App() {
   // Course Settings Modal State
   const [isCourseModalOpen, setIsCourseModalOpen] = useState<boolean>(false);
   const [editingCourseCode, setEditingCourseCode] = useState<string | null>(null);
+  const [editModalCourseCode, setEditModalCourseCode] = useState<string>('');
   const [courseFormData, setCourseFormData] = useState<CourseSyllabus>({ name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false });
 
   // File Interaction State
@@ -575,15 +581,59 @@ export default function App() {
 
   const openCourseSettings = (code: string) => {
     setEditingCourseCode(code);
+    setEditModalCourseCode(code);
     const syl = coursesMap[code] || { name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false };
     setCourseFormData(syl); setIsCourseModalOpen(true);
   };
 
   const handleSaveCourseSettings = async (e: React.FormEvent) => {
     e.preventDefault(); if (!token || !editingCourseCode) return;
-    setCoursesMap(prev => ({ ...prev, [editingCourseCode]: courseFormData })); setIsCourseModalOpen(false);
+    
+    let finalCourseCode = editingCourseCode;
+    
+    // Handle course code rename for admins
+    if (editModalCourseCode !== editingCourseCode && (userProfile?.role === 'admin' || userProfile?.role === 'owner')) {
+      try {
+        const renameRes = await fetch(`${API_BASE_URL}/admin/courses/${editingCourseCode}/code`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ new_code: editModalCourseCode })
+        });
+        
+        if (!renameRes.ok) {
+          alert("שגיאה בשינוי מספר הקורס. ייתכן והמספר כבר קיים.");
+          return;
+        }
+        
+        finalCourseCode = editModalCourseCode;
+        
+        // Cascade changes locally immediately
+        setMyCourses(prev => {
+          const updated = prev.map(c => c === editingCourseCode ? editModalCourseCode : c);
+          syncCourses(updated); // Resync to the DB!
+          return updated;
+        });
+        setVisibleCourses(prev => prev.map(c => c === editingCourseCode ? editModalCourseCode : c));
+        setAssignments(prev => prev.map(a => a.courseCode === editingCourseCode ? { ...a, courseCode: editModalCourseCode } : a));
+        
+        setCoursesMap(prev => {
+          const newMap = { ...prev };
+          newMap[editModalCourseCode] = courseFormData;
+          delete newMap[editingCourseCode];
+          return newMap;
+        });
+        setEditingCourseCode(editModalCourseCode);
+      } catch {
+        alert("שגיאת תקשורת בעת שינוי מספר הקורס.");
+        return;
+      }
+    } else {
+      setCoursesMap(prev => ({ ...prev, [editingCourseCode]: courseFormData }));
+    }
+    
+    setIsCourseModalOpen(false);
     const payload = { ...courseFormData, hw_drop: courseFormData.hw_keep, ww_drop: courseFormData.ww_keep };
-    try { await fetch(`${API_BASE_URL}/courses/${editingCourseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) }); } catch { }
+    try { await fetch(`${API_BASE_URL}/courses/${finalCourseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) }); } catch { }
   };
 
   const toggleCompletion = async (id: number) => {
@@ -1245,13 +1295,29 @@ export default function App() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
             <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><Settings className="w-5 h-5 text-slate-500" /> הגדרות סילבוס</h2><button onClick={() => setIsCourseModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
             <form onSubmit={handleSaveCourseSettings} className="p-6 space-y-4">
-              <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שם הקורס</label><input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.name} onChange={e => setCourseFormData({...courseFormData, name: e.target.value})} /></div>
-              <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
-                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל גיליונות (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.hw_weight} onChange={e => setCourseFormData({...courseFormData, hw_weight: parseInt(e.target.value)||0})} /></div>
-                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר גיליונות תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.hw_keep} onChange={e => setCourseFormData({...courseFormData, hw_keep: parseInt(e.target.value)||0})} /></div>
-                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.hw_magen} onChange={e => setCourseFormData({...courseFormData, hw_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
+              
+              {/* Editable Course Code & Name Row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">מספר קורס</label>
+                  <input 
+                    required 
+                    type="text" 
+                    maxLength={7}
+                    className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 ${(userProfile?.role === 'admin' || userProfile?.role === 'owner') ? 'focus:ring-2 focus:ring-blue-500' : 'opacity-70 cursor-not-allowed'}`} 
+                    value={editModalCourseCode} 
+                    onChange={e => setEditModalCourseCode(e.target.value.toUpperCase())} 
+                    disabled={!(userProfile?.role === 'admin' || userProfile?.role === 'owner')}
+                    title={!(userProfile?.role === 'admin' || userProfile?.role === 'owner') ? "רק מנהלים יכולים לערוך מספרי קורסים" : ""}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שם הקורס</label>
+                  <input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.name} onChange={e => setCourseFormData({...courseFormData, name: e.target.value})} />
+                </div>
               </div>
-              <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
+              
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל וובוורק (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_weight} onChange={e => setCourseFormData({...courseFormData, ww_weight: parseInt(e.target.value)||0})} /></div>
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר וובוורקים תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_keep} onChange={e => setCourseFormData({...courseFormData, ww_keep: parseInt(e.target.value)||0})} /></div>
                 <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.ww_magen} onChange={e => setCourseFormData({...courseFormData, ww_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
