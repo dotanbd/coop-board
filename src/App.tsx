@@ -712,8 +712,9 @@ export default function App() {
     if (isCompleted) return 'border-solid border-s-slate-300 dark:border-s-slate-600 border-y-slate-200 dark:border-y-slate-700 border-e-slate-200 dark:border-e-slate-700 bg-slate-100/60 dark:bg-slate-800/60 opacity-60 grayscale-[0.3] hover:opacity-80'; 
     const hoursLeft = (new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60);
     
-    // ADDED: `border-dashed` creates the striped border effect. 
-    if (isOptional) return `border-dashed ${courseTheme.startBorder} border-y-slate-300 dark:border-y-slate-600 border-e-slate-300 dark:border-e-slate-600 bg-slate-50/50 dark:bg-slate-800/80 ${courseTheme.hover}`;
+    // SETS THE LEFT BORDER TO SOLID PALE COLOR (The other sides are overridden to slate)
+    if (isOptional) return `border-solid ${courseTheme.badgeBorder} border-y-slate-300 dark:border-y-slate-600 border-e-slate-300 dark:border-e-slate-600 bg-slate-50/50 dark:bg-slate-800/80 ${courseTheme.hover}`;
+    
     if (hoursLeft < 0) return 'border-solid border-s-red-500 border-y-red-200 dark:border-y-red-900/50 border-e-red-200 dark:border-e-red-900/50 bg-red-50 dark:bg-red-900/20';
     if (hoursLeft < 48) return 'border-solid border-s-orange-500 border-y-orange-200 dark:border-y-orange-900/50 border-e-orange-200 dark:border-e-orange-900/50 bg-orange-50 dark:bg-orange-900/20';
     return `border-solid ${courseTheme.startBorder} border-y-slate-200 dark:border-y-slate-700 border-e-slate-200 dark:border-e-slate-700 bg-white dark:bg-slate-800 ${courseTheme.hover}`;
@@ -1015,6 +1016,9 @@ export default function App() {
                     const courseTheme = getCourseTheme(assignment.courseCode);
                     return (
                       <div key={assignment.id} className={`relative p-5 rounded-xl border-s-4 shadow-sm group flex flex-col justify-between ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)}`}>
+                        {assignment.isOptional && !assignment.isCompleted && (
+                          <div className={`absolute -top-[1px] -bottom-[1px] -start-[4px] w-[4px] border-y-0 border-e-0 border-s-4 border-dashed rounded-s-xl ${courseTheme.startBorder} pointer-events-none`} />
+                        )}
                         {token && (
                           <div className="absolute top-4 end-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
