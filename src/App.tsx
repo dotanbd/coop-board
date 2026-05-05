@@ -708,12 +708,9 @@ export default function App() {
     return `${dateStr} ב-${date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
   };
   
-  const getCardClasses = (deadline: string, courseTheme: CourseTheme, isCompleted: boolean, isOptional: boolean = false) => {
+  const getCardClasses = (deadline: string, courseTheme: CourseTheme, isCompleted: boolean) => {
     if (isCompleted) return 'border-solid border-s-slate-300 dark:border-s-slate-600 border-y-slate-200 dark:border-y-slate-700 border-e-slate-200 dark:border-e-slate-700 bg-slate-100/60 dark:bg-slate-800/60 opacity-60 grayscale-[0.3] hover:opacity-80'; 
     const hoursLeft = (new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60);
-    
-    // SETS THE LEFT BORDER TO SOLID PALE COLOR (The other sides are overridden to slate)
-    if (isOptional) return `border-solid ${courseTheme.badgeBorder} border-y-slate-300 dark:border-y-slate-600 border-e-slate-300 dark:border-e-slate-600 bg-slate-50/50 dark:bg-slate-800/80 ${courseTheme.hover}`;
     
     if (hoursLeft < 0) return 'border-solid border-s-red-500 border-y-red-200 dark:border-y-red-900/50 border-e-red-200 dark:border-e-red-900/50 bg-red-50 dark:bg-red-900/20';
     if (hoursLeft < 48) return 'border-solid border-s-orange-500 border-y-orange-200 dark:border-y-orange-900/50 border-e-orange-200 dark:border-e-orange-900/50 bg-orange-50 dark:bg-orange-900/20';
@@ -1015,10 +1012,7 @@ export default function App() {
                   {filteredAssignments.map((assignment) => {
                     const courseTheme = getCourseTheme(assignment.courseCode);
                     return (
-                      <div key={assignment.id} className={`relative p-5 rounded-xl border-s-4 shadow-sm group flex flex-col justify-between ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)}`}>
-                        {assignment.isOptional && !assignment.isCompleted && (
-                          <div className={`absolute -top-[1px] -bottom-[1px] -start-[4px] w-[4px] border-y-0 border-e-0 border-s-4 border-dashed rounded-s-xl ${courseTheme.startBorder} pointer-events-none`} />
-                        )}
+                      <div key={assignment.id} className={`relative p-5 rounded-xl border-s-4 shadow-sm group flex flex-col justify-between ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted)}`}>
                         {token && (
                           <div className="absolute top-4 end-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
@@ -1043,7 +1037,13 @@ export default function App() {
                           </div>
                           
                           <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                            <div className="flex items-center gap-2 text-sm font-medium"><Clock className="w-4 h-4" /> <span>{formatDateTime(assignment.deadline)}</span></div>
+                            <div className={`flex items-center gap-2 text-sm font-medium ${assignment.isOptional && !assignment.isCompleted ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                              <Clock className="w-4 h-4" /> 
+                              <span>
+                                {formatDateTime(assignment.deadline)} 
+                                {assignment.isOptional && <span className="text-xs font-bold opacity-80 ms-1">(תאריך מומלץ)</span>}
+                              </span>
+                            </div>
                             <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
                               <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
                               <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
