@@ -22,6 +22,16 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// --- Environment Awareness ---
+const isDevEnvironment = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.hostname === 'dev.myteaspoon.tech' || window.location.hostname === 'localhost';
+  }
+  return false;
+};
+
+const IS_DEV = isDevEnvironment();
+
 // --- TypeScript Interfaces ---
 interface Attachment { id: number; filename: string; url: string; uploader_id: number; category: string; likes?: number; isLikedByMe?: boolean; }
 interface Assignment { id: number; title: string; courseCode: string; type: string; deadline: string; isOptional: boolean; isCompleted: boolean; grade: number | null; attachments: Attachment[]; }
@@ -853,15 +863,27 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-12 transition-colors duration-200" dir="rtl">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 relative md:sticky top-0 z-40 transition-colors duration-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0">
-          
-          {/* ✨ Admin Panel / Header Title Side */}
-          <div className="flex flex-wrap items-center gap-4 sm:gap-6 w-full md:w-auto">
+      <header className={`sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b ${IS_DEV ? 'border-t-4 border-t-orange-500 border-b-orange-200 dark:border-b-orange-900' : 'border-slate-200 dark:border-slate-800'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="bg-slate-900 dark:bg-slate-700 p-2 rounded-lg"><Coffee className="w-6 h-6 text-white" /></div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">Teaspoon</h1>
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 text-white">
+                <Coffee size={24} strokeWidth={2.5} />
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                    Teaspoon
+                  </h1>
+                  
+                  {/* ✨ DEV MODE BADGE */}
+                  {IS_DEV && (
+                    <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400 text-xs font-bold px-2.5 py-0.5 rounded-md flex items-center gap-1 border border-orange-200 dark:border-orange-800">
+                      <AlertCircle size={12} />
+                      DEV MODE
+                    </span>
+                  )}
+                </div>
                 {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
               </div>
             </div>
