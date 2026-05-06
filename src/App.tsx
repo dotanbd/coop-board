@@ -875,14 +875,6 @@ export default function App() {
                   <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
                     Teaspoon
                   </h1>
-                  
-                  {/* ✨ DEV MODE BADGE */}
-                  {IS_DEV && (
-                    <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400 text-xs font-bold px-2.5 py-0.5 rounded-md flex items-center gap-1 border border-orange-200 dark:border-orange-800">
-                      <AlertCircle size={12} />
-                      DEV MODE
-                    </span>
-                  )}
                 </div>
                 {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
               </div>
@@ -898,6 +890,14 @@ export default function App() {
               </button>
             )}
           </div>
+                  
+          {/* ✨ DEV MODE BADGE */}
+          {IS_DEV && (
+            <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400 text-xs font-bold px-2.5 py-0.5 rounded-md flex items-center gap-1 border border-orange-200 dark:border-orange-800">
+              <AlertCircle size={12} />
+              DEV MODE
+            </span>
+          )}
           
           {/* ✨ Action Buttons (Flexible Mobile Row) */}
           <div className="flex flex-wrap items-center justify-start md:justify-end gap-2 sm:gap-3 w-full md:w-auto mt-2 md:mt-0">
