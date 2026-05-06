@@ -1,0 +1,29 @@
+      - npm_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: teaspoon-minio-dev
+    command: server /data --console-address ":9001"
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - ./minio/data-dev:/data
+    restart: always
+    networks:
+      - teaspoon-dev-network
+
+networks:
+  teaspoon-dev-network:
+    name: teaspoon_dev_network
+    driver: bridge
+
+  npm_network:
+    external: true
+    name: npm_default
+
+volumes:
+  minio_data_dev:
