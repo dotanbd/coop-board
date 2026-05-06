@@ -55,9 +55,9 @@ services:
     name: teaspoon_dev_network
     driver: bridge
 
-  npm_network:
-    external: true
-    name: npm_default
+npm_network:
+  external: true
+  name: npm_default
 
 volumes:
   minio_data_dev:
