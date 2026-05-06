@@ -1,3 +1,38 @@
+version: '3.8'
+
+services:
+  frontend-dev:
+    build: ./frontend
+    container_name: teaspoon_frontend_dev
+    ports:
+      - "5174:80"
+    restart: always
+    networks:
+      - teaspoon-dev-network
+      - npm_network
+
+  backend-dev:
+    build: ./backend
+    container_name: teaspoon_backend_dev
+    ports:
+      - "10.0.0.124:8002:8001"
+    environment:
+      # Use the new Dev URLs and isolated files
+      - MINIO_ENDPOINT=http://teaspoon-minio-dev:9000
+      - MINIO_PUBLIC_URL=https://api-dev.myteaspoon.tech
+      - BUCKET_NAME=teaspoon-files-dev
+      - DB_FILE=teaspoon_v1_dev.db
+      - API_BASE_URL=https://api-dev.myteaspoon.tech
+      - GOOGLE_REDIRECT_URI=https://api-dev.myteaspoon.tech/api/v2/auth/callback
+      - FRONTEND_URL=https://dev.myteaspoon.tech
+    volumes:
+      - ./backend/data-dev:/app/data
+    env_file:
+      - .env
+    restart: always
+    command: uvicorn main:app --host 0.0.0.0 --port 8001
+    networks:
+      - teaspoon-dev-network
       - npm_network
 
   minio:
@@ -15,8 +50,7 @@
     restart: always
     networks:
       - teaspoon-dev-network
-
-networks:
+  networks:
   teaspoon-dev-network:
     name: teaspoon_dev_network
     driver: bridge
