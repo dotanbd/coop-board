@@ -4,3 +4,4 @@ backend/data/
 backend/data-dev/
 backend/*.db
 backend/__pycache__/
+.env
