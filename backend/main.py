@@ -704,6 +704,13 @@ def get_calendar_feed(token: Optional[str] = None, courses: Optional[str] = None
     else:
         assignments = db.query(DBAssignment).filter(DBAssignment.courseCode.in_(target_courses)).all()
 
+    # Build a lookup so each event shows ITS OWN course name (not a shared one)
+    course_codes = {a.courseCode for a in assignments if a.courseCode}
+    course_map = {
+        c.code: c.name
+        for c in db.query(DBCourse).filter(DBCourse.code.in_(course_codes)).all()
+    } if course_codes else {}
+
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
@@ -720,24 +727,36 @@ def get_calendar_feed(token: Optional[str] = None, courses: Optional[str] = None
         if not a.deadline:
             continue
         try:
-            dt_str = a.deadline.replace("-", "").replace(":", "")
-            if "." in dt_str:
-                dt_str = dt_str.split(".")[0] + "Z"
-            if not dt_str.endswith("Z"):
-                dt_str += "Z"
+            # Parse the deadline into a real datetime so we can shift it
+            raw = a.deadline
+            if "." in raw:
+                raw = raw.split(".")[0]
+            raw = raw.rstrip("Z")
+            # Try the most common ISO formats
+            try:
+                end_dt = datetime.strptime(raw, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                end_dt = datetime.strptime(raw, "%Y-%m-%d %H:%M:%S")
+
+            start_dt = end_dt - timedelta(minutes=30)
+            dt_end_str = end_dt.strftime("%Y%m%dT%H%M%SZ")
+            dt_start_str = start_dt.strftime("%Y%m%dT%H%M%SZ")
         except Exception:
             continue
 
         title = (a.title or "Assignment").replace("\r", "").replace("\n", " ")
-        desc = f"סוג: {a.type}".replace("\r", "").replace("\n", " ")
+        # Resolve THIS assignment's course name individually
+        course_name = course_map.get(a.courseCode, a.courseCode or "")
+        course_label = f"{course_name}" if course_name and course_name != a.courseCode else (a.courseCode or "")
+        desc = f"סוג: {a.type} | קורס: {course_label}".replace("\r", "").replace("\n", " ")
 
         lines.extend([
             "BEGIN:VEVENT",
             f"UID:assignment-{a.id}@teaspoon",
             f"DTSTAMP:{now_str}",
-            f"DTSTART:{dt_str}",
-            f"DTEND:{dt_str}",
-            f"SUMMARY:{a.courseCode} - {title}",
+            f"DTSTART:{dt_start_str}",
+            f"DTEND:{dt_end_str}",
+            f"SUMMARY:{course_label} - {title}",
             f"DESCRIPTION:{desc}",
             "END:VEVENT"
         ])
