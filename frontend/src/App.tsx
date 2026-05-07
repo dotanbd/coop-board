@@ -863,7 +863,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-12 transition-colors duration-200" dir="rtl">
       {/* Header */}
-      <header className={`sticky top-0 z-30 backdrop-blur-md border-b transition-colors ${IS_DEV
+      <header className={`sticky top-0 z-[9999] backdrop-blur-md border-b transition-colors ${IS_DEV
           ? 'bg-orange-50/95 dark:bg-orange-950/80 border-orange-200 dark:border-orange-900'
           : 'bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800'
         }`}>
