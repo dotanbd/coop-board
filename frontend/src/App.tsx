@@ -884,8 +884,6 @@ export default function App() {
                 </div>
                 {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
               </div>
-            </div>
-            <div className="flex items-center gap-3">
               {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
               <button 
                 onClick={() => setCurrentView(v => v === 'app' ? 'admin' : 'app')}
@@ -894,6 +892,8 @@ export default function App() {
                 {currentView === 'app' ? <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</> : <><ArrowRight className="w-4 h-4" /> חזרה למערכת</>}
               </button>
             )}
+            </div>
+            <div className="flex items-center gap-3">
               <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><Moon className="w-5 h-5 hidden dark:block" /><Sun className="w-5 h-5 block dark:hidden" /></button>
               <button
                 onClick={handleCalendarSync}
