@@ -748,7 +748,7 @@ def get_calendar_feed(token: Optional[str] = None, courses: Optional[str] = None
         # Resolve THIS assignment's course name individually
         course_name = course_map.get(a.courseCode, a.courseCode or "")
         course_label = f"{course_name}" if course_name and course_name != a.courseCode else (a.courseCode or "")
-        desc = f"סוג: {a.type} | קורס: {course_label}".replace("\r", "").replace("\n", " ")
+        desc = f"סוג: {a.type} | קורס: {course_label} - {a.courseCode}".replace("\r", "").replace("\n", " ")
 
         lines.extend([
             "BEGIN:VEVENT",
