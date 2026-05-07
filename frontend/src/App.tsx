@@ -863,25 +863,30 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-12 transition-colors duration-200" dir="rtl">
       {/* Header */}
-      <header className={`sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b ${IS_DEV ? 'border-t-4 border-t-orange-500 border-b-orange-200 dark:border-b-orange-900' : 'border-slate-200 dark:border-slate-800'}`}>
+      <header className={`sticky top-0 z-30 backdrop-blur-md border-b transition-colors ${IS_DEV
+          ? 'bg-orange-50/95 dark:bg-orange-950/80 border-orange-200 dark:border-orange-900'
+          : 'bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800'
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 text-white">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg text-white ${IS_DEV
+                  ? 'bg-gradient-to-br from-orange-400 to-red-500 shadow-orange-500/20'
+                  : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20'
+                }`}>
                 <Coffee size={24} strokeWidth={2.5} />
               </div>
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-                    Teaspoon
+                    {IS_DEV ? 'Teaspoon-dev' : 'Teaspoon'}
                   </h1>
                 </div>
                 {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
               </div>
             </div>
-
-            {/* ✨ Admin Panel Button - Now attached safely to the left of the main title block */}
-            {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
+            <div className="flex items-center gap-3">
+              {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
               <button 
                 onClick={() => setCurrentView(v => v === 'app' ? 'admin' : 'app')}
                 className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
@@ -889,46 +894,32 @@ export default function App() {
                 {currentView === 'app' ? <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</> : <><ArrowRight className="w-4 h-4" /> חזרה למערכת</>}
               </button>
             )}
-          </div>
-                  
-          {/* ✨ DEV MODE BADGE */}
-          {IS_DEV && (
-            <span className="bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-400 text-xs font-bold px-2.5 py-0.5 rounded-md flex items-center gap-1 border border-orange-200 dark:border-orange-800">
-              <AlertCircle size={12} />
-              DEV MODE
-            </span>
-          )}
-          
-          {/* ✨ Action Buttons (Flexible Mobile Row) */}
-          <div className="flex flex-wrap items-center justify-start md:justify-end gap-2 sm:gap-3 w-full md:w-auto mt-2 md:mt-0">
-            <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><Moon className="w-5 h-5 hidden dark:block" /><Sun className="w-5 h-5 block dark:hidden" /></button>
-            
-            <button 
-              onClick={handleCalendarSync} 
-              className={`flex items-center gap-2 border px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm ${
-                isCalendarCopied ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
-              }`}
-            >
-              {isCalendarCopied ? <Check className="w-4 h-4" /> : <Calendar className="w-4 h-4" />} 
-              <span className="hidden sm:inline">{isCalendarCopied ? 'הקישור הועתק!' : 'סנכרון ליומן'}</span>
-            </button>
-
-            {token ? (
-              <>
-                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs sm:text-sm font-medium border border-rose-200 dark:border-rose-800/50" title="סך הלייקים שקיבלת מהקהילה">
-                  <Heart className="w-4 h-4 fill-current" />
-                  <span className="font-bold">{userProfile?.totalLikesReceived || 0}</span>
-                </div>
-                
-                <button onClick={() => { localStorage.removeItem('teaspoon_jwt'); setToken(null); setUserProfile(null); }} className="flex items-center gap-2 p-2 px-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-xs sm:text-sm font-medium" title="התנתק"><User className="w-4 h-4 sm:w-5 sm:h-5" /> התנתק</button>
-                <button onClick={openAddModal} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm"><Plus className="w-4 h-4" /> הוספת מטלה</button>
-              </>
-            ) : (
-              <button onClick={() => window.location.href = `${API_BASE_URL}/auth/login`} className="flex items-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm"><LogIn className="w-4 h-4" /> התחברות לעריכה</button>
-            )}
+              <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><Moon className="w-5 h-5 hidden dark:block" /><Sun className="w-5 h-5 block dark:hidden" /></button>
+              <button
+                onClick={handleCalendarSync}
+                className={`flex items-center gap-2 border px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm ${isCalendarCopied ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
+                  }`}
+              >
+                {isCalendarCopied ? <Check className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
+                <span className="hidden sm:inline">{isCalendarCopied ? 'הקישור הועתק!' : 'סנכרון ליומן'}</span>
+              </button>
+              {token ? (
+                <>
+                  <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs sm:text-sm font-medium border border-rose-200 dark:border-rose-800/50" title="סך הלייקים שקיבלת מהקהילה">
+                    <Heart className="w-4 h-4 fill-current" />
+                    <span className="font-bold">{userProfile?.totalLikesReceived || 0}</span>
+                  </div>
+                  <button onClick={() => { localStorage.removeItem('teaspoon_jwt'); setToken(null); setUserProfile(null); }} className="flex items-center gap-2 p-2 px-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-xs sm:text-sm font-medium" title="התנתק"><User className="w-4 h-4 sm:w-5 sm:h-5" /> התנתק</button>
+                  <button onClick={openAddModal} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm"><Plus className="w-4 h-4" /> הוספת מטלה</button>
+                </>
+              ) : (
+                <button onClick={() => window.location.href = `${API_BASE_URL}/auth/login`} className="flex items-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm"><LogIn className="w-4 h-4" /> התחברות לעריכה</button>
+              )}
+            </div>
           </div>
         </div>
       </header>
+          
 
       {/* View Routing Logic */}
       <main className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-start">
