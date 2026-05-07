@@ -868,8 +868,8 @@ export default function App() {
           : 'bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800'
         }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 py-3 sm:flex-row sm:justify-between sm:items-center">
+            <div className="flex flex-wrap items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg text-white ${IS_DEV
                   ? 'bg-gradient-to-br from-orange-400 to-red-500 shadow-orange-500/20'
                   : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20'
@@ -893,7 +893,7 @@ export default function App() {
               </button>
             )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 justify-end">
               <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><Moon className="w-5 h-5 hidden dark:block" /><Sun className="w-5 h-5 block dark:hidden" /></button>
               <button
                 onClick={handleCalendarSync}
