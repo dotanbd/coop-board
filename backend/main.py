@@ -32,13 +32,13 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "https://api.myteaspoon.tech/api/v2/auth/callback")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://myteaspoon.tech")
-JWT_SECRET = os.getenv("JWT_SECRET", "super-secret-development-key")
-APP_SECRET = os.getenv("SECRET_KEY", "super-secret-teaspoon-crypto-key").encode()
+JWT_SECRET = os.getenv("JWT_SECRET")
+APP_SECRET = os.getenv("SECRET_KEY").encode()
 
 # --- MinIO Configuration ---
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
+MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 MINIO_PUBLIC_URL = os.getenv("MINIO_PUBLIC_URL", "https://api.myteaspoon.tech")
 BUCKET_NAME = "teaspoon-files"
 
