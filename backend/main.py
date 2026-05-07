@@ -19,7 +19,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import StreamingResponse
 import mimetypes
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update, or_, and_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from dotenv import load_dotenv
@@ -115,6 +115,7 @@ class DBAssignment(Base):
     deadline = Column(String)
     isOptional = Column(Boolean, default=False)
     attachments = relationship("DBAttachment", back_populates="assignment", cascade="all, delete-orphan")
+    user_id = Column(Integer, ForeignKey("users.id"))
 
 
 class DBAttachment(Base):
@@ -469,12 +470,27 @@ def update_my_courses(course_codes: List[str], current_user: dict = Depends(get_
 # --- Assignment Routes ---
 @app.get("/api/v2/assignments")
 def get_assignments(optional_user: dict = Depends(get_optional_user), db: Session = Depends(get_db)):
-    assignments = db.query(DBAssignment).all()
-    user_data = {}
-
     if optional_user:
-        entries = db.query(DBUserAssignment).filter(DBUserAssignment.user_id == optional_user["id"]).all()
+        # Logged-in users see public courses + their own private tasks
+        current_user_id = optional_user["id"]
+        assignments = db.query(DBAssignment).filter(
+            or_(
+                DBAssignment.courseCode != "9990999",
+                and_(
+                    DBAssignment.courseCode == "9990999",
+                    DBAssignment.uploader_id == current_user_id
+                )
+            )
+        ).all()
+
+        # Fetch their personal completed/grade data
+        entries = db.query(DBUserAssignment).filter(DBUserAssignment.user_id == current_user_id).all()
         user_data = {e.assignment_id: {"completed": e.is_completed, "grade": e.grade} for e in entries}
+
+    else:
+        # Guests only see public courses, never the private course
+        assignments = db.query(DBAssignment).filter(DBAssignment.courseCode != "9990999").all()
+        user_data = {}
 
     results = []
     for a in assignments:
