@@ -1095,7 +1095,7 @@ export default function App() {
                 {/* Global Filter Overlay (Hides on desktop for hover filters, present for date or mobile) */}
                 {openFilter && (
                   <div 
-                    className={`fixed inset-0 z-40 ${openFilter === 'date' ? '' : 'md:hidden'}`} 
+                    className={`fixed inset-0 z-50 ${openFilter === 'date' ? '' : 'md:hidden'}`} 
                     onClick={() => setOpenFilter(null)}
                   ></div>
                 )}
@@ -1108,13 +1108,13 @@ export default function App() {
                 >
                   <button 
                     onClick={() => setOpenFilter(prev => prev === 'type' ? null : 'type')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-60"
                   >
                     סוג: <span className="font-bold text-blue-600 dark:text-blue-400">{typeTranslations[activeTypeFilter]}</span>
                     <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'type' ? 'rotate-180' : ''}`} />
                   </button>
                   {openFilter === 'type' && (
-                    <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-60">
+                    <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-70">
                       {assignmentTypes.map(type => (
                         <button 
                           key={type} 
@@ -1136,13 +1136,13 @@ export default function App() {
                 >
                   <button 
                     onClick={() => setOpenFilter(prev => prev === 'status' ? null : 'status')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-60"
                   >
                     סטטוס: <span className="font-bold text-blue-600 dark:text-blue-400">{hideCompleted ? 'לא בוצעו' : 'הכל'}</span>
                     <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'status' ? 'rotate-180' : ''}`} />
                   </button>
                   {openFilter === 'status' && (
-                    <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-60">
+                    <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-70">
                       <button 
                         onClick={() => { setHideCompleted(false); setOpenFilter(null); }} 
                         className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ !hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
@@ -1163,7 +1163,7 @@ export default function App() {
                 <div className="relative">
                   <button 
                     onClick={() => setOpenFilter(prev => prev === 'date' ? null : 'date')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors shadow-sm relative z-50 ${ (dateRange.start || dateRange.end) ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700' }`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors shadow-sm relative z-60 ${ (dateRange.start || dateRange.end) ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700' }`}
                   >
                     <Calendar className={`w-4 h-4 ${ (dateRange.start || dateRange.end) ? 'text-blue-500' : 'text-slate-400' }`} />
                     תאריכים {(dateRange.start || dateRange.end) && '(פעיל)'}
@@ -1171,7 +1171,7 @@ export default function App() {
                   </button>
                   
                   {openFilter === 'date' && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 mt-1 w-64 max-w-[calc(100vw-2rem)] p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-60 cursor-default">
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 mt-1 w-64 max-w-[calc(100vw-2rem)] p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
