@@ -199,7 +199,7 @@ const AdminDashboard = ({ token }: { token: string }) => {
   // 1. Automatically find unique course codes that have pending items
   const pendingCourseCodes = useMemo(() => {
     // Assuming your logs have a status like 'pending' or 'awaiting_approval'
-    const pendingLogs = logs.filter(log => log.status === 'pending'); 
+    const pendingLogs = logs.filter(log => log.status === 'PENDING'); 
     
     // Extract the codes, put them in a Set to remove duplicates, and sort them
     const codes = pendingLogs.map(log => log.entity_id.split(':')[0]);
