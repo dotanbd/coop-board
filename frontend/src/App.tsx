@@ -196,13 +196,29 @@ const AdminDashboard = ({ token }: { token: string }) => {
   // Track which pill is currently clicked (null means "Show All")
   const [selectedCourseFilter, setSelectedCourseFilter] = useState<string[]>([]);
 
+  const extractCourseCode = (entityId: string) => {
+  if (!entityId) return "";
+
+  // Check if it's the complex format: "123:044102 - Course Name"
+  if (entityId.includes(':')) {
+    // 1. Split at the colon and take the right side -> "044102 - Course Name"
+    const afterColon = entityId.split(':')[1];
+    
+    // 2. Split at the hyphen and take the left side -> "044102"
+    return afterColon.split(' - ')[0].trim();
+  }
+
+  // If there's no colon, it's already the simple format: "044102"
+  return entityId.trim();
+};
+
   // 1. Automatically find unique course codes that have pending items
   const pendingCourseCodes = useMemo(() => {
     // Assuming your logs have a status like 'pending' or 'awaiting_approval'
     const pendingLogs = logs.filter(log => log.status === 'PENDING'); 
     
     // Extract the codes, put them in a Set to remove duplicates, and sort them
-    const codes = pendingLogs.map(log => log.entity_id.split(':')[0]);
+    const codes = pendingLogs.map(log => extractCourseCode(log.entity_id));
     return Array.from(new Set(codes)).sort();
   }, [logs]);
 
@@ -212,7 +228,7 @@ const AdminDashboard = ({ token }: { token: string }) => {
     if (selectedCourseFilter.length === 0) return logs; 
     
     // Otherwise, only show logs whose courseCode is currently selected
-    return logs.filter(log => selectedCourseFilter.includes(log.entity_id.split(':')[0]));
+    return logs.filter(log => selectedCourseFilter.includes(extractCourseCode(log.entity_id)));
   }, [logs, selectedCourseFilter]);
 
   const toggleCourseFilter = (code: string) => {
