@@ -1010,7 +1010,12 @@ export default function App() {
           </div>
         </div>
       </header>
-          
+      {openFilter && (
+        <div
+          className={`fixed inset-0 z-50 ${openFilter === 'date' ? '' : 'md:hidden'}`}
+          onClick={() => setOpenFilter(null)}
+        ></div>
+      )}
 
       {/* View Routing Logic */}
       <main className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-start">
@@ -1083,24 +1088,16 @@ export default function App() {
             </aside>
 
             {/* Main Content (Assignments) */}
-            <div className="flex-1 relative z-10 flex flex-col min-h-full">
-              
+            <div className="flex-1 relative flex flex-col min-h-full">
+
               {/* ✨ Unified Filter Row */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 relative z-20">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 relative z-60">
                 <div className="flex items-center gap-2 ms-1 sm:ms-2 text-slate-500 dark:text-slate-400">
                   <Filter className="w-4 h-4" />
                   <span className="text-sm font-semibold">סינון:</span>
                 </div>
 
-                {/* Global Filter Overlay (Hides on desktop for hover filters, present for date or mobile) */}
-                {openFilter && (
-                  <div 
-                    className={`fixed inset-0 z-50 ${openFilter === 'date' ? '' : 'md:hidden'}`} 
-                    onClick={() => setOpenFilter(null)}
-                  ></div>
-                )}
-
-                {/* Type Filter */}
+                  {/* Type Filter */}
                 <div 
                   className="relative"
                   onMouseEnter={() => window.innerWidth >= 768 && setOpenFilter('type')}
