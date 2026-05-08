@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   BookOpen, Calendar, Clock, Plus, CheckCircle, RefreshCw, 
   AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon, 
@@ -193,6 +193,36 @@ const AdminDashboard = ({ token }: { token: string }) => {
     }
   };
 
+  // Track which pill is currently clicked (null means "Show All")
+  const [selectedCourseFilter, setSelectedCourseFilter] = useState<string[]>([]);
+
+  // 1. Automatically find unique course codes that have pending items
+  const pendingCourseCodes = useMemo(() => {
+    // Assuming your logs have a status like 'pending' or 'awaiting_approval'
+    const pendingLogs = logs.filter(log => log.status === 'pending'); 
+    
+    // Extract the codes, put them in a Set to remove duplicates, and sort them
+    const codes = pendingLogs.map(log => log.entity_id.split(':')[0]);
+    return Array.from(new Set(codes)).sort();
+  }, [logs]);
+
+  // 2. The final array of logs you will actually map over in your JSX
+  const displayedLogs = useMemo(() => {
+    // If the array is empty, nothing is filtered -> show all!
+    if (selectedCourseFilter.length === 0) return logs; 
+    
+    // Otherwise, only show logs whose courseCode is currently selected
+    return logs.filter(log => selectedCourseFilter.includes(log.entity_id.split(':')[0]));
+  }, [logs, selectedCourseFilter]);
+
+  const toggleCourseFilter = (code: string) => {
+    setSelectedCourseFilter(prev => 
+      prev.includes(code) 
+        ? prev.filter(c => c !== code)
+        : [...prev, code]
+    );
+  };
+
   const fetchAdminData = useCallback(async () => {
     setLoading(true);
     try {
@@ -276,16 +306,16 @@ const AdminDashboard = ({ token }: { token: string }) => {
         ) : activeTab === 'users' ? (
           <div className="flex flex-col gap-4">
             <div className="relative w-full md:w-72">
-              <input 
-                type="text" 
-                placeholder="חיפוש לפי שם או אימייל..." 
+              <input
+                type="text"
+                placeholder="חיפוש לפי שם או אימייל..."
                 value={userSearchQuery}
                 onChange={e => setUserSearchQuery(e.target.value)}
                 className="w-full pl-4 pr-10 py-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-slate-100"
               />
               <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
             </div>
-            
+
             <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
               <table className="w-full text-sm text-right">
                 <thead className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-900/50 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
@@ -302,24 +332,23 @@ const AdminDashboard = ({ token }: { token: string }) => {
                       <td className="px-4 md:px-6 py-4 flex items-center gap-3">
                         <img src={u.picture} alt="" className="w-8 h-8 rounded-full bg-slate-200 shrink-0" referrerPolicy="no-referrer" />
                         <div className="flex flex-col">
-                           <span className="font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">{u.name}</span>
-                           <span className="text-xs text-slate-400 md:hidden block mt-0.5 line-clamp-1" dir="ltr">{u.email}</span>
+                          <span className="font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">{u.name}</span>
+                          <span className="text-xs text-slate-400 md:hidden block mt-0.5 line-clamp-1" dir="ltr">{u.email}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 hidden md:table-cell" dir="ltr">{u.email}</td>
                       <td className="px-4 md:px-6 py-4">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${
-                          u.role === 'owner' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                          u.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                          u.role === 'restricted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                          'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                        }`}>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${u.role === 'owner' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                            u.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                              u.role === 'restricted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                          }`}>
                           {u.role === 'owner' ? 'בעלים' : u.role === 'admin' ? 'מנהל' : u.role === 'restricted' ? 'מוגבל' : 'משתמש רגיל'}
                         </span>
                       </td>
                       <td className="px-4 md:px-6 py-4">
-                        <select 
-                          value={u.role} 
+                        <select
+                          value={u.role}
                           disabled={u.role === 'owner'}
                           onChange={(e) => handleRoleChange(u.id, e.target.value)}
                           className={`bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg px-2 md:px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 ${u.role === 'owner' ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -345,98 +374,144 @@ const AdminDashboard = ({ token }: { token: string }) => {
                 <p className="text-sm text-slate-400 mt-1">כל העריכות טופלו!</p>
               </div>
             )}
-            
-            {logs.map(log => {
-              let parsedOld = null; let parsedNew = null;
-              try { parsedOld = log.old_data ? JSON.parse(log.old_data) : null; } catch {}
-              try { parsedNew = log.new_data ? JSON.parse(log.new_data) : null; } catch {}
 
-              return (
-                <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 md:p-5 bg-white dark:bg-slate-800/50 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">{log.action}</span>
-                      <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        {log.entity_type === 'COURSE' 
-                          ? `קורס: ${log.entity_id}` 
-                          : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : `${log.entity_type} #${log.entity_id}`)
-                        }
-                      </span>
-                      <span className="text-xs text-slate-400" dir="ltr">{new Date(log.created_at).toLocaleString('he-IL')}</span>
-                    </div>
-                    
-                    <div className="text-sm text-slate-600 dark:text-slate-300 mb-3">
-                      בוצע ע"י: <span className="font-bold">{log.user_name}</span> <span className="text-xs opacity-70" dir="ltr">({log.user_email})</span>
-                    </div>
+            {pendingCourseCodes.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
 
-                    {log.entity_type === 'COURSE' && log.action === 'CREATE' ? (
-                      <div className="flex items-stretch gap-2 sm:gap-4 overflow-hidden">
-                        <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded text-xs">
-                          <div className="font-bold text-blue-700 dark:text-blue-400 mb-1">קורס חדש שנוסף:</div>
-                          {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">שם הקורס: {parsedNew.name}<br/>קוד הקורס: {log.entity_id.split(':')[0]}</div>}
-                        </div>
+                <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-2">
+                  ממתין לאישור:
+                </span>
+                <button
+                  onClick={() => setSelectedCourseFilter([])}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all duration-200 ${selectedCourseFilter.length === 0
+                    ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/20'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                >
+                  הכל
+                </button>
+                {pendingCourseCodes.map(code => (
+                  <button
+                    key={code}
+                    onClick={() => toggleCourseFilter(code)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-full transition-all duration-200 flex items-center gap-1 ${selectedCourseFilter.includes(code)
+                      ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/20'
+                      : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+                      }`}
+                  >
+                    {/* Hide the pulsing dot if the admin is actively working on it */}
+                    {!selectedCourseFilter.includes(code) && (
+                      <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>
+                    )}
+                    {code}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="space-y-4">
+              {displayedLogs.map(log => {
+                let parsedOld = null;
+                let parsedNew = null;
+
+                try {
+                  parsedOld = log.old_data ? JSON.parse(log.old_data) : null;
+                } catch {
+                  parsedOld = null;
+                }
+
+                try {
+                  parsedNew = log.new_data ? JSON.parse(log.new_data) : null;
+                } catch {
+                  parsedNew = null;
+                }
+
+                return (
+                  <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 md:p-5 bg-white dark:bg-slate-800/50 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">{log.action}</span>
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                          {log.entity_type === 'COURSE'
+                            ? `קורס: ${log.entity_id}`
+                            : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : `${log.entity_type} #${log.entity_id}`)
+                          }
+                        </span>
+                        <span className="text-xs text-slate-400" dir="ltr">{new Date(log.created_at).toLocaleString('he-IL')}</span>
                       </div>
-                    ) : (
-                      <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-4 overflow-hidden">
-                        {/* UPDATE ACTION - Shows Before and After */}
-                        {log.action === 'UPDATE' && (
-                          <>
-                            <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs opacity-80">
-                              <div className="font-bold text-red-700 dark:text-red-400 mb-1">המידע המקורי:</div>
-                              {parsedOld && <div className="text-slate-600 dark:text-slate-400">
-                                {log.entity_type === 'COURSE' ? `שם קורס: ${parsedOld.name}` : <>שם: {parsedOld.title}<br />מועד: {parsedOld.deadline}</>}
-                              </div>}
-                            </div>
-                            <div className="hidden sm:flex items-center justify-center text-slate-300"><ArrowLeft className="w-4 h-4" /></div>
-                            <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-3 rounded text-xs">
-                              <div className="font-bold text-emerald-700 dark:text-emerald-400 mb-1">השינוי המוצע:</div>
+
+                      <div className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                        בוצע ע"י: <span className="font-bold">{log.user_name}</span> <span className="text-xs opacity-70" dir="ltr">({log.user_email})</span>
+                      </div>
+
+                      {log.entity_type === 'COURSE' && log.action === 'CREATE' ? (
+                        <div className="flex items-stretch gap-2 sm:gap-4 overflow-hidden">
+                          <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded text-xs">
+                            <div className="font-bold text-blue-700 dark:text-blue-400 mb-1">קורס חדש שנוסף:</div>
+                            {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">שם הקורס: {parsedNew.name}<br />קוד הקורס: {log.entity_id.split(':')[0]}</div>}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-4 overflow-hidden">
+                          {/* UPDATE ACTION - Shows Before and After */}
+                          {log.action === 'UPDATE' && (
+                            <>
+                              <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs opacity-80">
+                                <div className="font-bold text-red-700 dark:text-red-400 mb-1">המידע המקורי:</div>
+                                {parsedOld && <div className="text-slate-600 dark:text-slate-400">
+                                  {log.entity_type === 'COURSE' ? `שם קורס: ${parsedOld.name}` : <>שם: {parsedOld.title}<br />מועד: {parsedOld.deadline}</>}
+                                </div>}
+                              </div>
+                              <div className="hidden sm:flex items-center justify-center text-slate-300"><ArrowLeft className="w-4 h-4" /></div>
+                              <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-3 rounded text-xs">
+                                <div className="font-bold text-emerald-700 dark:text-emerald-400 mb-1">השינוי המוצע:</div>
+                                {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">
+                                  {log.entity_type === 'COURSE' ? `שם קורס: ${parsedNew.name}` : <>שם: {parsedNew.title}<br />מועד: {parsedNew.deadline}</>}
+                                </div>}
+                              </div>
+                            </>
+                          )}
+
+                          {/* CREATE ACTION - Shows Only New Data */}
+                          {log.action === 'CREATE' && (
+                            <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded text-xs">
+                              <div className="font-bold text-blue-700 dark:text-blue-400 mb-1">נוצר פריט חדש:</div>
                               {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">
                                 {log.entity_type === 'COURSE' ? `שם קורס: ${parsedNew.name}` : <>שם: {parsedNew.title}<br />מועד: {parsedNew.deadline}</>}
                               </div>}
                             </div>
-                          </>
-                        )}
+                          )}
 
-                        {/* CREATE ACTION - Shows Only New Data */}
-                        {log.action === 'CREATE' && (
-                          <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded text-xs">
-                            <div className="font-bold text-blue-700 dark:text-blue-400 mb-1">נוצר פריט חדש:</div>
-                            {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">
-                              {log.entity_type === 'COURSE' ? `שם קורס: ${parsedNew.name}` : <>שם: {parsedNew.title}<br />מועד: {parsedNew.deadline}</>}
-                            </div>}
-                          </div>
-                        )}
-
-                        {/* DELETE ACTION - Shows Only Old Data with Warning */}
-                        {log.action === 'DELETE' && (
-                          <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs">
-                            <div className="font-bold text-red-700 dark:text-red-400 mb-1 flex items-center gap-1">
-                              <AlertCircle className="w-3.5 h-3.5" /> בקשת מחיקה לפריט:
+                          {/* DELETE ACTION - Shows Only Old Data with Warning */}
+                          {log.action === 'DELETE' && (
+                            <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs">
+                              <div className="font-bold text-red-700 dark:text-red-400 mb-1 flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5" /> בקשת מחיקה לפריט:
+                              </div>
+                              {parsedOld && <div className="text-slate-600 dark:text-slate-400 font-medium line-through mt-1">
+                                שם: {parsedOld.title} <br /> מועד: {parsedOld.deadline}
+                              </div>}
                             </div>
-                            {parsedOld && <div className="text-slate-600 dark:text-slate-400 font-medium line-through mt-1">
-                              שם: {parsedOld.title} <br /> מועד: {parsedOld.deadline}
-                            </div>}
-                          </div>
-                        )}
+                          )}
 
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="shrink-0 flex flex-col gap-2 border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-slate-700 pt-4 lg:pt-0 lg:pr-4 min-w-[140px]">
+                      <button onClick={() => handleApproveLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-sm font-bold transition-colors">
+                        <Check className="w-4 h-4" /> אישור
+                      </button>
+                      <button onClick={() => handleRevertLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-lg text-sm font-medium transition-colors text-slate-700 dark:text-slate-200">
+                        <X className="w-4 h-4" /> דחייה
+                      </button>
+                      <button onClick={() => handleRejectAndBlock(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-900/50 rounded-lg text-xs font-bold transition-colors mt-1">
+                        <Ban className="w-3.5 h-3.5" /> דחה וחסום
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="shrink-0 flex flex-col gap-2 border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-slate-700 pt-4 lg:pt-0 lg:pr-4 min-w-[140px]">
-                    <button onClick={() => handleApproveLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-sm font-bold transition-colors">
-                      <Check className="w-4 h-4" /> אישור
-                    </button>
-                    <button onClick={() => handleRevertLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-lg text-sm font-medium transition-colors text-slate-700 dark:text-slate-200">
-                      <X className="w-4 h-4" /> דחייה
-                    </button>
-                    <button onClick={() => handleRejectAndBlock(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-900/50 rounded-lg text-xs font-bold transition-colors mt-1">
-                      <Ban className="w-3.5 h-3.5" /> דחה וחסום
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
