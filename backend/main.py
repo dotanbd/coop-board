@@ -471,7 +471,7 @@ def update_my_courses(course_codes: List[str], current_user: dict = Depends(get_
 @app.get("/api/v2/assignments")
 def get_assignments(optional_user: dict = Depends(get_optional_user), db: Session = Depends(get_db)):
     if optional_user:
-        # Logged-in users see public courses + their own private tasks
+        # Logged-in users see public courses plus their own private tasks
         current_user_id = optional_user["id"]
         assignments = db.query(DBAssignment).filter(
             or_(
@@ -542,13 +542,16 @@ def create_assignment(assignment: AssignmentCreate, current_user: dict = Depends
                       db: Session = Depends(get_db)):
     user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
 
-    new_assignment = DBAssignment(**assignment.dict())
+    new_assignment = DBAssignment(
+        **assignment.dict(exclude={"user_id"}),
+        user_id=current_user.get("id")
+    )
     db.add(new_assignment)
     db.commit()
     db.refresh(new_assignment)
 
     # Send for admin approval if not owner or admin
-    if user and user.role not in ["admin", "owner"]:
+    if user and user.role not in ["admin", "owner"] and assignment.courseCode != "9990999":
         audit_log = DBAuditLog(
             user_id=user.id,
             action="CREATE",
@@ -585,7 +588,8 @@ def update_assignment(assignment_id: int, assignment: AssignmentCreate,
 
     # Send for admin approval if not owner or admin
     user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
-    if user and user.role != "admin":
+    is_trusted = user and user.role in ["admin", "owner"] or user.id == assignment.user_id
+    if not is_trusted and assignment.courseCode != "9990999":
         audit_log = DBAuditLog(
             user_id=user.id,
             action="UPDATE",
@@ -628,9 +632,8 @@ def delete_assignment(assignment_id: int, current_user: dict = Depends(get_write
     if not assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    is_trusted = user and user.role in ["admin", "owner"]
-
-    if not is_trusted:
+    is_trusted = user and user.role in ["admin", "owner"] or user.id == assignment.user_id
+    if not is_trusted and assignment.courseCode != "9990999":
         old_data = {
             "title": assignment.title,
             "courseCode": assignment.courseCode,
