@@ -602,8 +602,8 @@ def update_assignment(assignment_id: int, assignment: AssignmentCreate,
         db.add(audit_log)
 
     db.commit()
-    db.refresh(assignment)
-    return assignment
+    db.refresh(db_assignment)
+    return db_assignment
 
 
 @app.post("/api/v2/attachments/{attachment_id}/like")
