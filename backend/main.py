@@ -570,31 +570,31 @@ def create_assignment(assignment: AssignmentCreate, current_user: dict = Depends
 def update_assignment(assignment_id: int, assignment: AssignmentCreate,
                       current_user: dict = Depends(get_write_user),
                       db: Session = Depends(get_db)):
-    assignment = db.query(DBAssignment).filter(DBAssignment.id == assignment_id).first()
-    if not assignment:
+    db_assignment = db.query(DBAssignment).filter(DBAssignment.id == assignment_id).first()
+    if not db_assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
     old_data = {
-        "title": assignment.title,
-        "courseCode": assignment.courseCode,
-        "type": assignment.type,
-        "deadline": assignment.deadline,
-        "isOptional": assignment.isOptional
+        "title": db_assignment.title,
+        "courseCode": db_assignment.courseCode,
+        "type": db_assignment.type,
+        "deadline": db_assignment.deadline,
+        "isOptional": db_assignment.isOptional
     }
 
     # Always apply changes optimistically
     for key, value in assignment.dict().items():
-        setattr(assignment, key, value)
+        setattr(db_assignment, key, value)
 
     # Send for admin approval if not owner or admin
     user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
-    is_trusted = user and user.role in ["admin", "owner"] or user.id == assignment.user_id
+    is_trusted = user and user.role in ["admin", "owner"] or user.id == db_assignment.user_id
     if not is_trusted and assignment.courseCode != "9990999":
         audit_log = DBAuditLog(
             user_id=user.id,
             action="UPDATE",
             entity_type="ASSIGNMENT",
-            entity_id=f"{assignment.id}:{assignment.courseCode} - {assignment.title}",
+            entity_id=f"{db_assignment.id}:{db_assignment.courseCode} - {db_assignment.title}",
             old_data=json.dumps(old_data),
             new_data=json.dumps(assignment.dict()),
             status="PENDING"  # Stored for Admin Approval
