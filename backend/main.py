@@ -478,7 +478,7 @@ def get_assignments(optional_user: dict = Depends(get_optional_user), db: Sessio
                 DBAssignment.courseCode != "9990999",
                 and_(
                     DBAssignment.courseCode == "9990999",
-                    DBAssignment.uploader_id == current_user_id
+                    DBAssignment.user_id == current_user_id
                 )
             )
         ).all()
