@@ -19,7 +19,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import StreamingResponse
 import mimetypes
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update, or_, and_
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update, or_, and_, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from dotenv import load_dotenv
@@ -104,6 +104,7 @@ class DBCourse(Base):
     hw_magen = Column(Boolean, default=False)
     ww_magen = Column(Boolean, default=False)
     exam_magen = Column(Boolean, default=False)
+    last_edited = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
 class DBAssignment(Base):
@@ -126,7 +127,6 @@ class DBAttachment(Base):
     filename = Column(String)
     object_name = Column(String)
     category = Column(String, default="assignment")
-
     assignment = relationship("DBAssignment", back_populates="attachments")
 
 
@@ -154,7 +154,6 @@ class DBAuditLog(Base):
     new_data = Column(String, nullable=True)  # JSON snapshot
     status = Column(String, default="PENDING")  # PENDING until approved/denied
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
-
     user = relationship("DBUser")
 
 
@@ -470,10 +469,22 @@ def update_my_courses(course_codes: List[str], current_user: dict = Depends(get_
 # --- Assignment Routes ---
 @app.get("/api/v2/assignments")
 def get_assignments(optional_user: dict = Depends(get_optional_user), db: Session = Depends(get_db)):
+    pending_logs = db.query(DBAuditLog.entity_id).filter(
+        DBAuditLog.action == "DELETE",
+        DBAuditLog.entity_type == "ASSIGNMENT",
+        DBAuditLog.status == "PENDING"
+    ).all()
+
+    pending_ids = [int(log[0].split(":")[0]) for log in pending_logs if ":" in log[0]]
+
+    # ✨ 2. Build the base query, dynamically hiding the pending deletes
+    query = db.query(DBAssignment)
+    if pending_ids:
+        query = query.filter(DBAssignment.id.notin_(pending_ids))
     if optional_user:
         # Logged-in users see public courses plus their own private tasks
         current_user_id = optional_user["id"]
-        assignments = db.query(DBAssignment).filter(
+        assignments = query.filter(
             or_(
                 DBAssignment.courseCode != "9990999",
                 and_(
@@ -489,7 +500,7 @@ def get_assignments(optional_user: dict = Depends(get_optional_user), db: Sessio
 
     else:
         # Guests only see public courses, never the private course
-        assignments = db.query(DBAssignment).filter(DBAssignment.courseCode != "9990999").all()
+        assignments = query.filter(DBAssignment.courseCode != "9990999").all()
         user_data = {}
 
     results = []
@@ -547,8 +558,6 @@ def create_assignment(assignment: AssignmentCreate, current_user: dict = Depends
         user_id=current_user.get("id")
     )
     db.add(new_assignment)
-    db.commit()
-    db.refresh(new_assignment)
 
     # Send for admin approval if not owner or admin
     if user and user.role not in ["admin", "owner"] and assignment.courseCode != "9990999":
@@ -561,8 +570,13 @@ def create_assignment(assignment: AssignmentCreate, current_user: dict = Depends
             status="PENDING"
         )
         db.add(audit_log)
-        db.commit()
 
+    db_course = db.query(DBCourse).filter(DBCourse.code == assignment.courseCode).first()
+    if db_course:
+        db_course.last_edited = datetime.utcnow()
+
+    db.commit()
+    db.refresh(new_assignment)
     return new_assignment
 
 
@@ -601,6 +615,10 @@ def update_assignment(assignment_id: int, assignment: AssignmentCreate,
         )
         db.add(audit_log)
 
+    db_course = db.query(DBCourse).filter(DBCourse.code == assignment.courseCode).first()
+    if db_course:
+        db_course.last_edited = datetime.utcnow()
+
     db.commit()
     db.refresh(db_assignment)
     return db_assignment
@@ -627,49 +645,51 @@ def toggle_like(attachment_id: int, current_user: dict = Depends(get_current_use
 def delete_assignment(assignment_id: int, current_user: dict = Depends(get_write_user),
                       db: Session = Depends(get_db)):
     user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
-    assignment = db.query(DBAssignment).filter(DBAssignment.id == assignment_id).first()
+    db_assignment = db.query(DBAssignment).filter(DBAssignment.id == assignment_id).first()
 
-    if not assignment:
+    if not db_assignment:
         raise HTTPException(status_code=404, detail="Assignment not found")
 
-    is_trusted = user and user.role in ["admin", "owner"] or user.id == assignment.user_id
-    if not is_trusted and assignment.courseCode != "9990999":
-        old_data = {
-            "title": assignment.title,
-            "courseCode": assignment.courseCode,
-            "type": assignment.type,
-            "deadline": assignment.deadline,
-            "isOptional": assignment.isOptional,
-            "attachments": [
-                {
-                    "id": att.id,
-                    "user_id": att.user_id,
-                    "filename": att.filename,
-                    "object_name": att.object_name,
-                    "category": att.category
-                } for att in assignment.attachments
-            ]
-        }
+    is_trusted = user and user.role in ["admin", "owner"] or user.id == db_assignment.user_id
 
+    # If untrusted, just create the ticket and leave the data alone!
+    if not is_trusted and db_assignment.courseCode != "9990999":
         audit_log = DBAuditLog(
             user_id=user.id,
             action="DELETE",
             entity_type="ASSIGNMENT",
-            entity_id=f"{assignment.id}:{assignment.courseCode} - {assignment.title}",
-            old_data=json.dumps(old_data),
+            entity_id=f"{db_assignment.id}:{db_assignment.courseCode} - {db_assignment.title}",
+            old_data="{}",  # No snapshot needed, the data is still safely in the DB!
             status="PENDING"
         )
         db.add(audit_log)
+        db.commit()
+        return {"success": True, "status": "pending_approval"}
 
-    else:
-        # Admin/Owner: delete the files from MinIO instantly
-        for att in assignment.attachments:
-            try:
-                s3_client.delete_object(Bucket=BUCKET_NAME, Key=att.object_name)
-            except Exception:
-                pass
+    # Execute the full deep sweep immediately for trusted users
+    db.query(DBAuditLog).filter(
+        DBAuditLog.entity_type == "ASSIGNMENT",
+        DBAuditLog.entity_id.like(f"{db_assignment.id}:%")
+    ).delete(synchronize_session=False)
 
-    db.delete(assignment)
+    db.query(DBUserAssignment).filter(DBUserAssignment.assignment_id == db_assignment.id).delete(
+        synchronize_session=False)
+
+    for attachment in db_assignment.attachments:
+        db.query(DBAttachmentLike).filter(DBAttachmentLike.attachment_id == attachment.id).delete(
+            synchronize_session=False)
+        try:
+            s3_client.delete_object(Bucket=BUCKET_NAME, Key=attachment.object_name)
+        except Exception:
+            pass
+        db.delete(attachment)
+
+    db.delete(db_assignment)
+
+    db_course = db.query(DBCourse).filter(DBCourse.code == db_assignment.courseCode).first()
+    if db_course:
+        db_course.last_edited = datetime.utcnow()
+
     db.commit()
     return {"success": True}
 
@@ -943,16 +963,41 @@ def approve_change(log_id: int, admin: DBUser = Depends(get_admin_user), db: Ses
     if not log:
         raise HTTPException(status_code=404, detail="Log not found")
 
-    # Wipe files from MinIO if the change is a DELETE
+    # ✨ THE DEEP SWEEP EXECUTES HERE
     if log.action == "DELETE" and log.entity_type == "ASSIGNMENT":
-        old_data = json.loads(log.old_data)
-        for att in old_data.get("attachments", []):
-            try:
-                s3_client.delete_object(Bucket=BUCKET_NAME, Key=att["object_name"])
-            except Exception as e:
-                print(f"MinIO Delete Error: {e}")
+        real_id = int(log.entity_id.split(":")[0]) if ":" in log.entity_id else int(log.entity_id)
+        db_assignment = db.query(DBAssignment).filter(DBAssignment.id == real_id).first()
 
-    # The change is already live, so we simply delete the pending ticket
+        if db_assignment:
+            # 1. Sweep user grades
+            db.query(DBUserAssignment).filter(DBUserAssignment.assignment_id == real_id).delete(
+                synchronize_session=False)
+
+            # 2. Sweep attachments, likes, and MinIO files
+            for attachment in db_assignment.attachments:
+                db.query(DBAttachmentLike).filter(DBAttachmentLike.attachment_id == attachment.id).delete(
+                    synchronize_session=False)
+                try:
+                    s3_client.delete_object(Bucket=BUCKET_NAME, Key=attachment.object_name)
+                except Exception:
+                    pass
+                db.delete(attachment)
+
+            # 3. Sweep old audit logs (but spare this current ticket until the end!)
+            db.query(DBAuditLog).filter(
+                DBAuditLog.entity_type == "ASSIGNMENT",
+                DBAuditLog.entity_id.like(f"{real_id}:%"),
+                DBAuditLog.id != log.id
+            ).delete(synchronize_session=False)
+
+            # 4. Trigger course vitality
+            db_course = db.query(DBCourse).filter(DBCourse.code == db_assignment.courseCode).first()
+            if db_course:
+                db_course.last_edited = datetime.utcnow()
+
+            # 5. Delete the assignment
+            db.delete(db_assignment)
+
     db.delete(log)
     db.commit()
     return {"success": True, "message": "Change approved and log cleared."}
@@ -978,21 +1023,11 @@ def revert_change(log_id: int, admin: DBUser = Depends(get_admin_user), db: Sess
             if assignment:
                 db.delete(assignment)
         elif log.action == "DELETE":
-            # Reverting a deletion means recreating it with the EXACT old ID and connecting to the attachments
-            old_data = json.loads(log.old_data)
-            attachments_data = old_data.pop("attachments", [])
-            restored_assignment = DBAssignment(id=real_id, **old_data)
-            db.add(restored_assignment)
-            for att in attachments_data:
-                restored_att = DBAttachment(
-                    id=att["id"],
-                    assignment_id=restored_assignment.id,
-                    user_id=att["user_id"],
-                    filename=att["filename"],
-                    object_name=att["object_name"],
-                    category=att["category"]
-                )
-                db.add(restored_att)
+            # Deletion only actually happens if the log is approved
+            pass
+        else:
+            raise HTTPException(status_code=400, detail="Invalid action for reversion")
+            pass
 
     elif log.entity_type == "COURSE":
         course = db.query(DBCourse).filter(DBCourse.code == log.entity_id).first()
@@ -1037,13 +1072,7 @@ def reject_and_block(log_id: int, admin: DBUser = Depends(get_admin_user), db: S
             if assignment:
                 db.delete(assignment)
         elif log.action == "DELETE":
-            old_data = json.loads(log.old_data)
-            attachments_data = old_data.pop("attachments", [])
-            restored_assignment = DBAssignment(id=real_id, **old_data)
-            db.add(restored_assignment)
-            for att in attachments_data:
-                db.add(DBAttachment(id=att["id"], assignment_id=restored_assignment.id, user_id=att["user_id"],
-                                    filename=att["filename"], object_name=att["object_name"], category=att["category"]))
+            pass
 
     elif log.entity_type == "COURSE":
         course = db.query(DBCourse).filter(DBCourse.code == real_id_str).first()
