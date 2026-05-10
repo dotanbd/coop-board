@@ -312,8 +312,19 @@ async def google_auth_callback(code: str, db: Session = Depends(get_db)):
         user = DBUser(google_id=user_info["id"], email=user_info["email"], name=user_info["name"],
                       picture=user_info.get("picture", ""))
         db.add(user)
-        db.commit()
-        db.refresh(user)
+    else:
+        # refresh profile data on every login
+        new_picture = user_info.get("picture", "")
+        new_name = user_info.get("name", user.name)
+
+        # Only trigger a database update if something actually changed
+        if user.picture != new_picture or user.name != new_name:
+            user.picture = new_picture
+            user.name = new_name
+
+    # Commit changes (either the new user insertion or the updated profile)
+    db.commit()
+    db.refresh(user)
 
     jwt_token = jwt.encode({"sub": user.google_id, "id": user.id, "exp": datetime.utcnow() + timedelta(days=30)},
                            JWT_SECRET, algorithm="HS256")
@@ -726,6 +737,7 @@ def update_assignment_grade(assignment_id: int, grade_data: GradeUpdate, current
 @app.get("/api/v2/calendar/feed")
 def get_calendar_feed(token: Optional[str] = None, courses: Optional[str] = None, db: Session = Depends(get_db)):
     target_courses = []
+    user_id = None
 
     if token:
         try:
@@ -767,7 +779,7 @@ def get_calendar_feed(token: Optional[str] = None, courses: Optional[str] = None
     for a in assignments:
         if not a.deadline:
             continue
-        if token and a.courseCode == "9990999" and a.user_id != user_id:
+        if a.courseCode == "9990999" and a.user_id != user_id:
             continue
         try:
             # Parse the deadline into a real datetime so we can shift it
