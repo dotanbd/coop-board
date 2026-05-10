@@ -47,8 +47,10 @@ interface GradeSummary { earned: string; possible: string; isMagen: boolean; unc
 interface AdminUser { id: number; name: string; email: string; role: string; picture: string; }
 interface AuditLog { id: number; user_name: string; user_email: string; action: string; entity_type: string; entity_id: string; old_data: string; new_data: string; status: string; created_at: string; }
 
+// Leaderboard Interfaces
 interface LeaderboardEntry { id: number; name: string; picture: string; score: number; }
-interface LeaderboardData { top_3: LeaderboardEntry[]; me: { rank: number; entry: LeaderboardEntry; }; }
+interface LeaderboardSection { top_3: LeaderboardEntry[]; me: { rank: number; entry: LeaderboardEntry; }; }
+interface LeaderboardData { semester: LeaderboardSection; all_time: LeaderboardSection; }
 
 const typeTranslations: Record<string, string> = { 'All': 'הכל', 'Assignment': 'גיליון', 'Webwork': 'וובוורק', 'Exam': 'מבחן' };
 
@@ -635,6 +637,9 @@ export default function App() {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState<boolean>(false);
+  
+  // Leaderboard Tab State
+  const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'semester' | 'all_time'>('semester');
 
   const fetchLeaderboard = async () => {
     if (!token) return;
@@ -1652,16 +1657,34 @@ export default function App() {
       {/* Leaderboard Modal */}
       {isLeaderboardOpen && token && (
         <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
-            <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-slate-800 dark:to-slate-800 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700 flex flex-col max-h-[90vh]">
+            <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-slate-800 dark:to-slate-800 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center shrink-0">
               <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-yellow-500" />
                 מובילי הקהילה
               </h2>
               <button onClick={() => setIsLeaderboardOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
             </div>
-
-            <div className="p-6">
+            
+            {/* The Tab Switcher */}
+            {!isLeaderboardLoading && leaderboardData && (
+              <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                <button 
+                  onClick={() => setActiveLeaderboardTab('semester')}
+                  className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-colors ${activeLeaderboardTab === 'semester' ? 'border-rose-500 text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                >
+                  סמסטר נוכחי
+                </button>
+                <button 
+                  onClick={() => setActiveLeaderboardTab('all_time')}
+                  className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-colors ${activeLeaderboardTab === 'all_time' ? 'border-rose-500 text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                >
+                  כל הזמנים
+                </button>
+              </div>
+            )}
+            
+            <div className="p-6 overflow-y-auto">
               {isLeaderboardLoading || !leaderboardData ? (
                 <div className="flex justify-center items-center py-8">
                   <RefreshCw className="w-6 h-6 text-rose-500 animate-spin" />
@@ -1670,17 +1693,17 @@ export default function App() {
                 <div className="space-y-6">
                   {/* The Podium */}
                   <div className="space-y-3">
-                    {leaderboardData.top_3.length === 0 ? (
+                    {leaderboardData[activeLeaderboardTab].top_3.length === 0 ? (
                       <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4">עדיין אין לייקים בקהילה. היו הראשונים להעלות פתרון!</p>
                     ) : (
-                      leaderboardData.top_3.map((user, idx) => {
+                      leaderboardData[activeLeaderboardTab].top_3.map((user, idx) => {
                         const isGold = idx === 0;
                         const isSilver = idx === 1;
                         const isBronze = idx === 2;
-
+                        
                         let badgeColor = "bg-slate-100 text-slate-500";
                         let iconColor = "text-slate-400";
-
+                        
                         if (isGold) { badgeColor = "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"; iconColor = "text-yellow-500"; }
                         if (isSilver) { badgeColor = "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"; iconColor = "text-slate-400"; }
                         if (isBronze) { badgeColor = "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500"; iconColor = "text-amber-600"; }
@@ -1709,12 +1732,12 @@ export default function App() {
                     <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 flex items-center justify-center font-bold text-sm text-slate-500 dark:text-slate-400">
-                          #{leaderboardData.me.rank}
+                          #{leaderboardData[activeLeaderboardTab].me.rank}
                         </div>
                         <span className="font-bold text-slate-700 dark:text-slate-300">המיקום שלי</span>
                       </div>
                       <div className="flex items-center gap-1.5 font-bold">
-                        <span className="text-slate-700 dark:text-slate-200">{leaderboardData.me.entry.score}</span>
+                        <span className="text-slate-700 dark:text-slate-200">{leaderboardData[activeLeaderboardTab].me.entry.score}</span>
                         <Heart className="w-4 h-4 fill-current text-rose-500" />
                       </div>
                     </div>
