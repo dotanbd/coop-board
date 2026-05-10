@@ -1393,6 +1393,7 @@ export default function App() {
               const codeRegex = /^\d{3}0\d{3}$/;
               if (!codeRegex.test(newCourseCode)) { setCourseCodeError('קוד קורס חייב להיות בפורמט: XXX0XXX (לדוגמה: 1150204)'); return; }
               if (!newCourseName.trim()) { setCourseCodeError('שם הקורס לא יכול להיות ריק'); return; }
+              if (myCourses.includes(newCourseCode)) { setCourseCodeError('קורס זה כבר קיים, ניתן לערוך אותו מרשימת "הקורסים שלי"'); return; }
               if (coursesMap[newCourseCode]) { handleAddCourse(newCourseCode); } else {
                 if (!myCourses.includes(newCourseCode)) {
                   const updated = [...myCourses, newCourseCode]; setMyCourses(updated); setVisibleCourses(prev => [...prev, newCourseCode]);
