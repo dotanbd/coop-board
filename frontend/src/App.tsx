@@ -1188,13 +1188,6 @@ export default function App() {
                   
                   {openFilter === 'date' && (
                     <>
-                      {/* ✨ The Invisible Click-Catcher (z-50) */}
-                      <div 
-                        className="fixed inset-0 z-50 cursor-default" 
-                        onClick={() => setOpenFilter(null)}
-                      ></div>
-                      
-                      {/* ✨ The Actual Menu (z-70, safely above the click-catcher!) */}
                       <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
                         <div className="space-y-3">
                           <div>
@@ -1225,6 +1218,10 @@ export default function App() {
                           )}
                         </div>
                       </div>
+                      <div 
+                        className="fixed inset-0 z-50 cursor-default" 
+                        onClick={() => setOpenFilter(null)}
+                      ></div>
                     </>
                   )}
                 </div>
