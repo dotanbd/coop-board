@@ -1116,6 +1116,14 @@ export default function App() {
                   <span className="text-sm font-semibold">סינון:</span>
                 </div>
 
+                {/* Global Filter Overlay */}
+                {openFilter && (
+                  <div 
+                    className="fixed inset-0 z-50" 
+                    onClick={() => setOpenFilter(null)}
+                  ></div>
+                )}
+
                 {/* Type Filter */}
                 <div 
                   className="relative"
