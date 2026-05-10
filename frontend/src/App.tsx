@@ -4,7 +4,8 @@ import {
   AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon, 
   LogIn, User, Search, X, Check, Paperclip, FileText, Upload, Coffee,  
   XCircle, Lightbulb, Calculator, Shield, Settings, ChevronDown, 
-  Heart, Users, ShieldAlert, ArrowRight, ArrowLeft, ListChecks, Ban
+  Heart, Users, ShieldAlert, ArrowRight, ArrowLeft, ListChecks, Ban,
+  Trophy
 } from 'lucide-react';
 
 // --- Production/Development API Configuration ---
@@ -45,6 +46,9 @@ interface GradeSummary { earned: string; possible: string; isMagen: boolean; unc
 // Admin Interfaces
 interface AdminUser { id: number; name: string; email: string; role: string; picture: string; }
 interface AuditLog { id: number; user_name: string; user_email: string; action: string; entity_type: string; entity_id: string; old_data: string; new_data: string; status: string; created_at: string; }
+
+interface LeaderboardEntry { id: number; name: string; picture: string; score: number; }
+interface LeaderboardData { top_3: LeaderboardEntry[]; me: { rank: number; entry: LeaderboardEntry; }; }
 
 const typeTranslations: Record<string, string> = { 'All': 'הכל', 'Assignment': 'גיליון', 'Webwork': 'וובוורק', 'Exam': 'מבחן' };
 
@@ -617,6 +621,25 @@ export default function App() {
   // Mobile Filter Modal State
   const [isMobileFilterModalOpen, setIsMobileFilterModalOpen] = useState<boolean>(false);
 
+  // Leaderboard Modal State
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState<boolean>(false);
+
+  const fetchLeaderboard = async () => {
+    if (!token) return;
+    setIsLeaderboardLoading(true);
+    setIsLeaderboardOpen(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/leaderboard`, { headers: { 'Authorization': `Bearer ${token}` } });
+      if (res.ok) setLeaderboardData(await res.json());
+    } catch {
+      alert("שגיאה בטעינת לוח התוצאות");
+    } finally {
+      setIsLeaderboardLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -1012,10 +1035,14 @@ export default function App() {
               </button>
               {token ? (
                 <>
-                  <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs sm:text-sm font-medium border border-rose-200 dark:border-rose-800/50" title="סך הלייקים שקיבלת מהקהילה">
+                  <button 
+                    onClick={fetchLeaderboard}
+                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs sm:text-sm font-medium border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-sm cursor-pointer hover:scale-105 active:scale-95" 
+                    title="לוח הפותרים המובילים"
+                  >
                     <Heart className="w-4 h-4 fill-current" />
                     <span className="font-bold">{userProfile?.totalLikesReceived || 0}</span>
-                  </div>
+                  </button>
                   <button onClick={() => { localStorage.removeItem('teaspoon_jwt'); setToken(null); setUserProfile(null); }} className="flex items-center gap-2 p-2 px-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-xs sm:text-sm font-medium" title="התנתק"><User className="w-4 h-4 sm:w-5 sm:h-5" /> התנתק</button>
                   <button onClick={openAddModal} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm"><Plus className="w-4 h-4" /> הוספת מטלה</button>
                 </>
@@ -1593,6 +1620,84 @@ export default function App() {
               >
                 הצג תוצאות
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leaderboard Modal */}
+      {isLeaderboardOpen && token && (
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
+            <div className="bg-gradient-to-r from-rose-50 to-orange-50 dark:from-slate-800 dark:to-slate-800 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                מובילי הקהילה
+              </h2>
+              <button onClick={() => setIsLeaderboardOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
+            </div>
+            
+            <div className="p-6">
+              {isLeaderboardLoading || !leaderboardData ? (
+                <div className="flex justify-center items-center py-8">
+                  <RefreshCw className="w-6 h-6 text-rose-500 animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* The Podium */}
+                  <div className="space-y-3">
+                    {leaderboardData.top_3.length === 0 ? (
+                      <p className="text-center text-sm text-slate-500 dark:text-slate-400 py-4">עדיין אין לייקים בקהילה. היו הראשונים להעלות פתרון!</p>
+                    ) : (
+                      leaderboardData.top_3.map((user, idx) => {
+                        const isGold = idx === 0;
+                        const isSilver = idx === 1;
+                        const isBronze = idx === 2;
+                        
+                        let badgeColor = "bg-slate-100 text-slate-500";
+                        let iconColor = "text-slate-400";
+                        
+                        if (isGold) { badgeColor = "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"; iconColor = "text-yellow-500"; }
+                        if (isSilver) { badgeColor = "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"; iconColor = "text-slate-400"; }
+                        if (isBronze) { badgeColor = "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500"; iconColor = "text-amber-600"; }
+
+                        return (
+                          <div key={user.id} className={`flex items-center justify-between p-3 rounded-xl border ${idx === 0 ? 'border-yellow-200 dark:border-yellow-900/50 shadow-sm' : 'border-slate-100 dark:border-slate-700'}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${badgeColor}`}>
+                                {idx + 1}
+                              </div>
+                              <img src={user.picture || '/api/placeholder/32/32'} alt="" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-600" referrerPolicy="no-referrer" />
+                              <span className="font-bold text-slate-800 dark:text-slate-100">{user.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <span className="text-slate-700 dark:text-slate-200">{user.score}</span>
+                              <Heart className={`w-4 h-4 fill-current ${iconColor}`} />
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* The Current User's Status */}
+                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 flex items-center justify-center font-bold text-sm text-slate-500 dark:text-slate-400">
+                          #{leaderboardData.me.rank}
+                        </div>
+                        <span className="font-bold text-slate-700 dark:text-slate-300">המיקום שלי</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <span className="text-slate-700 dark:text-slate-200">{leaderboardData.me.entry.score}</span>
+                        <Heart className="w-4 h-4 fill-current text-rose-500" />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
             </div>
           </div>
         </div>
