@@ -1106,12 +1106,12 @@ def reject_and_block(log_id: int, admin: DBUser = Depends(get_admin_user), db: S
 
 @app.get("/api/v2/users/leaderboard")
 def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    # 1. Fetch all users and their lifetime stats
+    # 1. Fetch all base data
     users = db.query(DBUser).all()
     stats = db.query(DBUserStat).all()
     stats_map = {s.user_id: s.lifetime_likes for s in stats}
 
-    # 2. Dynamically count all active semester likes, grouped by uploader
+    # 2. Dynamically count active semester likes
     semester_likes = db.query(
         DBAttachment.user_id,
         func.count(DBAttachmentLike.id).label("likes")
@@ -1121,42 +1121,46 @@ def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session 
 
     semester_map = {row.user_id: row.likes for row in semester_likes}
 
-    # 3. Calculate totals for everyone
-    leaderboard = []
+    # 3. Build both lists simultaneously
+    semester_board = []
+    all_time_board = []
+
     for u in users:
-        total = semester_map.get(u.id, 0) + stats_map.get(u.id, 0)
-        leaderboard.append({
+        sem_score = semester_map.get(u.id, 0)
+        lifetime_score = sem_score + stats_map.get(u.id, 0)
+
+        base_user = {
             "id": u.id,
-            "name": u.name.split(' ')[0] if u.name else "Unknown",  # First name only for clean UI
-            "picture": u.picture,
-            "score": total
-        })
+            "name": u.name.split(' ')[0] if u.name else "Unknown",
+            "picture": u.picture
+        }
+
+        semester_board.append({**base_user, "score": sem_score})
+        all_time_board.append({**base_user, "score": lifetime_score})
 
     # 4. Sort descending
-    leaderboard.sort(key=lambda x: x["score"], reverse=True)
+    semester_board.sort(key=lambda x: x["score"], reverse=True)
+    all_time_board.sort(key=lambda x: x["score"], reverse=True)
 
-    # 5. Find current user's rank
-    my_rank = None
-    my_entry = None
+    # 5. Helper function to find user's rank and top 3
+    def process_board(board):
+        my_rank = None
+        my_entry = None
+        for index, entry in enumerate(board):
+            if entry["id"] == current_user["id"]:
+                my_rank = index + 1
+                my_entry = entry
+                break
 
-    for index, entry in enumerate(leaderboard):
-        if entry["id"] == current_user["id"]:
-            my_rank = index + 1
-            my_entry = entry
-            break
+        if not my_entry:
+            my_entry = {"id": current_user["id"], "name": "Me", "picture": "", "score": 0}
+            my_rank = len(board) + 1
 
-    # 6. Safety fallback (if user has no data yet)
-    if not my_entry:
-        my_entry = {"id": current_user["id"], "name": "Me", "picture": "", "score": 0}
-        my_rank = len(leaderboard) + 1
+        top_3 = [x for x in board[:3] if x["score"] > 0]
+        return {"top_3": top_3, "me": {"rank": my_rank, "entry": my_entry}}
 
-    # 7. Extract the top 3 (Only those who actually have at least 1 like!)
-    top_3 = [x for x in leaderboard[:3] if x["score"] > 0]
-
+    # 6. Return the dual payload
     return {
-        "top_3": top_3,
-        "me": {
-            "rank": my_rank,
-            "entry": my_entry
-        }
+        "semester": process_board(semester_board),
+        "all_time": process_board(all_time_board)
     }
