@@ -575,7 +575,7 @@ export default function App() {
   const assignmentTypes = ['All', 'Assignment', 'Webwork', 'Exam'];
 
   // Modals State
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [currentEditId, setCurrentEditId] = useState<number | null>(null);
   const [formData, setFormData] = useState<AssignmentFormData>({ title: '', courseCode: '', courseName: '', type: 'Assignment', deadline: '', time: '', isOptional: false });
@@ -600,6 +600,9 @@ export default function App() {
   // Intro Modal State
   const [showIntroModal, setShowIntroModal] = useState<boolean>(false);
   const [dontShowAgain, setDontShowAgain] = useState<boolean>(false);
+
+  // Mobile Filter Modal State
+  const [isMobileFilterModalOpen, setIsMobileFilterModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -758,12 +761,12 @@ export default function App() {
     }
   };
 
-  const openAddModal = () => { setIsEditing(false); setCurrentEditId(null); setFormData({ title: '', courseCode: '', courseName: '', type: 'Assignment', deadline: '', time: '', isOptional: false }); setIsModalOpen(true); };
+  const openAddModal = () => { setIsEditing(false); setCurrentEditId(null); setFormData({ title: '', courseCode: '', courseName: '', type: 'Assignment', deadline: '', time: '', isOptional: false }); setIsAssignmentModalOpen(true); };
 
   const openEditModal = (assignment: Assignment) => {
     const d = new Date(assignment.deadline); setIsEditing(true); setCurrentEditId(assignment.id);
     setFormData({ title: assignment.title, courseCode: assignment.courseCode, courseName: coursesMap[assignment.courseCode]?.name || '', type: assignment.type, isOptional: assignment.isOptional || false, deadline: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
-    setIsModalOpen(true);
+    setIsAssignmentModalOpen(true);
   };
   
   const handleDelete = async (id: number) => {
@@ -779,7 +782,7 @@ export default function App() {
          await fetch(`${API_BASE_URL}/courses/${formData.courseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: formData.courseName, hw_weight: 0, hw_drop: 0, ww_weight: 0, ww_drop: 0, exam_weight: 0, hw_magen: false, ww_magen: false, exam_magen: false }) });
       }
       await fetch(`${API_BASE_URL}/assignments${isEditing ? `/${currentEditId}` : ''}`, { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-      fetchAllData(); setIsModalOpen(false); if (!myCourses.includes(payload.courseCode)) handleAddCourse(payload.courseCode);
+      fetchAllData(); setIsAssignmentModalOpen(false); if (!myCourses.includes(payload.courseCode)) handleAddCourse(payload.courseCode);
     } catch { alert("שגיאה בשמירה."); }
   };
 
@@ -1086,19 +1089,32 @@ export default function App() {
             <div className="flex-1 relative z-10 flex flex-col min-h-full">
               
               {/* ✨ Unified Filter Row */}
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6 relative z-20">
+              
+              {/* 1. Mobile Filter Trigger (Hidden on Desktop) */}
+              <div className="md:hidden flex items-center justify-between mb-6 relative z-20 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                  <Filter className="w-4 h-4" />
+                  <span className="text-sm font-semibold">סינון מטלות</span>
+                </div>
+                <button
+                  onClick={() => setIsMobileFilterModalOpen(true)}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm ${
+                    activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end
+                      ? 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800'
+                      : 'bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  מסננים פעילים {(activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end) ? '(!)' : ''}
+                </button>
+              </div>
+
+              {/* 2. Desktop Filter Row (Hidden on Mobile) */}
+              <div className="hidden md:flex flex-wrap items-center gap-3 sm:gap-4 mb-6 relative z-20">
                 <div className="flex items-center gap-2 ms-1 sm:ms-2 text-slate-500 dark:text-slate-400">
                   <Filter className="w-4 h-4" />
                   <span className="text-sm font-semibold">סינון:</span>
                 </div>
-
-                {/* Global Filter Overlay (Hides on desktop for hover filters, present for date or mobile) */}
-                {openFilter && (
-                  <div 
-                    className={`fixed inset-0 z-50 ${openFilter === 'date' ? '' : 'md:hidden'}`} 
-                    onClick={() => setOpenFilter(null)}
-                  ></div>
-                )}
 
                 {/* Type Filter */}
                 <div 
@@ -1159,7 +1175,7 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Dates Filter - Click Only, with centered transform on mobile to prevent cropping */}
+                {/* Dates Filter */}
                 <div className="relative">
                   <button 
                     onClick={() => setOpenFilter(prev => prev === 'date' ? null : 'date')}
@@ -1171,7 +1187,7 @@ export default function App() {
                   </button>
                   
                   {openFilter === 'date' && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-0 mt-1 w-64 max-w-[calc(100vw-2rem)] p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
+                    <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
@@ -1320,10 +1336,10 @@ export default function App() {
       </main>
 
       {/* Assignment Modal */}
-      {isModalOpen && token && (
+      {isAssignmentModalOpen && token && (
         <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
-            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{isEditing ? 'עריכת מטלה' : 'הוספת מטלה חדשה'}</h2><button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
+            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">{isEditing ? 'עריכת מטלה' : 'הוספת מטלה חדשה'}</h2><button onClick={() => setIsAssignmentModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 sm:col-span-1">
@@ -1353,7 +1369,7 @@ export default function App() {
                 <input type="checkbox" id="isOptional" checked={formData.isOptional} onChange={e => setFormData({...formData, isOptional: e.target.checked})} className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 accent-blue-600 cursor-pointer" />
                 <label htmlFor="isOptional" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">תאריך רשות (ללא התראה)</label>
               </div>
-              <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
+              <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsAssignmentModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
             </form>
           </div>
         </div>
@@ -1447,6 +1463,123 @@ export default function App() {
               </div>
               <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsCourseModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Filter Modal */}
+      {isMobileFilterModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-end justify-center z-50 md:hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-t-2xl w-full shadow-2xl overflow-hidden border-t border-slate-100 dark:border-slate-700 max-h-[90vh] flex flex-col">
+            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center shrink-0">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Filter className="w-5 h-5 text-slate-500" /> סינון מטלות
+              </h2>
+              <button onClick={() => setIsMobileFilterModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-3xl leading-none">&times;</button>
+            </div>
+            
+            <div className="p-6 space-y-6 overflow-y-auto">
+              {/* Type Filter */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">סוג מטלה:</label>
+                <div className="flex flex-wrap gap-2">
+                  {assignmentTypes.map(type => (
+                    <button
+                      key={type}
+                      onClick={() => setActiveTypeFilter(type)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        activeTypeFilter === type 
+                          ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400' 
+                          : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      {typeTranslations[type]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">סטטוס ביצוע:</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setHideCompleted(false)}
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      !hideCompleted 
+                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400' 
+                        : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    הצג הכל
+                  </button>
+                  <button
+                    onClick={() => setHideCompleted(true)}
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      hideCompleted 
+                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400' 
+                        : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    רק לא בוצעו
+                  </button>
+                </div>
+              </div>
+
+              {/* Dates Filter */}
+              <div>
+                <div className="flex justify-between items-end mb-2">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">טווח תאריכים:</label>
+                  {(dateRange.start || dateRange.end) && (
+                    <button 
+                      onClick={() => setDateRange({start: '', end: ''})}
+                      className="text-xs text-red-500 hover:text-red-600 font-bold"
+                    >
+                      נקה תאריכים
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
+                    <input 
+                      type="date" 
+                      value={dateRange.start} 
+                      onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
+                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
+                    <input 
+                      type="date" 
+                      value={dateRange.end} 
+                      onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
+                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 shrink-0">
+               <button 
+                onClick={() => {
+                  setActiveTypeFilter('All');
+                  setHideCompleted(false);
+                  setDateRange({start: '', end: ''});
+                }} 
+                className="px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 font-bold transition-colors"
+              >
+                איפוס
+              </button>
+              <button 
+                onClick={() => setIsMobileFilterModalOpen(false)} 
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
+              >
+                הצג תוצאות
+              </button>
+            </div>
           </div>
         </div>
       )}
