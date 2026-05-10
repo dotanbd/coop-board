@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   BookOpen, Calendar, Clock, Plus, CheckCircle, RefreshCw, 
   AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon, 
@@ -566,8 +566,21 @@ export default function App() {
 
   const [dateRange, setDateRange] = useState<{start: string, end: string}>({ start: '', end: '' });
   
-  // ✨ State for Dropdowns (Hover on desktop, Click on mobile)
+  // State for Dropdowns (Hover on desktop, Click on mobile)
   const [openFilter, setOpenFilter] = useState<'type' | 'status' | 'date' | null>(null);
+  const desktopFilterRef = useRef<HTMLDivElement>(null);
+
+  // ✨ The new "Invisible Listener" that replaces the physical overlay
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // If a filter is open, and the user clicked completely outside the filter row, close it!
+      if (desktopFilterRef.current && !desktopFilterRef.current.contains(event.target as Node)) {
+        setOpenFilter(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -1110,7 +1123,7 @@ export default function App() {
               </div>
 
               {/* 2. Desktop Filter Row (Hidden on Mobile) */}
-              <div className="hidden md:flex flex-wrap items-center gap-3 sm:gap-4 mb-6 relative z-20">
+              <div ref={desktopFilterRef} className="hidden md:flex flex-wrap items-center gap-3 sm:gap-4 mb-6 relative z-20">
                 <div className="flex items-center gap-2 ms-1 sm:ms-2 text-slate-500 dark:text-slate-400">
                   <Filter className="w-4 h-4" />
                   <span className="text-sm font-semibold">סינון:</span>
@@ -1187,42 +1200,36 @@ export default function App() {
                   </button>
                   
                   {openFilter === 'date' && (
-                    <>
-                      <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
-                            <input 
-                              type="date" 
-                              value={dateRange.start} 
-                              onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
-                              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
-                            <input 
-                              type="date" 
-                              value={dateRange.end} 
-                              onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
-                              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
-                            />
-                          </div>
-                          {(dateRange.start || dateRange.end) && (
-                            <button 
-                              onClick={() => { setDateRange({start: '', end: ''}); setOpenFilter(null); }} 
-                              className="w-full text-center text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-700 mt-2 transition-colors"
-                            >
-                              נקה תאריכים
-                            </button>
-                          )}
+                    <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
+                          <input 
+                            type="date" 
+                            value={dateRange.start} 
+                            onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
+                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                          />
                         </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
+                          <input 
+                            type="date" 
+                            value={dateRange.end} 
+                            onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
+                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                          />
+                        </div>
+                        {(dateRange.start || dateRange.end) && (
+                          <button 
+                            onClick={() => { setDateRange({start: '', end: ''}); setOpenFilter(null); }} 
+                            className="w-full text-center text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-700 mt-2 transition-colors"
+                          >
+                            נקה תאריכים
+                          </button>
+                        )}
                       </div>
-                      <div 
-                        className="fixed inset-0 z-50 cursor-default" 
-                        onClick={() => setOpenFilter(null)}
-                      ></div>
-                    </>
+                    </div>
                   )}
                 </div>
               </div>
