@@ -5,7 +5,7 @@ import {
   LogIn, User, Search, X, Check, Paperclip, FileText, Upload, Coffee,  
   XCircle, Lightbulb, Calculator, Shield, Settings, ChevronDown, 
   Heart, Users, ShieldAlert, ArrowRight, ArrowLeft, ListChecks, Ban,
-  Trophy
+  Trophy, LayoutGrid, List
 } from 'lucide-react';
 
 // --- Production/Development API Configuration ---
@@ -549,6 +549,16 @@ export default function App() {
 
   const [currentView, setCurrentView] = useState<'app' | 'admin'>('app');
 
+  // View Mode State (Cards vs List)
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('teaspoon_view_mode') as 'cards' | 'list' || 'cards';
+    return 'cards';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem('teaspoon_view_mode', viewMode);
+  }, [viewMode]);
+
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [coursesMap, setCoursesMap] = useState<CoursesMap>({});
   
@@ -574,7 +584,7 @@ export default function App() {
   const [openFilter, setOpenFilter] = useState<'type' | 'status' | 'date' | null>(null);
   const desktopFilterRef = useRef<HTMLDivElement>(null);
 
-  // ✨ The new "Invisible Listener" that replaces the physical overlay
+  // The "Invisible Listener" that replaces the physical overlay
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // If a filter is open, and the user clicked completely outside the filter row, close it!
@@ -1128,13 +1138,13 @@ export default function App() {
             {/* Main Content (Assignments) */}
             <div className="flex-1 relative z-10 flex flex-col min-h-full">
               
-              {/* ✨ Unified Filter Row */}
+              {/* Unified Filter Row */}
               
-              {/* 1. Mobile Filter Trigger (Hidden on Desktop) */}
-              <div className="md:hidden flex items-center justify-between mb-6 relative z-20 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-                  <Filter className="w-4 h-4" />
-                  <span className="text-sm font-semibold">סינון מטלות</span>
+              {/* 1. Mobile Filter Trigger & View Toggle (Hidden on Desktop) */}
+              <div className="md:hidden flex items-center justify-between mb-6 relative z-20 bg-white dark:bg-slate-800 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1 rounded-lg">
+                  <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-md transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><LayoutGrid className="w-4 h-4" /></button>
+                  <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><List className="w-4 h-4" /></button>
                 </div>
                 <button
                   onClick={() => setIsMobileFilterModalOpen(true)}
@@ -1259,24 +1269,32 @@ export default function App() {
                     </div>
                   )}
                 </div>
+                {/* The View Toggle (Pushed to the left edge using ms-auto) */}
+                <div className="ms-auto flex items-center gap-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1 rounded-lg">
+                  <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-md transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><LayoutGrid className="w-4 h-4" /></button>
+                  <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><List className="w-4 h-4" /></button>
+                </div>
               </div>
 
               {loading ? ( <div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div> ) 
               : fetchError ? ( <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div> ) 
               : filteredAssignments.length === 0 ? ( <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">אין מטלות להצגה</h3></div> ) 
               : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start">
+                <div className={viewMode === 'cards' ? "grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-3 flex-1 content-start"}>
                   {filteredAssignments.map((assignment) => {
                     const courseTheme = getCourseTheme(assignment.courseCode);
                     return (
-                      <div key={assignment.id} className={`relative p-5 rounded-xl border-s-4 shadow-sm group flex flex-col justify-between ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)}`}>
+                      <div key={assignment.id} className={`relative rounded-xl border-s-4 shadow-sm group transition-all duration-200 ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)} ${viewMode === 'cards' ? 'p-5 flex flex-col justify-between' : 'p-4 flex flex-col lg:flex-row gap-4'}`}>
+                        
                         {token && (
                           <div className="absolute top-4 end-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
                             <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
                           </div>
                         )}
-                        <div>
+
+                        {/* Left Side (Or Top in Card Mode): Content */}
+                        <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-3 pe-16">
                             <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
                               {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
@@ -1298,7 +1316,7 @@ export default function App() {
                               <Clock className="w-4 h-4" /> 
                               <span>
                                 {formatDateTime(assignment.deadline)} 
-                                {assignment.isOptional && <span className="text-xs font-bold opacity-80 ms-1">(תאריך מומלץ)</span>}
+                                {assignment.isOptional && <span className="text-xs font-bold opacity-80 ms-1">(רשות)</span>}
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
@@ -1308,7 +1326,8 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="mt-4 ms-8 border-t border-slate-200 dark:border-slate-700/50 pt-3">
+                        {/* Right Side (Or Bottom in Card Mode): Attachments */}
+                        <div className={`${viewMode === 'cards' ? 'mt-4 ms-8 border-t pt-3' : 'mt-4 lg:mt-0 border-t lg:border-t-0 lg:border-s lg:ps-5 pt-3 lg:pt-0 lg:w-[360px] shrink-0 flex flex-col justify-center'} border-slate-200 dark:border-slate-700/50`}>
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-xs font-semibold flex items-center gap-1 text-slate-500 dark:text-slate-400"><Paperclip className="w-3 h-3" /> קבצים ({assignment.attachments?.length || 0})</span>
                             {token && (
