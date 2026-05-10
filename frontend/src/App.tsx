@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { 
-  BookOpen, Calendar, Clock, Plus, CheckCircle, RefreshCw, 
-  AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon, 
-  LogIn, User, Search, X, Check, Paperclip, FileText, Upload, Coffee,  
-  XCircle, Lightbulb, Calculator, Shield, Settings, ChevronDown, 
+import {
+  BookOpen, Calendar, Clock, Plus, CheckCircle, RefreshCw,
+  AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon,
+  LogIn, User, Search, X, Check, Paperclip, FileText, Upload, Coffee,
+  XCircle, Lightbulb, Calculator, Shield, Settings, ChevronDown,
   Heart, Users, ShieldAlert, ArrowRight, ArrowLeft, ListChecks, Ban,
   Trophy, LayoutGrid, List
 } from 'lucide-react';
@@ -174,8 +174,8 @@ const AdminDashboard = ({ token }: { token: string }) => {
   // User search state
   const [userSearchQuery, setUserSearchQuery] = useState('');
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
     u.email.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
 
@@ -201,26 +201,26 @@ const AdminDashboard = ({ token }: { token: string }) => {
   const [selectedCourseFilter, setSelectedCourseFilter] = useState<string[]>([]);
 
   const extractCourseCode = (entityId: string) => {
-  if (!entityId) return "";
+    if (!entityId) return "";
 
-  // Check if it's the complex format: "123:044102 - Course Name"
-  if (entityId.includes(':')) {
-    // 1. Split at the colon and take the right side -> "044102 - Course Name"
-    const afterColon = entityId.split(':')[1];
-    
-    // 2. Split at the hyphen and take the left side -> "044102"
-    return afterColon.split(' - ')[0].trim();
-  }
+    // Check if it's the complex format: "123:044102 - Course Name"
+    if (entityId.includes(':')) {
+      // 1. Split at the colon and take the right side -> "044102 - Course Name"
+      const afterColon = entityId.split(':')[1];
 
-  // If there's no colon, it's already the simple format: "044102"
-  return entityId.trim();
-};
+      // 2. Split at the hyphen and take the left side -> "044102"
+      return afterColon.split(' - ')[0].trim();
+    }
+
+    // If there's no colon, it's already the simple format: "044102"
+    return entityId.trim();
+  };
 
   // 1. Automatically find unique course codes that have pending items
   const pendingCourseCodes = useMemo(() => {
     // Assuming your logs have a status like 'pending' or 'awaiting_approval'
-    const pendingLogs = logs.filter(log => log.status === 'PENDING'); 
-    
+    const pendingLogs = logs.filter(log => log.status === 'PENDING');
+
     // Extract the codes, put them in a Set to remove duplicates, and sort them
     const codes = pendingLogs.map(log => extractCourseCode(log.entity_id));
     return Array.from(new Set(codes)).sort();
@@ -229,15 +229,15 @@ const AdminDashboard = ({ token }: { token: string }) => {
   // 2. The final array of logs you will actually map over in your JSX
   const displayedLogs = useMemo(() => {
     // If the array is empty, nothing is filtered -> show all!
-    if (selectedCourseFilter.length === 0) return logs; 
-    
+    if (selectedCourseFilter.length === 0) return logs;
+
     // Otherwise, only show logs whose courseCode is currently selected
     return logs.filter(log => selectedCourseFilter.includes(extractCourseCode(log.entity_id)));
   }, [logs, selectedCourseFilter]);
 
   const toggleCourseFilter = (code: string) => {
-    setSelectedCourseFilter(prev => 
-      prev.includes(code) 
+    setSelectedCourseFilter(prev =>
+      prev.includes(code)
         ? prev.filter(c => c !== code)
         : [...prev, code]
     );
@@ -359,9 +359,9 @@ const AdminDashboard = ({ token }: { token: string }) => {
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 hidden md:table-cell" dir="ltr">{u.email}</td>
                       <td className="px-4 md:px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${u.role === 'owner' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                            u.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
-                              u.role === 'restricted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                          u.role === 'admin' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' :
+                            u.role === 'restricted' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                              'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
                           }`}>
                           {u.role === 'owner' ? 'בעלים' : u.role === 'admin' ? 'מנהל' : u.role === 'restricted' ? 'מוגבל' : 'משתמש רגיל'}
                         </span>
@@ -561,16 +561,16 @@ export default function App() {
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [coursesMap, setCoursesMap] = useState<CoursesMap>({});
-  
-  const [myCourses, setMyCourses] = useState<string[]>([]); 
+
+  const [myCourses, setMyCourses] = useState<string[]>([]);
   const [visibleCourses, setVisibleCourses] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isCalendarCopied, setIsCalendarCopied] = useState(false);
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => { 
-    if (typeof window !== 'undefined') return localStorage.getItem('theme') as 'light' | 'dark' || 'light'; 
-    return 'light'; 
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('theme') as 'light' | 'dark' || 'light';
+    return 'light';
   });
 
   const [hideCompleted, setHideCompleted] = useState<boolean>(() => {
@@ -578,8 +578,8 @@ export default function App() {
     return false;
   });
 
-  const [dateRange, setDateRange] = useState<{start: string, end: string}>({ start: '', end: '' });
-  
+  const [dateRange, setDateRange] = useState<{ start: string, end: string }>({ start: '', end: '' });
+
   // State for Dropdowns (Hover on desktop, Click on mobile)
   const [openFilter, setOpenFilter] = useState<'type' | 'status' | 'date' | null>(null);
   const desktopFilterRef = useRef<HTMLDivElement>(null);
@@ -654,10 +654,10 @@ export default function App() {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
       const urlToken = urlParams.get('token');
-      if (urlToken) { 
-        localStorage.setItem('teaspoon_jwt', urlToken); 
-        setToken(urlToken); 
-        window.history.replaceState({}, document.title, window.location.pathname); 
+      if (urlToken) {
+        localStorage.setItem('teaspoon_jwt', urlToken);
+        setToken(urlToken);
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
   }, []);
@@ -686,12 +686,12 @@ export default function App() {
     setLoading(true); setFetchError(null);
     try {
       const headers: HeadersInit = {}; if (token) headers['Authorization'] = `Bearer ${token}`;
-      const [coursesRes, assignmentsRes] = await Promise.all([ fetch(`${API_BASE_URL}/courses`), fetch(`${API_BASE_URL}/assignments`, { headers }) ]);
+      const [coursesRes, assignmentsRes] = await Promise.all([fetch(`${API_BASE_URL}/courses`), fetch(`${API_BASE_URL}/assignments`, { headers })]);
       if (!coursesRes.ok || !assignmentsRes.ok) throw new Error("Network error");
-      
+
       const rawMap = await coursesRes.json(); const mappedMap: CoursesMap = {};
       Object.entries(rawMap).forEach(([k, v]: [string, any]) => {
-          mappedMap[k] = { name: v.name || '', hw_weight: v.hw_weight || 0, hw_keep: v.hw_keep !== undefined ? v.hw_keep : (v.hw_drop || 0), hw_magen: v.hw_magen || false, ww_weight: v.ww_weight || 0, ww_keep: v.ww_keep !== undefined ? v.ww_keep : (v.ww_drop || 0), ww_magen: v.ww_magen || false, exam_weight: v.exam_weight || 0, exam_magen: v.exam_magen || false };
+        mappedMap[k] = { name: v.name || '', hw_weight: v.hw_weight || 0, hw_keep: v.hw_keep !== undefined ? v.hw_keep : (v.hw_drop || 0), hw_magen: v.hw_magen || false, ww_weight: v.ww_weight || 0, ww_keep: v.ww_keep !== undefined ? v.ww_keep : (v.ww_drop || 0), ww_magen: v.ww_magen || false, exam_weight: v.exam_weight || 0, exam_magen: v.exam_magen || false };
       });
       setCoursesMap(mappedMap);
 
@@ -699,8 +699,9 @@ export default function App() {
 
       if (token) {
         try {
-          const [userRes, userCoursesRes] = await Promise.all([ fetch(`${API_BASE_URL}/users/me`, { headers }), fetch(`${API_BASE_URL}/users/me/courses`, { headers }) ]);
-          if (userRes.ok) { setUserProfile(await userRes.json()); const dbCourses = await userCoursesRes.json(); setMyCourses(dbCourses); setVisibleCourses(dbCourses);
+          const [userRes, userCoursesRes] = await Promise.all([fetch(`${API_BASE_URL}/users/me`, { headers }), fetch(`${API_BASE_URL}/users/me/courses`, { headers })]);
+          if (userRes.ok) {
+            setUserProfile(await userRes.json()); const dbCourses = await userCoursesRes.json(); setMyCourses(dbCourses); setVisibleCourses(dbCourses);
           } else throw new Error("Unauthorized");
         } catch { localStorage.removeItem('teaspoon_jwt'); setToken(null); }
       } else {
@@ -721,10 +722,10 @@ export default function App() {
     if (token) fetch(`${API_BASE_URL}/users/me/courses`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(newCourses) });
     else localStorage.setItem('guest_courses', JSON.stringify(newCourses));
   };
-  const handleAddCourse = (code: string) => { 
+  const handleAddCourse = (code: string) => {
     if (!code.trim()) return;
-    if (!myCourses.includes(code)) { const updated = [...myCourses, code]; setMyCourses(updated); setVisibleCourses(prev => [...prev, code]); syncCourses(updated); } 
-    setSearchQuery(''); setIsSearchFocused(false); 
+    if (!myCourses.includes(code)) { const updated = [...myCourses, code]; setMyCourses(updated); setVisibleCourses(prev => [...prev, code]); syncCourses(updated); }
+    setSearchQuery(''); setIsSearchFocused(false);
   };
   const handleRemoveCourse = (code: string) => { const updated = myCourses.filter(c => c !== code); setMyCourses(updated); setVisibleCourses(prev => prev.filter(c => c !== code)); syncCourses(updated); };
   const toggleVisibleCourse = (code: string) => setVisibleCourses(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
@@ -738,9 +739,9 @@ export default function App() {
 
   const handleSaveCourseSettings = async (e: React.FormEvent) => {
     e.preventDefault(); if (!token || !editingCourseCode) return;
-    
+
     let finalCourseCode = editingCourseCode;
-    
+
     // Handle course code rename for admins
     if (editModalCourseCode !== editingCourseCode && (userProfile?.role === 'admin' || userProfile?.role === 'owner')) {
       try {
@@ -749,14 +750,14 @@ export default function App() {
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ new_code: editModalCourseCode })
         });
-        
+
         if (!renameRes.ok) {
           alert("שגיאה בשינוי מספר הקורס. ייתכן והמספר כבר קיים.");
           return;
         }
-        
+
         finalCourseCode = editModalCourseCode;
-        
+
         // Cascade changes locally immediately
         setMyCourses(prev => {
           const updated = prev.map(c => c === editingCourseCode ? editModalCourseCode : c);
@@ -765,7 +766,7 @@ export default function App() {
         });
         setVisibleCourses(prev => prev.map(c => c === editingCourseCode ? editModalCourseCode : c));
         setAssignments(prev => prev.map(a => a.courseCode === editingCourseCode ? { ...a, courseCode: editModalCourseCode } : a));
-        
+
         setCoursesMap(prev => {
           const newMap = { ...prev };
           newMap[editModalCourseCode] = courseFormData;
@@ -780,7 +781,7 @@ export default function App() {
     } else {
       setCoursesMap(prev => ({ ...prev, [editingCourseCode]: courseFormData }));
     }
-    
+
     setIsCourseModalOpen(false);
     const payload = { ...courseFormData, hw_drop: courseFormData.hw_keep, ww_drop: courseFormData.ww_keep };
     try { await fetch(`${API_BASE_URL}/courses/${finalCourseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) }); } catch { }
@@ -814,18 +815,18 @@ export default function App() {
     setFormData({ title: assignment.title, courseCode: assignment.courseCode, courseName: coursesMap[assignment.courseCode]?.name || '', type: assignment.type, isOptional: assignment.isOptional || false, deadline: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
     setIsAssignmentModalOpen(true);
   };
-  
+
   const handleDelete = async (id: number) => {
     if (!window.confirm("למחוק מטלה זו?")) return;
-    try { await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` }}); setAssignments(prev => prev.filter(a => a.id !== id)); } catch { alert("שגיאה במחיקה."); }
+    try { await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); setAssignments(prev => prev.filter(a => a.id !== id)); } catch { alert("שגיאה במחיקה."); }
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); if (!token) return;
     const payload = { title: formData.title, courseCode: formData.courseCode, type: formData.type, deadline: new Date(`${formData.deadline}T${formData.time || '23:59'}:00`).toISOString(), isOptional: formData.isOptional };
     try {
       if (!coursesMap[formData.courseCode]) {
-         await fetch(`${API_BASE_URL}/courses/${formData.courseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: formData.courseName, hw_weight: 0, hw_drop: 0, ww_weight: 0, ww_drop: 0, exam_weight: 0, hw_magen: false, ww_magen: false, exam_magen: false }) });
+        await fetch(`${API_BASE_URL}/courses/${formData.courseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: formData.courseName, hw_weight: 0, hw_drop: 0, ww_weight: 0, ww_drop: 0, exam_weight: 0, hw_magen: false, ww_magen: false, exam_magen: false }) });
       }
       await fetch(`${API_BASE_URL}/assignments${isEditing ? `/${currentEditId}` : ''}`, { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
       fetchAllData(); setIsAssignmentModalOpen(false); if (!myCourses.includes(payload.courseCode)) handleAddCourse(payload.courseCode);
@@ -840,9 +841,9 @@ export default function App() {
     const processCategory = (type: string, weight: number, keepCount: number) => {
       if (weight === 0) return { earned: 0, possible: 0, rawAvg: undefined };
       const items = courseAssignments.filter(a => a.type === type); const gradedItems = items.filter(a => a.grade !== null);
-      if (gradedItems.length === 0) return { earned: 0, possible: weight, rawAvg: undefined }; 
+      if (gradedItems.length === 0) return { earned: 0, possible: weight, rawAvg: undefined };
       const actualKeep = keepCount > 0 ? keepCount : Math.max(1, gradedItems.length);
-      let grades = gradedItems.map(a => a.grade as number).sort((a, b) => b - a); 
+      let grades = gradedItems.map(a => a.grade as number).sort((a, b) => b - a);
       if (keepCount > 0) { while (grades.length < actualKeep) { grades.push(0); } }
       const keptGrades = grades.slice(0, actualKeep); const avg = keptGrades.reduce((sum, g) => sum + g, 0) / actualKeep;
       return { earned: (avg / 100) * weight, possible: weight, rawAvg: avg };
@@ -850,7 +851,7 @@ export default function App() {
 
     const hw = processCategory('Assignment', syllabus.hw_weight || 0, syllabus.hw_keep || 0);
     const ww = processCategory('Webwork', syllabus.ww_weight || 0, syllabus.ww_keep || 0);
-    const exam = processCategory('Exam', syllabus.exam_weight || 0, 0); 
+    const exam = processCategory('Exam', syllabus.exam_weight || 0, 0);
 
     let final_hw_earned = hw.earned; let final_hw_possible = hw.possible;
     let final_ww_earned = ww.earned; let final_ww_possible = ww.possible;
@@ -868,17 +869,17 @@ export default function App() {
 
     const totalEarned = final_hw_earned + final_ww_earned + final_exam_earned; const totalPossible = final_hw_possible + final_ww_possible + final_exam_possible;
     if (totalPossible === 0) {
-        const gradedItems = courseAssignments.filter(a => a.grade !== null);
-        const avg = gradedItems.reduce((sum, a) => sum + (a.grade as number), 0) / gradedItems.length;
-        return { earned: avg.toFixed(1), possible: '100', isMagen: false, unconfigured: true };
+      const gradedItems = courseAssignments.filter(a => a.grade !== null);
+      const avg = gradedItems.reduce((sum, a) => sum + (a.grade as number), 0) / gradedItems.length;
+      return { earned: avg.toFixed(1), possible: '100', isMagen: false, unconfigured: true };
     }
     return { earned: totalEarned.toFixed(1), possible: totalPossible.toFixed(1), isMagen: isMagenActive, unconfigured: false };
   };
 
   const handleCalendarSync = () => {
     let calendarUrl = '';
-    if (token) { calendarUrl = `${API_BASE_URL}/calendar/feed?token=${token}`; } 
-    else if (visibleCourses.length > 0) { calendarUrl = `${API_BASE_URL}/calendar/feed?courses=${visibleCourses.join(',')}`; } 
+    if (token) { calendarUrl = `${API_BASE_URL}/calendar/feed?token=${token}`; }
+    else if (visibleCourses.length > 0) { calendarUrl = `${API_BASE_URL}/calendar/feed?courses=${visibleCourses.join(',')}`; }
     else { alert("אין קורסים מסומנים לסנכרון."); return; }
     navigator.clipboard.writeText(calendarUrl).then(() => { setIsCalendarCopied(true); setTimeout(() => setIsCalendarCopied(false), 2000); }).catch(() => { alert("שגיאה בהעתקת הקישור ליומן. אנא נסה שוב."); });
   };
@@ -887,10 +888,11 @@ export default function App() {
     if (!e.target.files || e.target.files.length === 0 || !token) return;
     const file = e.target.files[0]; const inputElement = e.target; setUploadingId(assignmentId);
     const fd = new FormData(); fd.append('file', file); fd.append('category', category);
-    try { await fetch(`${API_BASE_URL}/assignments/${assignmentId}/attachments`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd }); await fetchAllData();
+    try {
+      await fetch(`${API_BASE_URL}/assignments/${assignmentId}/attachments`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: fd }); await fetchAllData();
     } catch { alert("שגיאה בהעלאה."); } finally { setUploadingId(null); inputElement.value = ''; }
   };
-  
+
   const handleRenameAttachment = async (assignmentId: number, attachmentId: number) => {
     if (!token || !editFileName.trim()) return;
     const oldName = assignments.find(a => a.id === assignmentId)?.attachments.find(a => a.id === attachmentId)?.filename;
@@ -900,7 +902,7 @@ export default function App() {
     setEditingFileId(null);
     try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ filename: finalName }) }); } catch { fetchAllData(); }
   };
-  
+
   const handleDeleteAttachment = async (assignmentId: number, attachmentId: number) => {
     if (!token || !window.confirm("למחוק קובץ?")) return;
     setAssignments(prev => prev.map(a => a.id === assignmentId ? { ...a, attachments: (a.attachments || []).filter(att => att.id !== attachmentId) } : a));
@@ -934,12 +936,12 @@ export default function App() {
   };
 
   const searchResults = Object.entries(coursesMap).filter(([code, syl]) => { if (!searchQuery) return false; return code.includes(searchQuery) || (syl.name && syl.name.toLowerCase().includes(searchQuery.toLowerCase())); }).slice(0, 5);
-  
+
   const filteredAssignments = assignments.filter(a => {
     if (!visibleCourses.includes(a.courseCode)) return false;
     if (activeTypeFilter !== 'All' && a.type !== activeTypeFilter) return false;
     if (hideCompleted && a.isCompleted) return false;
-    
+
     if (dateRange.start || dateRange.end) {
       const assignmentDate = new Date(a.deadline).getTime();
       if (dateRange.start) { const start = new Date(dateRange.start); start.setHours(0, 0, 0, 0); if (assignmentDate < start.getTime()) return false; }
@@ -954,11 +956,11 @@ export default function App() {
     if (date.toDateString() === today.toDateString()) dateStr = 'היום'; else if (date.toDateString() === tomorrow.toDateString()) dateStr = 'מחר';
     return `${dateStr} ב-${date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
   };
-  
+
   const getCardClasses = (deadline: string, courseTheme: CourseTheme, isCompleted: boolean, isOptional: boolean) => {
-    if (isCompleted) return 'border-solid border-s-slate-300 dark:border-s-slate-600 border-y-slate-200 dark:border-y-slate-700 border-e-slate-200 dark:border-e-slate-700 bg-slate-100/60 dark:bg-slate-800/60 opacity-60 grayscale-[0.3] hover:opacity-80'; 
+    if (isCompleted) return 'border-solid border-s-slate-300 dark:border-s-slate-600 border-y-slate-200 dark:border-y-slate-700 border-e-slate-200 dark:border-e-slate-700 bg-slate-100/60 dark:bg-slate-800/60 opacity-60 grayscale-[0.3] hover:opacity-80';
     const hoursLeft = (new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60);
-    
+
     if (hoursLeft < 0 && !isOptional) return 'border-solid border-s-red-500 border-y-red-200 dark:border-y-red-900/50 border-e-red-200 dark:border-e-red-900/50 bg-red-50 dark:bg-red-900/20';
     if (hoursLeft < 48 && !isOptional) return 'border-solid border-s-orange-500 border-y-orange-200 dark:border-y-orange-9０/5０ border-e-orange-2０ dark:border-e-orange-9０/5０ bg-orange-5０ dark:bg-orange-9０/2０';
     return `border-solid ${courseTheme.startBorder} border-y-slate-200 dark:border-y-slate-700 border-e-slate-200 dark:border-e-slate-700 bg-white dark:bg-slate-800 ${courseTheme.hover}`;
@@ -978,10 +980,10 @@ export default function App() {
           <span className="text-xs truncate" dir="ltr">{att.filename}</span>
         </a>
       )}
-      
+
       <div className="flex items-center gap-2 shrink-0">
         {att.category === 'solution' && (
-          <button 
+          <button
             onClick={(e) => { e.preventDefault(); handleToggleLike(assignmentId, att.id, att.isLikedByMe); }}
             className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors ${att.isLikedByMe ? 'text-rose-600 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-400 font-bold' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-rose-500 font-medium'}`}
             title="סמן פתרון כמועיל"
@@ -1004,15 +1006,15 @@ export default function App() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-12 transition-colors duration-200" dir="rtl">
       {/* Header */}
       <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${IS_DEV
-          ? 'bg-orange-50/95 dark:bg-orange-950/80 border-orange-200 dark:border-orange-900'
-          : 'bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800'
+        ? 'bg-orange-50/95 dark:bg-orange-950/80 border-orange-200 dark:border-orange-900'
+        : 'bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800'
         }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-3 py-3 sm:flex-row sm:justify-between sm:items-center">
             <div className="flex flex-wrap items-center gap-3">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg text-white ${IS_DEV
-                  ? 'bg-gradient-to-br from-orange-400 to-red-500 shadow-orange-500/20'
-                  : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20'
+                ? 'bg-gradient-to-br from-orange-400 to-red-500 shadow-orange-500/20'
+                : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20'
                 }`}>
                 <Coffee size={24} strokeWidth={2.5} />
               </div>
@@ -1025,13 +1027,13 @@ export default function App() {
                 {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
               </div>
               {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
-              <button 
-                onClick={() => setCurrentView(v => v === 'app' ? 'admin' : 'app')}
-                className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
-              >
-                {currentView === 'app' ? <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</> : <><ArrowRight className="w-4 h-4" /> חזרה למערכת</>}
-              </button>
-            )}
+                <button
+                  onClick={() => setCurrentView(v => v === 'app' ? 'admin' : 'app')}
+                  className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
+                >
+                  {currentView === 'app' ? <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</> : <><ArrowRight className="w-4 h-4" /> חזרה למערכת</>}
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-3 justify-end">
               <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><Moon className="w-5 h-5 hidden dark:block" /><Sun className="w-5 h-5 block dark:hidden" /></button>
@@ -1045,9 +1047,9 @@ export default function App() {
               </button>
               {token ? (
                 <>
-                  <button 
+                  <button
                     onClick={fetchLeaderboard}
-                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs sm:text-sm font-medium border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-sm cursor-pointer hover:scale-105 active:scale-95" 
+                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs sm:text-sm font-medium border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-sm cursor-pointer hover:scale-105 active:scale-95"
                     title="לוח הפותרים המובילים"
                   >
                     <Heart className="w-4 h-4 fill-current" />
@@ -1063,7 +1065,7 @@ export default function App() {
           </div>
         </div>
       </header>
-          
+
 
       {/* View Routing Logic */}
       <main className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-start">
@@ -1086,7 +1088,7 @@ export default function App() {
                     <input type="text" placeholder="חיפוש קורס..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-slate-100" />
                     <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
                   </div>
-                  
+
                   {isSearchFocused && searchQuery && (
                     <div className="absolute z-30 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto flex flex-col">
                       {searchResults.length > 0 && searchResults.map(([code, syl]) => (
@@ -1095,10 +1097,10 @@ export default function App() {
                           <span className="text-xs text-slate-500">{code}</span>
                         </button>
                       ))}
-                      
+
                       {searchQuery && !myCourses.includes(searchQuery) && (
-                        <button 
-                          onMouseDown={(e) => { e.preventDefault(); setNewCourseCode(searchQuery); setNewCourseName(''); setCourseCodeError(''); setIsAddCourseModalOpen(true); }} 
+                        <button
+                          onMouseDown={(e) => { e.preventDefault(); setNewCourseCode(searchQuery); setNewCourseName(''); setCourseCodeError(''); setIsAddCourseModalOpen(true); }}
                           className="w-full text-right px-4 py-3 hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700 text-blue-600 dark:text-blue-400 transition-colors mt-auto"
                         >
                           <Plus className="w-4 h-4" />
@@ -1108,7 +1110,7 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="space-y-2 flex-1 overflow-y-auto pe-2 scrollbar-thin">
                   {myCourses.map(code => {
                     const courseTheme = getCourseTheme(code);
@@ -1137,9 +1139,9 @@ export default function App() {
 
             {/* Main Content (Assignments) */}
             <div className="flex-1 relative z-10 flex flex-col min-h-full">
-              
+
               {/* Unified Filter Row */}
-              
+
               {/* 1. Mobile Filter Trigger & View Toggle (Hidden on Desktop) */}
               <div className="md:hidden flex items-center justify-between mb-6 relative z-20 bg-white dark:bg-slate-800 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                 <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1 rounded-lg">
@@ -1148,11 +1150,10 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => setIsMobileFilterModalOpen(true)}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm ${
-                    activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm ${activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end
                       ? 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800'
                       : 'bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                  }`}
+                    }`}
                 >
                   <Settings className="w-3.5 h-3.5" />
                   מסננים פעילים {(activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end) ? '(!)' : ''}
@@ -1167,12 +1168,12 @@ export default function App() {
                 </div>
 
                 {/* Type Filter */}
-                <div 
+                <div
                   className="relative"
                   onMouseEnter={() => window.innerWidth >= 768 && setOpenFilter('type')}
                   onMouseLeave={() => window.innerWidth >= 768 && setOpenFilter(null)}
                 >
-                  <button 
+                  <button
                     onClick={() => setOpenFilter(prev => prev === 'type' ? null : 'type')}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-60"
                   >
@@ -1182,10 +1183,10 @@ export default function App() {
                   {openFilter === 'type' && (
                     <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-70">
                       {assignmentTypes.map(type => (
-                        <button 
-                          key={type} 
-                          onClick={() => { setActiveTypeFilter(type); setOpenFilter(null); }} 
-                          className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ activeTypeFilter === type ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
+                        <button
+                          key={type}
+                          onClick={() => { setActiveTypeFilter(type); setOpenFilter(null); }}
+                          className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${activeTypeFilter === type ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300'}`}
                         >
                           {typeTranslations[type]}
                         </button>
@@ -1195,12 +1196,12 @@ export default function App() {
                 </div>
 
                 {/* Status Filter */}
-                <div 
+                <div
                   className="relative"
                   onMouseEnter={() => window.innerWidth >= 768 && setOpenFilter('status')}
                   onMouseLeave={() => window.innerWidth >= 768 && setOpenFilter(null)}
                 >
-                  <button 
+                  <button
                     onClick={() => setOpenFilter(prev => prev === 'status' ? null : 'status')}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-60"
                   >
@@ -1209,15 +1210,15 @@ export default function App() {
                   </button>
                   {openFilter === 'status' && (
                     <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-70">
-                      <button 
-                        onClick={() => { setHideCompleted(false); setOpenFilter(null); }} 
-                        className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ !hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
+                      <button
+                        onClick={() => { setHideCompleted(false); setOpenFilter(null); }}
+                        className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${!hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300'}`}
                       >
                         הכל
                       </button>
-                      <button 
-                        onClick={() => { setHideCompleted(true); setOpenFilter(null); }} 
-                        className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${ hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300' }`}
+                      <button
+                        onClick={() => { setHideCompleted(true); setOpenFilter(null); }}
+                        className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300'}`}
                       >
                         לא בוצעו
                       </button>
@@ -1227,39 +1228,39 @@ export default function App() {
 
                 {/* Dates Filter */}
                 <div className="relative">
-                  <button 
+                  <button
                     onClick={() => setOpenFilter(prev => prev === 'date' ? null : 'date')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors shadow-sm relative z-60 ${ (dateRange.start || dateRange.end) ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700' }`}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors shadow-sm relative z-60 ${(dateRange.start || dateRange.end) ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                   >
-                    <Calendar className={`w-4 h-4 ${ (dateRange.start || dateRange.end) ? 'text-blue-500' : 'text-slate-400' }`} />
+                    <Calendar className={`w-4 h-4 ${(dateRange.start || dateRange.end) ? 'text-blue-500' : 'text-slate-400'}`} />
                     תאריכים {(dateRange.start || dateRange.end) && '(פעיל)'}
                     <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'date' ? 'rotate-180' : ''}`} />
                   </button>
-                  
+
                   {openFilter === 'date' && (
                     <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
                       <div className="space-y-3">
                         <div>
                           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
-                          <input 
-                            type="date" 
-                            value={dateRange.start} 
-                            onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                          <input
+                            type="date"
+                            value={dateRange.start}
+                            onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
-                          <input 
-                            type="date" 
-                            value={dateRange.end} 
-                            onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                          <input
+                            type="date"
+                            value={dateRange.end}
+                            onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
                         {(dateRange.start || dateRange.end) && (
-                          <button 
-                            onClick={() => { setDateRange({start: '', end: ''}); setOpenFilter(null); }} 
+                          <button
+                            onClick={() => { setDateRange({ start: '', end: '' }); setOpenFilter(null); }}
                             className="w-full text-center text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-700 mt-2 transition-colors"
                           >
                             נקה תאריכים
@@ -1276,88 +1277,97 @@ export default function App() {
                 </div>
               </div>
 
-              {loading ? ( <div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div> ) 
-              : fetchError ? ( <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div> ) 
-              : filteredAssignments.length === 0 ? ( <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">אין מטלות להצגה</h3></div> ) 
-              : (
-                <div className={viewMode === 'cards' ? "grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-3 flex-1 content-start"}>
-                  {filteredAssignments.map((assignment) => {
-                    const courseTheme = getCourseTheme(assignment.courseCode);
-                    return (
-                      <div key={assignment.id} className={`relative rounded-xl border-s-4 shadow-sm group transition-all duration-200 ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)} ${viewMode === 'cards' ? 'p-5 flex flex-col justify-between' : 'p-4 flex flex-col lg:flex-row gap-4'}`}>
-                        
-                        {token && (
-                          <div className="absolute top-4 end-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
-                          </div>
-                        )}
+              {loading ? (<div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div>)
+                : fetchError ? (<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div>)
+                  : filteredAssignments.length === 0 ? (<div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">אין מטלות להצגה</h3></div>)
+                    : (
+                      <div className={viewMode === 'cards' ? "grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-3 flex-1 content-start"}>
+                        <div className={viewMode === 'cards' ? "grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-3 flex-1 content-start"}>
+                          {filteredAssignments.map((assignment) => {
+                            const courseTheme = getCourseTheme(assignment.courseCode);
+                            const isList = viewMode === 'list';
 
-                        {/* Left Side (Or Top in Card Mode): Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-3 pe-16">
-                            <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
-                              {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
-                              <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-start gap-3 mb-1">
-                            <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5">
-                              {assignment.isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <Circle className="w-5 h-5" />}
-                            </button>
-                            <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
-                          </div>
-                          
-                          <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                            <div className={`flex items-center gap-2 text-sm font-medium ${assignment.isOptional && !assignment.isCompleted ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-                              <Clock className="w-4 h-4" /> 
-                              <span>
-                                {formatDateTime(assignment.deadline)} 
-                                {assignment.isOptional && <span className="text-xs font-bold opacity-80 ms-1">(רשות)</span>}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
-                              <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
-                              <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
-                            </div>
-                          </div>
-                        </div>
+                            return (
+                              <div key={assignment.id} className={`relative rounded-xl border-s-4 shadow-sm group transition-all duration-200 ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)} ${isList ? 'p-5 lg:p-4 flex flex-col lg:flex-row gap-0 lg:gap-6' : 'p-5 flex flex-col justify-between'}`}>
 
-                        {/* Right Side (Or Bottom in Card Mode): Attachments */}
-                        <div className={`${viewMode === 'cards' ? 'mt-4 ms-8 border-t pt-3' : 'mt-4 lg:mt-0 border-t lg:border-t-0 lg:border-s lg:ps-5 pt-3 lg:pt-0 lg:w-[360px] shrink-0 flex flex-col justify-center'} border-slate-200 dark:border-slate-700/50`}>
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-semibold flex items-center gap-1 text-slate-500 dark:text-slate-400"><Paperclip className="w-3 h-3" /> קבצים ({assignment.attachments?.length || 0})</span>
-                            {token && (
-                              <div className="flex items-center gap-3">
-                                <label className={`text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> מטלה</label>
-                                <label className={`text-xs flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> פתרון</label>
-                                {uploadingId === assignment.id && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
+                                {/* Left Side (Or Top in Card Mode): Content */}
+                                <div className={`flex-1 min-w-0 ${isList ? 'lg:py-1' : ''}`}>
+
+                                  {/* ✨ MOVED: Edit/Delete buttons are now inside the document flow to prevent overlaps! */}
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
+                                        {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
+                                      </span>
+                                      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
+                                      </span>
+                                    </div>
+
+                                    {token && (
+                                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ms-2">
+                                        <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
+                                        <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-start gap-3 mb-1">
+                                    <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5">
+                                      {assignment.isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <Circle className="w-5 h-5" />}
+                                    </button>
+                                    <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
+                                  </div>
+
+                                  <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    <div className={`flex items-center gap-2 text-sm font-medium ${assignment.isOptional && !assignment.isCompleted ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                                      <Clock className="w-4 h-4" />
+                                      <span>
+                                        {formatDateTime(assignment.deadline)}
+                                        {assignment.isOptional && <span className="text-xs font-bold opacity-80 ms-1">(רשות)</span>}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
+                                      <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
+                                      <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Right Side (Or Bottom in Card Mode): Attachments */}
+                                {/* MOBILE FIX: The layout now identical to Card View on screens < lg, keeping the ms-8 indent! */}
+                                <div className={`${isList ? 'mt-4 ms-8 lg:ms-0 lg:mt-0 border-t lg:border-t-0 lg:border-s lg:ps-6 pt-3 lg:pt-0 lg:w-[380px] shrink-0 flex flex-col justify-center' : 'mt-4 ms-8 border-t pt-3'} border-slate-200 dark:border-slate-700/50`}>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-semibold flex items-center gap-1 text-slate-500 dark:text-slate-400"><Paperclip className="w-3 h-3" /> קבצים ({assignment.attachments?.length || 0})</span>
+                                    {token && (
+                                      <div className="flex items-center gap-3">
+                                        <label className={`text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> מטלה</label>
+                                        <label className={`text-xs flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> פתרון</label>
+                                        {uploadingId === assignment.id && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {(assignment.attachments?.filter(a => a.category === 'assignment').length || 0) > 0 && (<div className="mb-3"><span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5 block">קבצי מטלה</span><div className="space-y-1.5">{assignment.attachments?.filter(a => a.category === 'assignment').map(att => renderAttachment(att, assignment.id))}</div></div>)}
+
+                                  {(assignment.attachments?.filter(a => a.category === 'solution').length || 0) > 0 && (
+                                    <div>
+                                      <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-600 uppercase mb-1.5 flex items-center gap-1">
+                                        <Lightbulb className="w-3 h-3" /> רפרנסים ועזרים
+                                      </span>
+                                      <div className="space-y-1.5">
+                                        {assignment.attachments?.filter(a => a.category === 'solution')
+                                          .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+                                          .map(att => renderAttachment(att, assignment.id))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                            )}
-                          </div>
-                          {(assignment.attachments?.filter(a => a.category === 'assignment').length || 0) > 0 && (<div className="mb-3"><span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5 block">קבצי מטלה</span><div className="space-y-1.5">{assignment.attachments?.filter(a => a.category === 'assignment').map(att => renderAttachment(att, assignment.id))}</div></div>)}
-                          
-                          {(assignment.attachments?.filter(a => a.category === 'solution').length || 0) > 0 && (
-                            <div>
-                              <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-600 uppercase mb-1.5 flex items-center gap-1">
-                                <Lightbulb className="w-3 h-3" /> רפרנסים ועזרים
-                              </span>
-                              <div className="space-y-1.5">
-                                {assignment.attachments?.filter(a => a.category === 'solution')
-                                  .sort((a, b) => (b.likes || 0) - (a.likes || 0)) 
-                                  .map(att => renderAttachment(att, assignment.id))}
-                              </div>
-                            </div>
-                          )}
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
 
               {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
                 <div className="mt-12 border-t border-slate-200 dark:border-slate-700 pt-8 mb-4">
@@ -1377,7 +1387,7 @@ export default function App() {
                             <div className="flex gap-1">
                               {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון משוקלל" className="cursor-help"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-orange-500" /></span>}
                               {summary.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 mt-0.5 shrink-0 ${themeObj.badgeText}`} /></span>}
-                          </div>
+                            </div>
                           </div>
                           <div className="flex items-baseline gap-1.5" dir="ltr">
                             <span className={`text-3xl font-black leading-none ${themeObj.badgeText}`}>{summary.earned}</span>
@@ -1403,9 +1413,9 @@ export default function App() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 sm:col-span-1">
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">קורס</label>
-                  <select 
-                    required 
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100 text-right appearance-none" 
+                  <select
+                    required
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100 text-right appearance-none"
                     value={formData.courseCode}
                     onChange={e => setFormData({ ...formData, courseCode: e.target.value, courseName: coursesMap[e.target.value]?.name || formData.courseName })}
                   >
@@ -1415,17 +1425,17 @@ export default function App() {
                     ))}
                   </select>
                 </div>
-                
-                <div className="col-span-2 sm:col-span-1"><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">סוג המטלה</label><select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}><option value="Assignment">גיליון</option><option value="Webwork">וובוורק</option><option value="Exam">מבחן</option></select></div>
+
+                <div className="col-span-2 sm:col-span-1"><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">סוג המטלה</label><select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}><option value="Assignment">גיליון</option><option value="Webwork">וובוורק</option><option value="Exam">מבחן</option></select></div>
               </div>
 
-              <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">כותרת</label><input required type="text" placeholder="לדוגמה: גיליון 1, בוחן אמצע" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} /></div>
+              <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">כותרת</label><input required type="text" placeholder="לדוגמה: גיליון 1, בוחן אמצע" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">תאריך הגשה</label><input required type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.deadline} onChange={e => setFormData({...formData, deadline: e.target.value})} /></div>
-                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שעה (רשות)</label><input type="time" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.time} onChange={e => setFormData({...formData, time: e.target.value})} /></div>
+                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">תאריך הגשה</label><input required type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.deadline} onChange={e => setFormData({ ...formData, deadline: e.target.value })} /></div>
+                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שעה (רשות)</label><input type="time" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} /></div>
               </div>
               <div className="flex items-center gap-3 pt-2">
-                <input type="checkbox" id="isOptional" checked={formData.isOptional} onChange={e => setFormData({...formData, isOptional: e.target.checked})} className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 accent-blue-600 cursor-pointer" />
+                <input type="checkbox" id="isOptional" checked={formData.isOptional} onChange={e => setFormData({ ...formData, isOptional: e.target.checked })} className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 accent-blue-600 cursor-pointer" />
                 <label htmlFor="isOptional" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">תאריך רשות (ללא התראה)</label>
               </div>
               <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsAssignmentModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
@@ -1451,13 +1461,13 @@ export default function App() {
                   const newSyl = { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false };
                   setCoursesMap(prev => ({ ...prev, [newCourseCode]: newSyl }));
                   if (token) {
-                      fetch(`${API_BASE_URL}/courses/${newCourseCode}`, {
-                          method: 'PUT',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                          body: JSON.stringify({ ...newSyl, hw_drop: 0, ww_drop: 0 })
-                      }).catch(() => console.error("Failed to save course"));
+                    fetch(`${API_BASE_URL}/courses/${newCourseCode}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                      body: JSON.stringify({ ...newSyl, hw_drop: 0, ww_drop: 0 })
+                    }).catch(() => console.error("Failed to save course"));
                   }
-                  
+
                   syncCourses(updated);
                 }
               }
@@ -1484,42 +1494,42 @@ export default function App() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
             <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><Settings className="w-5 h-5 text-slate-500" /> הגדרות סילבוס</h2><button onClick={() => setIsCourseModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
             <form onSubmit={handleSaveCourseSettings} className="p-6 space-y-4">
-              
+
               {/* Editable Course Code & Name Row */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">מספר קורס</label>
-                  <input 
-                    required 
-                    type="text" 
+                  <input
+                    required
+                    type="text"
                     maxLength={7}
-                    className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 ${(userProfile?.role === 'admin' || userProfile?.role === 'owner') ? 'focus:ring-2 focus:ring-blue-500' : 'opacity-70 cursor-not-allowed'}`} 
-                    value={editModalCourseCode} 
-                    onChange={e => setEditModalCourseCode(e.target.value.toUpperCase())} 
+                    className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 ${(userProfile?.role === 'admin' || userProfile?.role === 'owner') ? 'focus:ring-2 focus:ring-blue-500' : 'opacity-70 cursor-not-allowed'}`}
+                    value={editModalCourseCode}
+                    onChange={e => setEditModalCourseCode(e.target.value.toUpperCase())}
                     disabled={!(userProfile?.role === 'admin' || userProfile?.role === 'owner')}
                     title={!(userProfile?.role === 'admin' || userProfile?.role === 'owner') ? "רק מנהלים יכולים לערוך מספרי קורסים" : ""}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שם הקורס</label>
-                  <input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.name} onChange={e => setCourseFormData({...courseFormData, name: e.target.value})} />
+                  <input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.name} onChange={e => setCourseFormData({ ...courseFormData, name: e.target.value })} />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
-                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל גיליונות (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.hw_weight} onChange={e => setCourseFormData({...courseFormData, hw_weight: parseInt(e.target.value)||0})} /></div>
-                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר גיליונות תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.hw_keep} onChange={e => setCourseFormData({...courseFormData, hw_keep: parseInt(e.target.value)||0})} /></div>
-                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.hw_magen} onChange={e => setCourseFormData({...courseFormData, hw_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
+                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל גיליונות (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.hw_weight} onChange={e => setCourseFormData({ ...courseFormData, hw_weight: parseInt(e.target.value) || 0 })} /></div>
+                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר גיליונות תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.hw_keep} onChange={e => setCourseFormData({ ...courseFormData, hw_keep: parseInt(e.target.value) || 0 })} /></div>
+                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.hw_magen} onChange={e => setCourseFormData({ ...courseFormData, hw_magen: e.target.checked })} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
               </div>
               <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
-                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל וובוורק (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_weight} onChange={e => setCourseFormData({...courseFormData, ww_weight: parseInt(e.target.value)||0})} /></div>
-                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר וובוורקים תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_keep} onChange={e => setCourseFormData({...courseFormData, ww_keep: parseInt(e.target.value)||0})} /></div>
-                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.ww_magen} onChange={e => setCourseFormData({...courseFormData, ww_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
+                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל וובוורק (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_weight} onChange={e => setCourseFormData({ ...courseFormData, ww_weight: parseInt(e.target.value) || 0 })} /></div>
+                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר וובוורקים תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_keep} onChange={e => setCourseFormData({ ...courseFormData, ww_keep: parseInt(e.target.value) || 0 })} /></div>
+                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.ww_magen} onChange={e => setCourseFormData({ ...courseFormData, ww_magen: e.target.checked })} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
               </div>
               <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
-                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל בוחן אמצע (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.exam_weight} onChange={e => setCourseFormData({...courseFormData, exam_weight: parseInt(e.target.value)||0})} /></div>
-                 <div></div>
-                 <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.exam_magen} onChange={e => setCourseFormData({...courseFormData, exam_magen: e.target.checked})} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
+                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל בוחן אמצע (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.exam_weight} onChange={e => setCourseFormData({ ...courseFormData, exam_weight: parseInt(e.target.value) || 0 })} /></div>
+                <div></div>
+                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.exam_magen} onChange={e => setCourseFormData({ ...courseFormData, exam_magen: e.target.checked })} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
               </div>
               <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsCourseModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
             </form>
@@ -1537,7 +1547,7 @@ export default function App() {
               </h2>
               <button onClick={() => setIsMobileFilterModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-3xl leading-none">&times;</button>
             </div>
-            
+
             <div className="p-6 space-y-6 overflow-y-auto">
               {/* Type Filter */}
               <div>
@@ -1547,11 +1557,10 @@ export default function App() {
                     <button
                       key={type}
                       onClick={() => setActiveTypeFilter(type)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                        activeTypeFilter === type 
-                          ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400' 
+                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${activeTypeFilter === type
+                          ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
                           : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
-                      }`}
+                        }`}
                     >
                       {typeTranslations[type]}
                     </button>
@@ -1565,21 +1574,19 @@ export default function App() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setHideCompleted(false)}
-                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      !hideCompleted 
-                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400' 
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${!hideCompleted
+                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
                         : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
-                    }`}
+                      }`}
                   >
                     הצג הכל
                   </button>
                   <button
                     onClick={() => setHideCompleted(true)}
-                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      hideCompleted 
-                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400' 
+                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${hideCompleted
+                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
                         : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
-                    }`}
+                      }`}
                   >
                     רק לא בוצעו
                   </button>
@@ -1591,8 +1598,8 @@ export default function App() {
                 <div className="flex justify-between items-end mb-2">
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">טווח תאריכים:</label>
                   {(dateRange.start || dateRange.end) && (
-                    <button 
-                      onClick={() => setDateRange({start: '', end: ''})}
+                    <button
+                      onClick={() => setDateRange({ start: '', end: '' })}
                       className="text-xs text-red-500 hover:text-red-600 font-bold"
                     >
                       נקה תאריכים
@@ -1602,39 +1609,39 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
-                    <input 
-                      type="date" 
-                      value={dateRange.start} 
-                      onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
-                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                    <input
+                      type="date"
+                      value={dateRange.start}
+                      onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
-                    <input 
-                      type="date" 
-                      value={dateRange.end} 
-                      onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
-                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                    <input
+                      type="date"
+                      value={dateRange.end}
+                      onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
                 </div>
               </div>
             </div>
-            
+
             <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex gap-3 shrink-0">
-               <button 
+              <button
                 onClick={() => {
                   setActiveTypeFilter('All');
                   setHideCompleted(false);
-                  setDateRange({start: '', end: ''});
-                }} 
+                  setDateRange({ start: '', end: '' });
+                }}
                 className="px-4 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 font-bold transition-colors"
               >
                 איפוס
               </button>
-              <button 
-                onClick={() => setIsMobileFilterModalOpen(false)} 
+              <button
+                onClick={() => setIsMobileFilterModalOpen(false)}
                 className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
               >
                 הצג תוצאות
@@ -1655,7 +1662,7 @@ export default function App() {
               </h2>
               <button onClick={() => setIsLeaderboardOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
             </div>
-            
+
             <div className="p-6">
               {isLeaderboardLoading || !leaderboardData ? (
                 <div className="flex justify-center items-center py-8">
@@ -1672,10 +1679,10 @@ export default function App() {
                         const isGold = idx === 0;
                         const isSilver = idx === 1;
                         const isBronze = idx === 2;
-                        
+
                         let badgeColor = "bg-slate-100 text-slate-500";
                         let iconColor = "text-slate-400";
-                        
+
                         if (isGold) { badgeColor = "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"; iconColor = "text-yellow-500"; }
                         if (isSilver) { badgeColor = "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"; iconColor = "text-slate-400"; }
                         if (isBronze) { badgeColor = "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500"; iconColor = "text-amber-600"; }
@@ -1731,13 +1738,13 @@ export default function App() {
                 <Coffee className="w-6 h-6 text-blue-500" />
                 ברוכים הבאים ל-Teaspoon!
               </h2>
-              <button 
+              <button
                 onClick={() => {
                   setShowIntroModal(false);
                   if (dontShowAgain) {
                     localStorage.setItem('hasSeenIntro', 'true');
                   }
-                }} 
+                }}
                 className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none"
               >
                 &times;
@@ -1788,18 +1795,18 @@ export default function App() {
 
               <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                 <div className="flex items-center gap-3 mb-4">
-                  <input 
-                    type="checkbox" 
-                    id="dontShowAgain" 
-                    checked={dontShowAgain} 
-                    onChange={(e) => setDontShowAgain(e.target.checked)} 
-                    className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 accent-blue-600 cursor-pointer" 
+                  <input
+                    type="checkbox"
+                    id="dontShowAgain"
+                    checked={dontShowAgain}
+                    onChange={(e) => setDontShowAgain(e.target.checked)}
+                    className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 accent-blue-600 cursor-pointer"
                   />
                   <label htmlFor="dontShowAgain" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
                     אל תציג שוב
                   </label>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     setShowIntroModal(false);
                     if (dontShowAgain) {
