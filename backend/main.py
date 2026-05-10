@@ -571,6 +571,7 @@ def create_assignment(assignment: AssignmentCreate, current_user: dict = Depends
         user_id=current_user.get("id")
     )
     db.add(new_assignment)
+    db.flush()
 
     # Send for admin approval if not owner or admin
     if user and user.role not in ["admin", "owner"] and assignment.courseCode != "9990999":
