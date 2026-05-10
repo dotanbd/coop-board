@@ -1151,8 +1151,8 @@ export default function App() {
                 <button
                   onClick={() => setIsMobileFilterModalOpen(true)}
                   className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm ${activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end
-                      ? 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800'
-                      : 'bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                    ? 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800'
+                    : 'bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
                     }`}
                 >
                   <Settings className="w-3.5 h-3.5" />
@@ -1282,90 +1282,88 @@ export default function App() {
                   : filteredAssignments.length === 0 ? (<div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">אין מטלות להצגה</h3></div>)
                     : (
                       <div className={viewMode === 'cards' ? "grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-3 flex-1 content-start"}>
-                        <div className={viewMode === 'cards' ? "grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-3 flex-1 content-start"}>
-                          {filteredAssignments.map((assignment) => {
-                            const courseTheme = getCourseTheme(assignment.courseCode);
-                            const isList = viewMode === 'list';
+                        {filteredAssignments.map((assignment) => {
+                          const courseTheme = getCourseTheme(assignment.courseCode);
+                          const isList = viewMode === 'list';
 
-                            return (
-                              <div key={assignment.id} className={`relative rounded-xl border-s-4 shadow-sm group transition-all duration-200 ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)} ${isList ? 'p-5 lg:p-4 flex flex-col lg:flex-row gap-0 lg:gap-6' : 'p-5 flex flex-col justify-between'}`}>
+                          return (
+                            <div key={assignment.id} className={`relative rounded-xl border-s-4 shadow-sm group transition-all duration-200 ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)} ${isList ? 'p-5 lg:p-4 flex flex-col lg:flex-row gap-0 lg:gap-6' : 'p-5 flex flex-col justify-between'}`}>
 
-                                {/* Left Side (Or Top in Card Mode): Content */}
-                                <div className={`flex-1 min-w-0 ${isList ? 'lg:py-1' : ''}`}>
+                              {/* Left Side (Or Top in Card Mode): Content */}
+                              <div className={`flex-1 min-w-0 ${isList ? 'lg:py-1' : ''}`}>
 
-                                  {/* ✨ MOVED: Edit/Delete buttons are now inside the document flow to prevent overlaps! */}
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
-                                        {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
-                                      </span>
-                                      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
-                                        <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
-                                      </span>
-                                    </div>
-
-                                    {token && (
-                                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ms-2">
-                                        <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
-                                        <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
-                                      </div>
-                                    )}
+                                {/* ✨ MOVED: Edit/Delete buttons are now inside the document flow to prevent overlaps! */}
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
+                                      {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
+                                      <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
+                                    </span>
                                   </div>
 
-                                  <div className="flex items-start gap-3 mb-1">
-                                    <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5">
-                                      {assignment.isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <Circle className="w-5 h-5" />}
-                                    </button>
-                                    <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
-                                  </div>
-
-                                  <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                                    <div className={`flex items-center gap-2 text-sm font-medium ${assignment.isOptional && !assignment.isCompleted ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-                                      <Clock className="w-4 h-4" />
-                                      <span>
-                                        {formatDateTime(assignment.deadline)}
-                                        {assignment.isOptional && <span className="text-xs font-bold opacity-80 ms-1">(רשות)</span>}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
-                                      <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
-                                      <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Right Side (Or Bottom in Card Mode): Attachments */}
-                                {/* MOBILE FIX: The layout now identical to Card View on screens < lg, keeping the ms-8 indent! */}
-                                <div className={`${isList ? 'mt-4 ms-8 lg:ms-0 lg:mt-0 border-t lg:border-t-0 lg:border-s lg:ps-6 pt-3 lg:pt-0 lg:w-[380px] shrink-0 flex flex-col justify-center' : 'mt-4 ms-8 border-t pt-3'} border-slate-200 dark:border-slate-700/50`}>
-                                  <div className="flex items-center justify-between mb-3">
-                                    <span className="text-xs font-semibold flex items-center gap-1 text-slate-500 dark:text-slate-400"><Paperclip className="w-3 h-3" /> קבצים ({assignment.attachments?.length || 0})</span>
-                                    {token && (
-                                      <div className="flex items-center gap-3">
-                                        <label className={`text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> מטלה</label>
-                                        <label className={`text-xs flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> פתרון</label>
-                                        {uploadingId === assignment.id && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
-                                      </div>
-                                    )}
-                                  </div>
-                                  {(assignment.attachments?.filter(a => a.category === 'assignment').length || 0) > 0 && (<div className="mb-3"><span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5 block">קבצי מטלה</span><div className="space-y-1.5">{assignment.attachments?.filter(a => a.category === 'assignment').map(att => renderAttachment(att, assignment.id))}</div></div>)}
-
-                                  {(assignment.attachments?.filter(a => a.category === 'solution').length || 0) > 0 && (
-                                    <div>
-                                      <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-600 uppercase mb-1.5 flex items-center gap-1">
-                                        <Lightbulb className="w-3 h-3" /> רפרנסים ועזרים
-                                      </span>
-                                      <div className="space-y-1.5">
-                                        {assignment.attachments?.filter(a => a.category === 'solution')
-                                          .sort((a, b) => (b.likes || 0) - (a.likes || 0))
-                                          .map(att => renderAttachment(att, assignment.id))}
-                                      </div>
+                                  {token && (
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ms-2">
+                                      <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
+                                      <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
                                     </div>
                                   )}
                                 </div>
+
+                                <div className="flex items-start gap-3 mb-1">
+                                  <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5">
+                                    {assignment.isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <Circle className="w-5 h-5" />}
+                                  </button>
+                                  <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
+                                </div>
+
+                                <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                  <div className={`flex items-center gap-2 text-sm font-medium ${assignment.isOptional && !assignment.isCompleted ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                                    <Clock className="w-4 h-4" />
+                                    <span>
+                                      {formatDateTime(assignment.deadline)}
+                                      {assignment.isOptional && <span className="text-xs font-bold opacity-80 ms-1">(רשות)</span>}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
+                                    <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
+                                    <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
+                                  </div>
+                                </div>
                               </div>
-                            );
-                          })}
-                        </div>
+
+                              {/* Right Side (Or Bottom in Card Mode): Attachments */}
+                              {/* MOBILE FIX: The layout now identical to Card View on screens < lg, keeping the ms-8 indent! */}
+                              <div className={`${isList ? 'mt-4 ms-8 lg:ms-0 lg:mt-0 border-t lg:border-t-0 lg:border-s lg:ps-6 pt-3 lg:pt-0 lg:w-[380px] shrink-0 flex flex-col justify-center' : 'mt-4 ms-8 border-t pt-3'} border-slate-200 dark:border-slate-700/50`}>
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className="text-xs font-semibold flex items-center gap-1 text-slate-500 dark:text-slate-400"><Paperclip className="w-3 h-3" /> קבצים ({assignment.attachments?.length || 0})</span>
+                                  {token && (
+                                    <div className="flex items-center gap-3">
+                                      <label className={`text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> מטלה</label>
+                                      <label className={`text-xs flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> פתרון</label>
+                                      {uploadingId === assignment.id && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
+                                    </div>
+                                  )}
+                                </div>
+                                {(assignment.attachments?.filter(a => a.category === 'assignment').length || 0) > 0 && (<div className="mb-3"><span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5 block">קבצי מטלה</span><div className="space-y-1.5">{assignment.attachments?.filter(a => a.category === 'assignment').map(att => renderAttachment(att, assignment.id))}</div></div>)}
+
+                                {(assignment.attachments?.filter(a => a.category === 'solution').length || 0) > 0 && (
+                                  <div>
+                                    <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-600 uppercase mb-1.5 flex items-center gap-1">
+                                      <Lightbulb className="w-3 h-3" /> רפרנסים ועזרים
+                                    </span>
+                                    <div className="space-y-1.5">
+                                      {assignment.attachments?.filter(a => a.category === 'solution')
+                                        .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+                                        .map(att => renderAttachment(att, assignment.id))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
@@ -1558,8 +1556,8 @@ export default function App() {
                       key={type}
                       onClick={() => setActiveTypeFilter(type)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${activeTypeFilter === type
-                          ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
-                          : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
+                        : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
                         }`}
                     >
                       {typeTranslations[type]}
@@ -1575,8 +1573,8 @@ export default function App() {
                   <button
                     onClick={() => setHideCompleted(false)}
                     className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${!hideCompleted
-                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
-                        : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                      ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
+                      : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
                       }`}
                   >
                     הצג הכל
@@ -1584,8 +1582,8 @@ export default function App() {
                   <button
                     onClick={() => setHideCompleted(true)}
                     className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${hideCompleted
-                        ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
-                        : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
+                      ? 'bg-blue-50 border-blue-300 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-400'
+                      : 'bg-white border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'
                       }`}
                   >
                     רק לא בוצעו
