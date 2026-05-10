@@ -1116,10 +1116,10 @@ export default function App() {
                   <span className="text-sm font-semibold">סינון:</span>
                 </div>
 
-                {/* Global Filter Overlay */}
+                {/* Date Filter Overlay */}
                 {openFilter === 'date' && (
                   <div 
-                    className="fixed inset-0 z-50" 
+                    className="fixed inset-0 z-50 cursor-default" 
                     onClick={() => setOpenFilter(null)}
                   ></div>
                 )}
