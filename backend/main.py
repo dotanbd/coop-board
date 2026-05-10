@@ -19,7 +19,8 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import StreamingResponse
 import mimetypes
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update, or_, and_, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update
+from sqlalchemy import or_, and_, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from dotenv import load_dotenv
@@ -1085,3 +1086,61 @@ def reject_and_block(log_id: int, admin: DBUser = Depends(get_admin_user), db: S
     db.delete(log)
     db.commit()
     return {"success": True, "message": "Change reverted and user restricted."}
+
+
+@app.get("/api/v2/users/leaderboard")
+def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    # 1. Fetch all users and their lifetime stats
+    users = db.query(DBUser).all()
+    stats = db.query(DBUserStat).all()
+    stats_map = {s.user_id: s.lifetime_likes for s in stats}
+
+    # 2. Dynamically count all active semester likes, grouped by uploader
+    semester_likes = db.query(
+        DBAttachment.user_id,
+        func.count(DBAttachmentLike.id).label("likes")
+    ).join(
+        DBAttachmentLike, DBAttachment.id == DBAttachmentLike.attachment_id
+    ).group_by(DBAttachment.user_id).all()
+
+    semester_map = {row.user_id: row.likes for row in semester_likes}
+
+    # 3. Calculate totals for everyone
+    leaderboard = []
+    for u in users:
+        total = semester_map.get(u.id, 0) + stats_map.get(u.id, 0)
+        leaderboard.append({
+            "id": u.id,
+            "name": u.name.split(' ')[0] if u.name else "Unknown",  # First name only for clean UI
+            "picture": u.picture,
+            "score": total
+        })
+
+    # 4. Sort descending
+    leaderboard.sort(key=lambda x: x["score"], reverse=True)
+
+    # 5. Find current user's rank
+    my_rank = None
+    my_entry = None
+
+    for index, entry in enumerate(leaderboard):
+        if entry["id"] == current_user["id"]:
+            my_rank = index + 1
+            my_entry = entry
+            break
+
+    # 6. Safety fallback (if user has no data yet)
+    if not my_entry:
+        my_entry = {"id": current_user["id"], "name": "Me", "picture": "", "score": 0}
+        my_rank = len(leaderboard) + 1
+
+    # 7. Extract the top 3 (Only those who actually have at least 1 like!)
+    top_3 = [x for x in leaderboard[:3] if x["score"] > 0]
+
+    return {
+        "top_3": top_3,
+        "me": {
+            "rank": my_rank,
+            "entry": my_entry
+        }
+    }
