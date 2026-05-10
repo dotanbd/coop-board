@@ -1116,14 +1116,6 @@ export default function App() {
                   <span className="text-sm font-semibold">סינון:</span>
                 </div>
 
-                {/* Date Filter Overlay */}
-                {openFilter === 'date' && (
-                  <div 
-                    className="fixed inset-0 z-50 cursor-default" 
-                    onClick={() => setOpenFilter(null)}
-                  ></div>
-                )}
-
                 {/* Type Filter */}
                 <div 
                   className="relative"
@@ -1195,36 +1187,45 @@ export default function App() {
                   </button>
                   
                   {openFilter === 'date' && (
-                    <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
-                          <input 
-                            type="date" 
-                            value={dateRange.start} 
-                            onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
-                          />
+                    <>
+                      {/* ✨ The Invisible Click-Catcher (z-50) */}
+                      <div 
+                        className="fixed inset-0 z-50 cursor-default" 
+                        onClick={() => setOpenFilter(null)}
+                      ></div>
+                      
+                      {/* ✨ The Actual Menu (z-70, safely above the click-catcher!) */}
+                      <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
+                            <input 
+                              type="date" 
+                              value={dateRange.start} 
+                              onChange={e => setDateRange(prev => ({...prev, start: e.target.value}))} 
+                              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
+                            <input 
+                              type="date" 
+                              value={dateRange.end} 
+                              onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
+                              className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
+                            />
+                          </div>
+                          {(dateRange.start || dateRange.end) && (
+                            <button 
+                              onClick={() => { setDateRange({start: '', end: ''}); setOpenFilter(null); }} 
+                              className="w-full text-center text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-700 mt-2 transition-colors"
+                            >
+                              נקה תאריכים
+                            </button>
+                          )}
                         </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
-                          <input 
-                            type="date" 
-                            value={dateRange.end} 
-                            onChange={e => setDateRange(prev => ({...prev, end: e.target.value}))} 
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500" 
-                          />
-                        </div>
-                        {(dateRange.start || dateRange.end) && (
-                          <button 
-                            onClick={() => { setDateRange({start: '', end: ''}); setOpenFilter(null); }} 
-                            className="w-full text-center text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-700 mt-2 transition-colors"
-                          >
-                            נקה תאריכים
-                          </button>
-                        )}
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               </div>
