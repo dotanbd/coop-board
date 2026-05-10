@@ -24,6 +24,7 @@ from sqlalchemy import or_, and_, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from dotenv import load_dotenv
+from sqlalchemy.sql.functions import current_user
 
 # Load environment variables from .env file
 load_dotenv()
@@ -744,7 +745,7 @@ def get_calendar_feed(token: Optional[str] = None, courses: Optional[str] = None
     else:
         assignments = db.query(DBAssignment).filter(DBAssignment.courseCode.in_(target_courses)).all()
 
-    # Build a lookup so each event shows ITS OWN course name (not a shared one)
+    # Build a lookup so each event shows its own course name
     course_codes = {a.courseCode for a in assignments if a.courseCode}
     course_map = {
         c.code: c.name
@@ -765,6 +766,8 @@ def get_calendar_feed(token: Optional[str] = None, courses: Optional[str] = None
 
     for a in assignments:
         if not a.deadline:
+            continue
+        if token and a.courseCode == "9990999" and a.user_id != user_id:
             continue
         try:
             # Parse the deadline into a real datetime so we can shift it
