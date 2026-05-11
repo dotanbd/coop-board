@@ -43,6 +43,7 @@ MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY")
 MINIO_PUBLIC_URL = os.getenv("MINIO_PUBLIC_URL", "https://api.myteaspoon.tech")
 BUCKET_NAME = "teaspoon-files"
+SUMMARIES_BUCKET = "teaspoon-summaries"
 
 s3_client = boto3.client(
     's3',
@@ -52,14 +53,15 @@ s3_client = boto3.client(
     config=Config(signature_version='s3v4')
 )
 
-# Ensure bucket exists on startup
-try:
-    s3_client.head_bucket(Bucket=BUCKET_NAME)
-except ClientError:
+# Ensure both buckets exist on startup
+for bucket in [BUCKET_NAME, SUMMARIES_BUCKET]:
     try:
-        s3_client.create_bucket(Bucket=BUCKET_NAME)
-    except Exception as e:
-        print(f"Warning: Could not create MinIO bucket on startup. ({e})")
+        s3_client.head_bucket(Bucket=bucket)
+    except ClientError:
+        try:
+            s3_client.create_bucket(Bucket=bucket)
+        except Exception as e:
+            print(f"Warning: Could not create MinIO bucket {bucket} on startup. ({e})")
 
 # --- Database Setup ---
 DB_FILE_NAME = os.getenv("DB_FILE", "teaspoon_v1.db")
@@ -93,7 +95,6 @@ class DBUser(Base):
     role = Column(String, default="student")
     followed_courses = relationship("DBCourse", secondary=user_courses)
 
-
 class DBCourse(Base):
     __tablename__ = "courses"
     code = Column(String, primary_key=True, index=True)
@@ -108,7 +109,6 @@ class DBCourse(Base):
     exam_magen = Column(Boolean, default=False)
     last_edited = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-
 class DBAssignment(Base):
     __tablename__ = "assignments"
     id = Column(Integer, primary_key=True, index=True)
@@ -120,7 +120,6 @@ class DBAssignment(Base):
     attachments = relationship("DBAttachment", back_populates="assignment", cascade="all, delete-orphan")
     user_id = Column(Integer, ForeignKey("users.id"))
 
-
 class DBAttachment(Base):
     __tablename__ = "attachments"
     id = Column(Integer, primary_key=True, index=True)
@@ -131,19 +130,16 @@ class DBAttachment(Base):
     category = Column(String, default="assignment")
     assignment = relationship("DBAssignment", back_populates="attachments")
 
-
 class DBAttachmentLike(Base):
     __tablename__ = "attachment_likes"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     attachment_id = Column(Integer, ForeignKey("attachments.id"))
 
-
 class DBUserStat(Base):
     __tablename__ = "user_stats"
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     lifetime_likes = Column(Integer, default=0)
-
 
 class DBAuditLog(Base):
     __tablename__ = "audit_logs"
@@ -157,6 +153,22 @@ class DBAuditLog(Base):
     status = Column(String, default="PENDING")  # PENDING until approved/denied
     created_at = Column(String, default=lambda: datetime.utcnow().isoformat())
     user = relationship("DBUser")
+
+class DBSummary(Base):
+    __tablename__ = "summaries"
+    id = Column(Integer, primary_key=True, index=True)
+    courseCode = Column(String, ForeignKey("courses.code", ondelete="CASCADE"))
+    uploader_id = Column(Integer, ForeignKey("users.id"))
+    filename = Column(String)
+    object_name = Column(String)  # The MinIO S3 key
+    upload_date = Column(DateTime, default=datetime.utcnow)
+    course = relationship("DBCourse")
+
+class DBSummaryLike(Base):
+    __tablename__ = "summary_likes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    summary_id = Column(Integer, ForeignKey("summaries.id", ondelete="CASCADE"))
 
 
 # Create all tables
@@ -919,6 +931,141 @@ def download_attachment(attachment_id: int, expires: int, sig: str, db: Session 
         )
     except Exception as e:
         print(f"MinIO Download Error: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving file from storage")
+
+
+# --- Summaries Routes ---
+@app.get("/api/v2/summaries/{courseCode}")
+def get_summaries(courseCode: str, optional_user: dict = Depends(get_optional_user), db: Session = Depends(get_db)):
+    summaries = db.query(DBSummary).filter(DBSummary.courseCode == courseCode).all()
+    results = []
+
+    for s in summaries:
+        # Generate secure download link
+        secure_query = generate_secure_download_query(s.id, expires_in_seconds=3600)
+        url = f"{MINIO_PUBLIC_URL}/api/v2/summaries/{s.id}/download{secure_query}"
+
+        likes_count = db.query(DBSummaryLike).filter(DBSummaryLike.summary_id == s.id).count()
+
+        is_liked = False
+        if optional_user:
+            is_liked = db.query(DBSummaryLike).filter(
+                DBSummaryLike.summary_id == s.id,
+                DBSummaryLike.user_id == optional_user["id"]
+            ).first() is not None
+
+        results.append({
+            "id": s.id,
+            "filename": s.filename,
+            "url": url,
+            "uploader_id": s.uploader_id,
+            "upload_date": s.upload_date.isoformat(),
+            "likes": likes_count,
+            "isLikedByMe": is_liked
+        })
+
+    # Sort summaries so the most liked stay at the top
+    results.sort(key=lambda x: (x["likes"], x["upload_date"]), reverse=True)
+    return results
+
+
+@app.post("/api/v2/summaries")
+async def upload_summary(courseCode: str = Form(...), file: UploadFile = File(...),
+                         current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    course = db.query(DBCourse).filter(DBCourse.code == courseCode).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+
+    ext = os.path.splitext(file.filename)[1]
+    object_name = f"summary_{uuid.uuid4()}{ext}"
+
+    try:
+        s3_client.upload_fileobj(file.file, SUMMARIES_BUCKET, object_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MinIO Upload Error: {str(e)}")
+
+    new_summary = DBSummary(
+        courseCode=courseCode,
+        uploader_id=current_user["id"],
+        filename=file.filename,
+        object_name=object_name
+    )
+    db.add(new_summary)
+    db.commit()
+    db.refresh(new_summary)
+
+    return {"success": True, "id": new_summary.id}
+
+
+@app.post("/api/v2/summaries/{summary_id}/like")
+def toggle_summary_like(summary_id: int, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    existing_like = db.query(DBSummaryLike).filter(
+        DBSummaryLike.user_id == current_user["id"],
+        DBSummaryLike.summary_id == summary_id
+    ).first()
+
+    if existing_like:
+        db.delete(existing_like)
+    else:
+        new_like = DBSummaryLike(user_id=current_user["id"], summary_id=summary_id)
+        db.add(new_like)
+
+    db.commit()
+    return {"success": True}
+
+
+@app.delete("/api/v2/summaries/{summary_id}")
+def delete_summary(summary_id: int, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+    summary = db.query(DBSummary).filter(DBSummary.id == summary_id).first()
+    if not summary:
+        raise HTTPException(status_code=404, detail="Summary not found")
+
+    user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
+    if summary.uploader_id != current_user["id"] and user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this summary")
+
+    try:
+        s3_client.delete_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
+    except Exception:
+        pass
+
+    db.query(DBSummaryLike).filter(DBSummaryLike.summary_id == summary_id).delete()
+    db.delete(summary)
+    db.commit()
+    return {"success": True}
+
+
+@app.get("/api/v2/summaries/{summary_id}/download")
+def download_summary(summary_id: int, expires: int, sig: str, db: Session = Depends(get_db)):
+    if int(time.time()) > expires:
+        raise HTTPException(status_code=403, detail="Download link has expired. Please refresh the page.")
+
+    expected_message = f"{summary_id}:{expires}".encode()
+    expected_sig = hmac.new(APP_SECRET, expected_message, hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(sig, expected_sig):
+        raise HTTPException(status_code=403, detail="Invalid signature.")
+
+    summary = db.query(DBSummary).filter(DBSummary.id == summary_id).first()
+    if not summary:
+        raise HTTPException(status_code=404, detail="Summary not found")
+
+    try:
+        s3_response = s3_client.get_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
+
+        def file_stream():
+            for chunk in s3_response['Body'].iter_chunks():
+                yield chunk
+
+        content_type, _ = mimetypes.guess_type(summary.filename)
+        encoded_filename = quote(summary.filename)
+
+        return StreamingResponse(
+            file_stream(),
+            media_type=content_type or "application/octet-stream",
+            headers={"Content-Disposition": f"inline; filename*=utf-8''{encoded_filename}"}
+        )
+    except Exception as e:
         raise HTTPException(status_code=500, detail="Error retrieving file from storage")
 
 
