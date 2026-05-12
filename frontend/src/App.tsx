@@ -347,7 +347,7 @@ const AdminDashboard = ({ token }: { token: string }) => {
               />
               <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
             </div>
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-500" />
               כמות משתמשים רשומים:
               {users && (
@@ -355,7 +355,7 @@ const AdminDashboard = ({ token }: { token: string }) => {
                   {users.length}
                 </span>
               )}
-            </h2>
+            </h3>
 
             <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
               <table className="w-full text-sm text-right">
