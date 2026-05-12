@@ -177,10 +177,9 @@ const getCourseTheme = (courseCode: string): CourseTheme => {
 // ==========================================
 // ADMIN DASHBOARD COMPONENT
 // ==========================================
-const AdminDashboard = ({ token }: { token: string }) => {
+const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, logs: AuditLog[], setLogs: React.Dispatch<React.SetStateAction<AuditLog[]>>, coursesMap: CoursesMap }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'logs'>('users');
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   // User search state
@@ -440,11 +439,9 @@ const AdminDashboard = ({ token }: { token: string }) => {
                       : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
                       }`}
                   >
-                    {/* Hide the pulsing dot if the admin is actively working on it */}
-                    {!selectedCourseFilter.includes(code) && (
-                      <span className="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>
-                    )}
-                    {code}
+                    <span className="line-clamp-1 text-right">
+                      {code} {coursesMap[code]?.name ? `- ${coursesMap[code].name}` : ''}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -661,6 +658,25 @@ export default function App() {
 
   // Mobile Filter Modal State
   const [isMobileFilterModalOpen, setIsMobileFilterModalOpen] = useState<boolean>(false);
+
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+
+  useEffect(() => {
+    const fetchAdminLogs = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/admin/logs`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) setLogs(await res.json());
+      } catch (e) {
+        console.error("Error fetching logs:", e);
+      }
+    };
+
+    if (token && userProfile && ['admin', 'owner'].includes(userProfile.role)) {
+      fetchAdminLogs();
+    }
+  }, [token, userProfile]);
 
   // Summaries State
   const [summaries, setSummaries] = useState<Summary[]>([]);
@@ -1176,6 +1192,12 @@ export default function App() {
                   className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
                 >
                   {currentView === 'admin' ? <><ArrowRight className="w-4 h-4" /> חזרה למערכת</> : <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</>}
+                  {logs && logs.length > 0 && currentView !== 'admin' && (
+                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                    </span>
+                  )}
                 </button>
               )}
             </div>
@@ -1241,7 +1263,7 @@ export default function App() {
               <ShieldAlert className="w-8 h-8 text-purple-600 dark:text-purple-400" />
               מערכת ניהול ובקרת איכות
             </h2>
-            <AdminDashboard token={token} />
+            <AdminDashboard token={token} logs={logs} setLogs={setLogs} coursesMap={coursesMap} />
           </div>
         ) : currentView === 'summaries' ? (
           <div className="flex flex-col flex-1 animate-in fade-in duration-300">
