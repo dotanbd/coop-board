@@ -704,7 +704,18 @@ export default function App() {
   };
 
   const toggleSummaryLike = async (summaryId: number) => {
-    if (!token) return;
+    
+    if (!token) {
+      alert("יש להתחבר כדי לסמן לייק לפתרון.");
+      return;
+    }
+
+    const summary = summaries.find(s => s.id === summaryId);
+    if (summary && userProfile && summary.uploader_id === userProfile.id) {
+      alert("לא ניתן לסמן לייק לסיכום שלך.");
+      return;
+    }
+
     // Optimistic UI Update
     setSummaries(prev => prev.map(s => 
       s.id === summaryId 
@@ -1012,7 +1023,7 @@ export default function App() {
     try { await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); } catch { fetchAllData(); }
   };
 
-  // ✨ NEW: Optimistic Like Toggle
+  // Optimistic Like Toggle
   const handleToggleLike = async (assignmentId: number, attachmentId: number, currentLikedStatus: boolean | undefined) => {
     if (!token) {
       alert("יש להתחבר כדי לסמן לייק לפתרון.");
