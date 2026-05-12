@@ -337,6 +337,15 @@ const AdminDashboard = ({ token }: { token: string }) => {
           <div className="flex justify-center items-center h-full"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div>
         ) : activeTab === 'users' ? (
           <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              כמות משתמשים רשומים:
+              {users && (
+                <span className="ms-2 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs font-black">
+                  {users.length}
+                </span>
+              )}
+            </h3>
             <div className="relative w-full md:w-72">
               <input
                 type="text"
@@ -347,15 +356,6 @@ const AdminDashboard = ({ token }: { token: string }) => {
               />
               <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
             </div>
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-500" />
-              כמות משתמשים רשומים:
-              {users && (
-                <span className="ms-2 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs font-black">
-                  {users.length}
-                </span>
-              )}
-            </h3>
 
             <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
               <table className="w-full text-sm text-right">
