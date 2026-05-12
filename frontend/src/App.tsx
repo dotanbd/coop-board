@@ -676,7 +676,7 @@ export default function App() {
     if (token && userProfile && ['admin', 'owner'].includes(userProfile.role)) {
       fetchAdminLogs();
     }
-  }, [token, userProfile]);
+  }, [token, userProfile, currentView]);
 
   // Summaries State
   const [summaries, setSummaries] = useState<Summary[]>([]);
@@ -1189,13 +1189,13 @@ export default function App() {
               {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
                 <button
                   onClick={() => setCurrentView(v => v === 'admin' ? 'app' : 'admin')}
-                  className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
+                  className={`relative flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
                 >
                   {currentView === 'admin' ? <><ArrowRight className="w-4 h-4" /> חזרה למערכת</> : <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</>}
                   {logs && logs.length > 0 && currentView !== 'admin' && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="absolute -top-1.5 -left-1.5 flex h-3.5 w-3.5 z-50">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-orange-500"></span>
+                      <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-orange-500 border border-white dark:border-slate-800"></span>
                     </span>
                   )}
                 </button>
