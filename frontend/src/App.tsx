@@ -704,7 +704,7 @@ export default function App() {
   };
 
   const toggleSummaryLike = async (summaryId: number) => {
-    
+
     if (!token) {
       alert("יש להתחבר כדי לסמן לייק לפתרון.");
       return;
@@ -1259,7 +1259,9 @@ export default function App() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 content-start">
-                {summaries.map(summary => {
+                {[...summaries]
+                  .sort((a, b) => (b.likes || 0) - (a.likes || 0))
+                  .map(summary => {
                   const isOwnerOrAdmin = userProfile?.id === summary.uploader_id || ['admin', 'owner'].includes(userProfile?.role || '');
                   
                   return (

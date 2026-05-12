@@ -347,12 +347,17 @@ async def google_auth_callback(code: str, db: Session = Depends(get_db)):
 def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
     user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
 
-    # 1. Calculate valid likes from this current active semester
+    # Calculate valid likes from this current active semester (Attachments)
     semester_likes = db.query(DBAttachmentLike).join(
         DBAttachment, DBAttachmentLike.attachment_id == DBAttachment.id
     ).filter(DBAttachment.user_id == user.id).count()
 
-    # 2. Grab their preserved "Vault" score from previous semesters
+    # Calculate likes from Summaries
+    summary_likes = db.query(DBSummaryLike).join(
+        DBSummary, DBSummaryLike.summary_id == DBSummary.id
+    ).filter(DBSummary.uploader_id == user.id).count()
+
+    # Grab their preserved "Vault" score from previous semesters
     stats = db.query(DBUserStat).filter(DBUserStat.user_id == user.id).first()
     lifetime = stats.lifetime_likes if stats else 0
 
@@ -362,7 +367,7 @@ def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends
         "name": user.name,
         "picture": user.picture,
         "role": user.role,
-        "totalLikesReceived": semester_likes + lifetime  # Combine them!
+        "totalLikesReceived": semester_likes + summary_likes + lifetime
     }
 
 
@@ -1320,12 +1325,12 @@ def reject_and_block(log_id: int, admin: DBUser = Depends(get_admin_user), db: S
 
 @app.get("/api/v2/users/leaderboard")
 def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
-    # 1. Fetch all base data
+    # Fetch all base data
     users = db.query(DBUser).all()
     stats = db.query(DBUserStat).all()
     stats_map = {s.user_id: s.lifetime_likes for s in stats}
 
-    # 2. Dynamically count active semester likes
+    # Dynamically count active semester likes (Attachments)
     semester_likes = db.query(
         DBAttachment.user_id,
         func.count(DBAttachmentLike.id).label("likes")
@@ -1335,12 +1340,23 @@ def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session 
 
     semester_map = {row.user_id: row.likes for row in semester_likes}
 
-    # 3. Build both lists simultaneously
+    # Dynamically count active semester likes (Summaries)
+    summary_likes_query = db.query(
+        DBSummary.uploader_id,
+        func.count(DBSummaryLike.id).label("likes")
+    ).join(
+        DBSummaryLike, DBSummary.id == DBSummaryLike.summary_id
+    ).group_by(DBSummary.uploader_id).all()
+
+    summary_map = {row.uploader_id: row.likes for row in summary_likes_query}
+
+    # Build both lists simultaneously
     semester_board = []
     all_time_board = []
 
     for u in users:
-        sem_score = semester_map.get(u.id, 0)
+        # Merge both maps for the total semester score
+        sem_score = semester_map.get(u.id, 0) + summary_map.get(u.id, 0)
         lifetime_score = sem_score + stats_map.get(u.id, 0)
 
         base_user = {
@@ -1352,11 +1368,11 @@ def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session 
         semester_board.append({**base_user, "score": sem_score})
         all_time_board.append({**base_user, "score": lifetime_score})
 
-    # 4. Sort descending
+    # Sort descending
     semester_board.sort(key=lambda x: x["score"], reverse=True)
     all_time_board.sort(key=lambda x: x["score"], reverse=True)
 
-    # 5. Helper function to find user's rank and top 3
+    # Helper function to find user's rank and top 3
     def process_board(board):
         my_rank = None
         my_entry = None
@@ -1373,7 +1389,7 @@ def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session 
         top_3 = [x for x in board[:3] if x["score"] > 0]
         return {"top_3": top_3, "me": {"rank": my_rank, "entry": my_entry}}
 
-    # 6. Return the dual payload
+    # Return the dual payload
     return {
         "semester": process_board(semester_board),
         "all_time": process_board(all_time_board)
