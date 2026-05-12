@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend-dev:
     build: ./frontend
@@ -18,7 +16,7 @@ services:
       - "10.0.0.124:8002:8001"
     environment:
       # Use the new Dev URLs and isolated files
-      - MINIO_ENDPOINT=http://teaspoon-minio-dev:9000
+      - MINIO_ENDPOINT=http://minio-dev:9000
       - MINIO_PUBLIC_URL=https://api-dev.myteaspoon.tech
       - BUCKET_NAME=teaspoon-files-dev
       - DB_FILE=teaspoon_v1_dev.db
@@ -35,9 +33,9 @@ services:
       - teaspoon-dev-network
       - npm_network
 
-  minio:
+  minio-dev:
     image: minio/minio:latest
-    container_name: teaspoon-minio-dev
+    container_name: teaspoon_minio_dev
     command: server /data --console-address ":9001"
     ports:
       - "9002:9000"
@@ -61,4 +59,5 @@ networks:
     name: npm_default
 
 volumes:
-  minio_data_dev:
+  - ./:/app
+  - ./backend/data-dev:/app/data
