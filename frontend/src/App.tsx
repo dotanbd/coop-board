@@ -1368,18 +1368,30 @@ export default function App() {
                       )}
 
                       <div className="flex items-start gap-3 mb-4 pe-12 sm:pe-10">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/50 overflow-hidden shadow-sm">
-                          {summary.uploader_picture ? (
-                            <img src={summary.uploader_picture} alt={summary.uploader_name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          ) : (
-                            <FileText className="w-5 h-5" />
-                          )}
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/50 shadow-sm">
+                          <FileText className="w-5 h-5" />
                         </div>
+                        
                         <div className="min-w-0 flex-1">
                           <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate text-sm" title={summary.filename}>{summary.filename}</h3>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-400 dark:text-slate-500 font-medium">
-                            <span className="truncate max-w-[100px] sm:max-w-[120px]" title={summary.uploader_name}>{summary.uploader_name}</span>
-                            <span>•</span>
+                          
+                          <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            {/* mini avatar next to the name */}
+                            {summary.uploader_picture ? (
+                              <img 
+                                src={summary.uploader_picture} 
+                                alt={summary.uploader_name} 
+                                className="w-4 h-4 rounded-full shrink-0 border border-slate-200 dark:border-slate-700" 
+                                referrerPolicy="no-referrer" 
+                              />
+                            ) : (
+                              <User className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                            )}
+                            
+                            <span className="truncate max-w-[100px] sm:max-w-[120px]" title={summary.uploader_name}>
+                              {summary.uploader_name}
+                            </span>
+                            <span className="opacity-50">•</span>
                             <span>{new Date(summary.upload_date).toLocaleDateString('he-IL')}</span>
                           </div>
                         </div>
