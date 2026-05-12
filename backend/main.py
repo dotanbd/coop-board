@@ -971,7 +971,8 @@ def get_summaries(courseCode: str, optional_user: dict = Depends(get_optional_us
 
 @app.post("/api/v2/summaries")
 async def upload_summary(courseCode: str = Form(...), file: UploadFile = File(...),
-                         current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):
+                         current_user: dict = Depends(get_write_user), db: Session = Depends(get_db)):
+    user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
     course = db.query(DBCourse).filter(DBCourse.code == courseCode).first()
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
@@ -986,15 +987,57 @@ async def upload_summary(courseCode: str = Form(...), file: UploadFile = File(..
 
     new_summary = DBSummary(
         courseCode=courseCode,
-        uploader_id=current_user["id"],
+        uploader_id=user.id,
         filename=file.filename,
         object_name=object_name
     )
     db.add(new_summary)
+
+    db.flush()
+    if user.role not in ["admin", "owner"]:
+        audit_log = DBAuditLog(
+            user_id=user.id,
+            action="CREATE",
+            entity_type="SUMMARY",
+            entity_id=f"{new_summary.id}:{courseCode} - {file.filename}",
+            new_data=json.dumps({"filename": file.filename}),
+            status="PENDING"
+        )
+        db.add(audit_log)
+
     db.commit()
     db.refresh(new_summary)
 
     return {"success": True, "id": new_summary.id}
+
+
+@app.get("/api/v2/admin/summaries/{summary_id}/preview")
+def admin_preview_summary(summary_id: int, token: str, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user = db.query(DBUser).filter(DBUser.id == payload.get("id")).first()
+        if not user or user.role not in ["admin", "owner"]:
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    summary = db.query(DBSummary).filter(DBSummary.id == summary_id).first()
+    if not summary:
+        raise HTTPException(status_code=404, detail="Summary not found")
+
+    try:
+        s3_response = s3_client.get_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
+        def file_stream():
+            for chunk in s3_response['Body'].iter_chunks():
+                yield chunk
+        content_type, _ = mimetypes.guess_type(summary.filename)
+        return StreamingResponse(
+            file_stream(),
+            media_type=content_type or "application/octet-stream",
+            headers={"Content-Disposition": f"inline; filename*=utf-8''{quote(summary.filename)}"}
+        )
+    except Exception:
+        raise HTTPException(status_code=500, detail="Storage read error")
 
 
 @app.post("/api/v2/summaries/{summary_id}/like")
@@ -1127,7 +1170,7 @@ def approve_change(log_id: int, admin: DBUser = Depends(get_admin_user), db: Ses
     if not log:
         raise HTTPException(status_code=404, detail="Log not found")
 
-    # ✨ THE DEEP SWEEP EXECUTES HERE
+    # Deleting all traces of the assignment
     if log.action == "DELETE" and log.entity_type == "ASSIGNMENT":
         real_id = int(log.entity_id.split(":")[0]) if ":" in log.entity_id else int(log.entity_id)
         db_assignment = db.query(DBAssignment).filter(DBAssignment.id == real_id).first()
@@ -1203,6 +1246,18 @@ def revert_change(log_id: int, admin: DBUser = Depends(get_admin_user), db: Sess
                 for key, value in old_data.items():
                     setattr(course, key, value)
 
+    elif log.entity_type == "SUMMARY":
+        real_id = int(log.entity_id.split(":")[0]) if ":" in log.entity_id else int(log.entity_id)
+        if log.action == "CREATE":
+            summary = db.query(DBSummary).filter(DBSummary.id == real_id).first()
+            if summary:
+                try:
+                    s3_client.delete_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
+                except Exception:
+                    pass
+                db.query(DBSummaryLike).filter(DBSummaryLike.summary_id == real_id).delete(synchronize_session=False)
+                db.delete(summary)
+
     db.delete(log)
     db.commit()
     return {"success": True, "message": "Change reverted."}
@@ -1245,6 +1300,18 @@ def reject_and_block(log_id: int, admin: DBUser = Depends(get_admin_user), db: S
         elif log.action == "UPDATE" and course:
             for key, value in json.loads(log.old_data).items():
                 setattr(course, key, value)
+
+    elif log.entity_type == "SUMMARY":
+        real_id = int(log.entity_id.split(":")[0]) if ":" in log.entity_id else int(log.entity_id)
+        if log.action == "CREATE":
+            summary = db.query(DBSummary).filter(DBSummary.id == real_id).first()
+            if summary:
+                try:
+                    s3_client.delete_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
+                except Exception:
+                    pass
+                db.query(DBSummaryLike).filter(DBSummaryLike.summary_id == real_id).delete(synchronize_session=False)
+                db.delete(summary)
 
     db.delete(log)
     db.commit()

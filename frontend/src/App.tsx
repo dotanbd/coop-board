@@ -467,6 +467,16 @@ const AdminDashboard = ({ token }: { token: string }) => {
                             ? `קורס: ${log.entity_id}`
                             : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : `${log.entity_type} #${log.entity_id}`)
                           }
+                          {log.entity_type === 'SUMMARY' && log.action === 'CREATE' && (
+                            <a
+                              href={`${API_BASE_URL}/admin/summaries/${log.entity_id.split(':')[0]}/preview?token=${token}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors border border-emerald-200 dark:border-emerald-800"
+                            >
+                              <BookOpen className="w-3 h-3" /> צפה בקובץ
+                            </a>
+                          )}
                         </span>
                         <span className="text-xs text-slate-400" dir="ltr">{new Date(log.created_at).toLocaleString('he-IL')}</span>
                       </div>
@@ -1119,7 +1129,7 @@ export default function App() {
                 </div>
                 {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
               </div>
-              {/* ✨ The Unified App Pillar Switcher */}
+              {/* The Unified App Pillar Switcher */}
                 <div className="hidden sm:flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner">
                   <button 
                     onClick={() => setCurrentView('app')}
@@ -1141,10 +1151,10 @@ export default function App() {
                 </div>
               {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
                 <button
-                  onClick={() => setCurrentView(v => v === 'app' ? 'admin' : 'app')}
+                  onClick={() => setCurrentView(v => v === 'admin' ? 'app' : 'admin')}
                   className={`flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
                 >
-                  {currentView === 'app' ? <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</> : <><ArrowRight className="w-4 h-4" /> חזרה למערכת</>}
+                  {currentView === 'admin' ? <><ArrowRight className="w-4 h-4" /> חזרה למערכת</> : <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</>}
                 </button>
               )}
             </div>
