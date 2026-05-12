@@ -60,3 +60,4 @@ networks:
 
 volumes:
   - ./:/app
+  - ./backend/data-dev:/app/data
