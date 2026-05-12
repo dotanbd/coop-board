@@ -671,14 +671,14 @@ export default function App() {
         console.error("Error fetching summaries:", e);
       }
     };
-    
+
     if (currentView === 'summaries') fetchSummaries();
   }, [currentView, selectedSummaryCourse, token]);
 
   const handleSummaryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !selectedSummaryCourse || !token) return;
     setIsUploadingSummary(true);
-    
+
     const formData = new FormData();
     formData.append('file', e.target.files[0]);
     formData.append('courseCode', selectedSummaryCourse);
@@ -717,9 +717,9 @@ export default function App() {
     }
 
     // Optimistic UI Update
-    setSummaries(prev => prev.map(s => 
-      s.id === summaryId 
-        ? { ...s, isLikedByMe: !s.isLikedByMe, likes: s.isLikedByMe ? s.likes - 1 : s.likes + 1 } 
+    setSummaries(prev => prev.map(s =>
+      s.id === summaryId
+        ? { ...s, isLikedByMe: !s.isLikedByMe, likes: s.isLikedByMe ? s.likes - 1 : s.likes + 1 }
         : s
     ));
     await fetch(`${API_BASE_URL}/summaries/${summaryId}/like`, {
@@ -738,7 +738,7 @@ export default function App() {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    
+
     if (res.ok) setSummaries(prev => prev.filter(s => s.id !== summaryId));
   };
 
@@ -746,7 +746,7 @@ export default function App() {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState<boolean>(false);
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState<boolean>(false);
-  
+
   // Leaderboard Tab State
   const [activeLeaderboardTab, setActiveLeaderboardTab] = useState<'semester' | 'all_time'>('semester');
 
@@ -1141,25 +1141,26 @@ export default function App() {
                 {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
               </div>
               {/* The Unified App Pillar Switcher */}
-                <div className="hidden sm:flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner">
-                  <button 
-                    onClick={() => setCurrentView('app')}
-                    className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${currentView === 'app' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                  >
-                    <ListChecks className="w-4 h-4" /> מעקב מטלות
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setCurrentView('summaries');
-                      if (!selectedSummaryCourse && myCourses.length > 0) {
-                        setSelectedSummaryCourse(myCourses[0]);
-                      }
-                    }} 
-                    className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${currentView === 'summaries' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                  >
-                    <BookOpen className="w-4 h-4" /> מאגר סיכומים
-                  </button>
-                </div>
+              <div className="hidden sm:flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner">
+                <button
+                  onClick={() => setCurrentView('app')}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${currentView === 'app' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                >
+                  <ListChecks className="w-4 h-4" /> מעקב מטלות
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentView('summaries');
+                    const validCourses = myCourses.filter(c => c !== '9990999');
+                    if (!selectedSummaryCourse && validCourses.length > 0) {
+                      setSelectedSummaryCourse(validCourses[0]);
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${currentView === 'summaries' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+                >
+                  <BookOpen className="w-4 h-4" /> מאגר סיכומים
+                </button>
+              </div>
               {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
                 <button
                   onClick={() => setCurrentView(v => v === 'admin' ? 'app' : 'admin')}
@@ -1202,7 +1203,29 @@ export default function App() {
 
 
       {/* View Routing Logic */}
-      <main className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 items-start">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 flex flex-col md:flex-row gap-8 items-start">
+        {/* ✨ Mobile App Pillar Switcher (Native App Feel) */}
+        {currentView !== 'admin' && (
+          <div className="flex sm:hidden w-full bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner mb-4 shrink-0">
+            <button
+              onClick={() => setCurrentView('app')}
+              className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-all ${currentView === 'app' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+            >
+              <ListChecks className="w-4 h-4" /> מטלות
+            </button>
+            <button
+              onClick={() => {
+                setCurrentView('summaries');
+                if (!selectedSummaryCourse && myCourses.length > 0) {
+                  setSelectedSummaryCourse(myCourses[0]);
+                }
+              }}
+              className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-all ${currentView === 'summaries' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+            >
+              <BookOpen className="w-4 h-4" /> סיכומים
+            </button>
+          </div>
+        )}
         {currentView === 'admin' && token ? (
           <div className="w-full">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-3">
@@ -1220,21 +1243,23 @@ export default function App() {
                   <BookOpen className="w-6 h-6 text-emerald-500" />
                   מאגר סיכומים
                 </h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">צפו והעלו סיכומים, מבחנים וחומרי עזר לקורסים שלכם.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">שתפו וחפשו סיכומים, מבחני עבר וחומרי עזר לקורסים שלכם.</p>
               </div>
-              
+
               <div className="flex items-center gap-3 w-full md:w-auto">
-                <select 
+                <select
                   value={selectedSummaryCourse}
                   onChange={(e) => setSelectedSummaryCourse(e.target.value)}
                   className="flex-1 md:w-64 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="" disabled>בחר קורס...</option>
-                  {myCourses.map(code => (
-                    <option key={code} value={code}>{code} - {coursesMap[code]?.name}</option>
-                  ))}
+                  {myCourses
+                    .filter(code => code !== '9990999')
+                    .map(code => (
+                      <option key={code} value={code}>{code} - {coursesMap[code]?.name}</option>
+                    ))}
                 </select>
-                
+
                 {token && selectedSummaryCourse && (
                   <label className={`shrink-0 flex items-center gap-2 px-4 py-2.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 transition-colors font-bold text-sm rounded-xl border border-emerald-200 dark:border-emerald-800 cursor-pointer shadow-sm ${isUploadingSummary ? 'opacity-50 pointer-events-none' : ''}`}>
                     <input type="file" className="hidden" onChange={handleSummaryUpload} disabled={isUploadingSummary} accept=".pdf,.doc,.docx,.zip" />
@@ -1262,41 +1287,41 @@ export default function App() {
                 {[...summaries]
                   .sort((a, b) => (b.likes || 0) - (a.likes || 0))
                   .map(summary => {
-                  const isOwnerOrAdmin = userProfile?.id === summary.uploader_id || ['admin', 'owner'].includes(userProfile?.role || '');
-                  
-                  return (
-                    <div key={summary.id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col group relative">
-                      
-                      {/* Delete Button (Absolute corner) */}
-                      {isOwnerOrAdmin && (
-                        <button onClick={() => deleteSummary(summary.id, summary.uploader_id)} className="absolute top-3 left-3 p-1.5 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-all z-10 shadow-sm border border-transparent hover:border-red-100 dark:hover:border-red-900/50">
-                          <Trash className="w-4 h-4" />
-                        </button>
-                      )}
+                    const isOwnerOrAdmin = userProfile?.id === summary.uploader_id || ['admin', 'owner'].includes(userProfile?.role || '');
 
-                      <div className="flex items-start gap-3 mb-4 pe-6">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/50">
-                          <FileText className="w-5 h-5" />
+                    return (
+                      <div key={summary.id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col group relative">
+
+                        {/* Delete Button (Absolute corner) */}
+                        {isOwnerOrAdmin && (
+                          <button onClick={() => deleteSummary(summary.id, summary.uploader_id)} className="absolute top-3 left-3 p-1.5 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-800 rounded-md opacity-0 group-hover:opacity-100 transition-all z-10 shadow-sm border border-transparent hover:border-red-100 dark:hover:border-red-900/50">
+                            <Trash className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        <div className="flex items-start gap-3 mb-4 pe-6">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/50">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate text-sm" title={summary.filename}>{summary.filename}</h3>
+                            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 block">{new Date(summary.upload_date).toLocaleDateString('he-IL')}</span>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate text-sm" title={summary.filename}>{summary.filename}</h3>
-                          <span className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 block">{new Date(summary.upload_date).toLocaleDateString('he-IL')}</span>
+
+                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50">
+                          <a href={summary.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg">
+                            <Download className="w-4 h-4" /> הורד
+                          </a>
+
+                          <button onClick={() => toggleSummaryLike(summary.id)} className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-lg transition-colors border ${summary.isLikedByMe ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' : 'bg-white text-slate-400 hover:text-rose-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm'}`}>
+                            <Heart className={`w-4 h-4 ${summary.isLikedByMe ? 'fill-current' : ''}`} />
+                            {summary.likes}
+                          </button>
                         </div>
                       </div>
-                      
-                      <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50">
-                        <a href={summary.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg">
-                          <Download className="w-4 h-4" /> הורד
-                        </a>
-                        
-                        <button onClick={() => toggleSummaryLike(summary.id)} className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-lg transition-colors border ${summary.isLikedByMe ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' : 'bg-white text-slate-400 hover:text-rose-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm'}`}>
-                          <Heart className={`w-4 h-4 ${summary.isLikedByMe ? 'fill-current' : ''}`} />
-                          {summary.likes}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             )}
           </div>
@@ -1883,17 +1908,17 @@ export default function App() {
               </h2>
               <button onClick={() => setIsLeaderboardOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
             </div>
-            
+
             {/* The Tab Switcher */}
             {!isLeaderboardLoading && leaderboardData && (
               <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
-                <button 
+                <button
                   onClick={() => setActiveLeaderboardTab('semester')}
                   className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-colors ${activeLeaderboardTab === 'semester' ? 'border-rose-500 text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
                   סמסטר נוכחי
                 </button>
-                <button 
+                <button
                   onClick={() => setActiveLeaderboardTab('all_time')}
                   className={`flex-1 py-2.5 text-sm font-bold border-b-2 transition-colors ${activeLeaderboardTab === 'all_time' ? 'border-rose-500 text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-800' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                 >
@@ -1901,7 +1926,7 @@ export default function App() {
                 </button>
               </div>
             )}
-            
+
             <div className="p-6 overflow-y-auto">
               {isLeaderboardLoading || !leaderboardData ? (
                 <div className="flex justify-center items-center py-8">
@@ -1918,10 +1943,10 @@ export default function App() {
                         const isGold = idx === 0;
                         const isSilver = idx === 1;
                         const isBronze = idx === 2;
-                        
+
                         let badgeColor = "bg-slate-100 text-slate-500";
                         let iconColor = "text-slate-400";
-                        
+
                         if (isGold) { badgeColor = "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"; iconColor = "text-yellow-500"; }
                         if (isSilver) { badgeColor = "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"; iconColor = "text-slate-400"; }
                         if (isBronze) { badgeColor = "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500"; iconColor = "text-amber-600"; }
