@@ -1393,10 +1393,6 @@ export default function App() {
 
               {/* 1. Mobile Filter Trigger & View Toggle (Hidden on Desktop) */}
               <div className="md:hidden flex items-center justify-between mb-6 relative z-20 bg-white dark:bg-slate-800 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1 rounded-lg">
-                  <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-md transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><LayoutGrid className="w-4 h-4" /></button>
-                  <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><List className="w-4 h-4" /></button>
-                </div>
                 <button
                   onClick={() => setIsMobileFilterModalOpen(true)}
                   className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm ${activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end
