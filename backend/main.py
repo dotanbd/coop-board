@@ -942,16 +942,25 @@ def download_attachment(attachment_id: int, expires: int, sig: str, db: Session 
 # --- Summaries Routes ---
 @app.get("/api/v2/summaries/{courseCode}")
 def get_summaries(courseCode: str, optional_user: dict = Depends(get_optional_user), db: Session = Depends(get_db)):
-    summaries = db.query(DBSummary).filter(DBSummary.courseCode == courseCode).all()
+    # Hide pending creations
+    pending_logs = db.query(DBAuditLog.entity_id).filter(
+        DBAuditLog.action == "CREATE",
+        DBAuditLog.entity_type == "SUMMARY",
+        DBAuditLog.status == "PENDING"
+    ).all()
+    pending_ids = [int(log[0].split(":")[0]) for log in pending_logs if ":" in log[0]]
+
+    query = db.query(DBSummary).filter(DBSummary.courseCode == courseCode)
+    if pending_ids:
+        query = query.filter(DBSummary.id.notin_(pending_ids))
+
+    summaries = query.all()
     results = []
 
     for s in summaries:
-        # Generate secure download link
         secure_query = generate_secure_download_query(s.id, expires_in_seconds=3600)
         url = f"{MINIO_PUBLIC_URL}/api/v2/summaries/{s.id}/download{secure_query}"
-
         likes_count = db.query(DBSummaryLike).filter(DBSummaryLike.summary_id == s.id).count()
-
         is_liked = False
         if optional_user:
             is_liked = db.query(DBSummaryLike).filter(
@@ -959,23 +968,27 @@ def get_summaries(courseCode: str, optional_user: dict = Depends(get_optional_us
                 DBSummaryLike.user_id == optional_user["id"]
             ).first() is not None
 
+        # ✨ Fetch uploader details!
+        uploader = db.query(DBUser).filter(DBUser.id == s.uploader_id).first()
+
         results.append({
             "id": s.id,
             "filename": s.filename,
             "url": url,
             "uploader_id": s.uploader_id,
+            "uploader_name": uploader.name if uploader else "Unknown",
+            "uploader_picture": uploader.picture if uploader else "",
             "upload_date": s.upload_date.isoformat(),
             "likes": likes_count,
             "isLikedByMe": is_liked
         })
 
-    # Sort summaries so the most liked stay at the top
     results.sort(key=lambda x: (x["likes"], x["upload_date"]), reverse=True)
     return results
 
 
 @app.post("/api/v2/summaries")
-async def upload_summary(courseCode: str = Form(...), file: UploadFile = File(...),
+async def upload_summary(courseCode: str = Form(...), filename: str = Form(...), file: UploadFile = File(...),
                          current_user: dict = Depends(get_write_user), db: Session = Depends(get_db)):
     user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
     course = db.query(DBCourse).filter(DBCourse.code == courseCode).first()
@@ -993,7 +1006,7 @@ async def upload_summary(courseCode: str = Form(...), file: UploadFile = File(..
     new_summary = DBSummary(
         courseCode=courseCode,
         uploader_id=user.id,
-        filename=file.filename,
+        filename=filename,
         object_name=object_name
     )
     db.add(new_summary)
@@ -1004,16 +1017,54 @@ async def upload_summary(courseCode: str = Form(...), file: UploadFile = File(..
             user_id=user.id,
             action="CREATE",
             entity_type="SUMMARY",
-            entity_id=f"{new_summary.id}:{courseCode} - {file.filename}",
-            new_data=json.dumps({"filename": file.filename}),
+            entity_id=f"{new_summary.id}:{courseCode} - {filename}",
+            new_data=json.dumps({"filename": filename}),
             status="PENDING"
         )
         db.add(audit_log)
 
     db.commit()
     db.refresh(new_summary)
-
     return {"success": True, "id": new_summary.id}
+
+
+@app.put("/api/v2/summaries/{summary_id}")
+async def update_summary(summary_id: int, filename: str = Form(...), file: Optional[UploadFile] = File(None),
+                         current_user: dict = Depends(get_write_user), db: Session = Depends(get_db)):
+    user = db.query(DBUser).filter(DBUser.id == current_user["id"]).first()
+    summary = db.query(DBSummary).filter(DBSummary.id == summary_id).first()
+
+    if not summary:
+        raise HTTPException(status_code=404, detail="Summary not found")
+
+    if summary.uploader_id != user.id and user.role not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this summary")
+
+    old_filename = summary.filename
+    summary.filename = filename
+
+    # Overwrite file in MinIO if provided
+    if file:
+        try:
+            s3_client.upload_fileobj(file.file, SUMMARIES_BUCKET, summary.object_name)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"MinIO Upload Error: {str(e)}")
+
+    db.flush()
+    if user.role not in ["admin", "owner"]:
+        audit_log = DBAuditLog(
+            user_id=user.id,
+            action="UPDATE",
+            entity_type="SUMMARY",
+            entity_id=f"{summary.id}:{summary.courseCode} - {summary.filename}",
+            old_data=json.dumps({"filename": old_filename}),
+            new_data=json.dumps({"filename": filename, "file_updated": file is not None}),
+            status="PENDING"
+        )
+        db.add(audit_log)
+
+    db.commit()
+    return {"success": True}
 
 
 @app.get("/api/v2/admin/summaries/{summary_id}/preview")

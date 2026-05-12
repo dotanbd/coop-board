@@ -57,6 +57,8 @@ interface Summary {
   filename: string;
   url: string;
   uploader_id: number;
+  uploader_name: string;
+  uploader_picture: string;
   upload_date: string;
   likes: number;
   isLikedByMe: boolean;
@@ -681,6 +683,9 @@ export default function App() {
   // Summaries State
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [selectedSummaryCourse, setSelectedSummaryCourse] = useState<string>('');
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [editingSummaryId, setEditingSummaryId] = useState<number | null>(null);
+  const [summaryFormData, setSummaryFormData] = useState<{ filename: string; file: File | null }>({ filename: '', file: null });
   const [isUploadingSummary, setIsUploadingSummary] = useState<boolean>(false);
 
   // Fetch summaries when view changes or course is selected
@@ -700,31 +705,42 @@ export default function App() {
     if (currentView === 'summaries') fetchSummaries();
   }, [currentView, selectedSummaryCourse, token]);
 
-  const handleSummaryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !e.target.files[0] || !selectedSummaryCourse || !token) return;
-    setIsUploadingSummary(true);
+  const handleSubmitSummary = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSummaryCourse || !token) return;
 
+    if (!editingSummaryId && !summaryFormData.file) {
+      alert("יש לבחור קובץ להעלאה");
+      return;
+    }
+
+    setIsUploadingSummary(true);
     const formData = new FormData();
-    formData.append('file', e.target.files[0]);
-    formData.append('courseCode', selectedSummaryCourse);
+    formData.append('filename', summaryFormData.filename);
+    if (summaryFormData.file) formData.append('file', summaryFormData.file);
+    if (!editingSummaryId) formData.append('courseCode', selectedSummaryCourse);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/summaries`, {
-        method: 'POST',
+      const url = editingSummaryId ? `${API_BASE_URL}/summaries/${editingSummaryId}` : `${API_BASE_URL}/summaries`;
+      const method = editingSummaryId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
+
       if (res.ok) {
-        // Trigger a re-fetch to show the new file
+        setIsSummaryModalOpen(false);
         const fetchRes = await fetch(`${API_BASE_URL}/summaries/${selectedSummaryCourse}`, { headers: { 'Authorization': `Bearer ${token}` } });
         if (fetchRes.ok) setSummaries(await fetchRes.json());
+      } else {
+        alert("שגיאה בשמירת הסיכום");
       }
     } catch {
-      alert("שגיאה בהעלאת הסיכום");
+      alert("שגיאת תקשורת");
     } finally {
       setIsUploadingSummary(false);
-      // Reset input
-      e.target.value = '';
     }
   };
 
@@ -1293,11 +1309,16 @@ export default function App() {
                 </select>
 
                 {token && selectedSummaryCourse && (
-                  <label className={`w-full sm:w-auto flex justify-center items-center gap-2 px-4 py-2.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 transition-colors font-bold text-sm rounded-xl border border-emerald-200 dark:border-emerald-800 cursor-pointer shadow-sm ${isUploadingSummary ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <input type="file" className="hidden" onChange={handleSummaryUpload} disabled={isUploadingSummary} accept=".pdf,.doc,.docx,.zip" />
-                    {isUploadingSummary ? <RefreshCw className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
-                    העלה קובץ
-                  </label>
+                  <button 
+                    onClick={() => {
+                      setEditingSummaryId(null);
+                      setSummaryFormData({ filename: '', file: null });
+                      setIsSummaryModalOpen(true);
+                    }}
+                    className={`w-full sm:w-auto flex justify-center items-center gap-2 px-4 py-2.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/60 transition-colors font-bold text-sm rounded-xl border border-emerald-200 dark:border-emerald-800 shadow-sm`}
+                  >
+                    <UploadCloud className="w-4 h-4" /> העלה קובץ
+                  </button>
                 )}
               </div>
             </div>
@@ -1323,35 +1344,58 @@ export default function App() {
 
                     return (
                       <div key={summary.id} className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col group relative">
-
-                        {/* Delete Button (Absolute corner) */}
-                        {isOwnerOrAdmin && (
-                          <button onClick={() => deleteSummary(summary.id, summary.uploader_id)} className="absolute top-2 left-2 sm:top-3 sm:left-3 p-1.5 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-800 rounded-md opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all z-10 shadow-sm border border-transparent hover:border-red-100 dark:hover:border-red-900/50">
+                      
+                      {/* Action Buttons (Absolute corner) */}
+                      {isOwnerOrAdmin && (
+                        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 z-10 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all">
+                          <button 
+                            onClick={() => {
+                              setEditingSummaryId(summary.id);
+                              setSummaryFormData({ filename: summary.filename, file: null });
+                              setIsSummaryModalOpen(true);
+                            }} 
+                            className="p-1.5 text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-transparent hover:border-blue-100 dark:hover:border-blue-900/50" title="עריכה"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => deleteSummary(summary.id, summary.uploader_id)} 
+                            className="p-1.5 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-transparent hover:border-red-100 dark:hover:border-red-900/50" title="מחיקה"
+                          >
                             <Trash className="w-4 h-4" />
                           </button>
-                        )}
-
-                        <div className="flex items-start gap-3 mb-4 pe-8 sm:pe-6">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/50">
-                            <FileText className="w-5 h-5" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate text-sm" title={summary.filename}>{summary.filename}</h3>
-                            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium mt-0.5 block">{new Date(summary.upload_date).toLocaleDateString('he-IL')}</span>
-                          </div>
                         </div>
+                      )}
 
-                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50">
-                          <a href={summary.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg">
-                            <Download className="w-4 h-4" /> הורד
-                          </a>
-
-                          <button onClick={() => toggleSummaryLike(summary.id)} className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-lg transition-colors border ${summary.isLikedByMe ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' : 'bg-white text-slate-400 hover:text-rose-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm'}`}>
-                            <Heart className={`w-4 h-4 ${summary.isLikedByMe ? 'fill-current' : ''}`} />
-                            {summary.likes}
-                          </button>
+                      <div className="flex items-start gap-3 mb-4 pe-12 sm:pe-10">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/50 overflow-hidden shadow-sm">
+                          {summary.uploader_picture ? (
+                            <img src={summary.uploader_picture} alt={summary.uploader_name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <FileText className="w-5 h-5" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate text-sm" title={summary.filename}>{summary.filename}</h3>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-slate-400 dark:text-slate-500 font-medium">
+                            <span className="truncate max-w-[100px] sm:max-w-[120px]" title={summary.uploader_name}>{summary.uploader_name}</span>
+                            <span>•</span>
+                            <span>{new Date(summary.upload_date).toLocaleDateString('he-IL')}</span>
+                          </div>
                         </div>
                       </div>
+                      
+                      <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50">
+                        <a href={summary.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg">
+                          <Download className="w-4 h-4" /> הורד
+                        </a>
+                        
+                        <button onClick={() => toggleSummaryLike(summary.id)} className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-lg transition-colors border ${summary.isLikedByMe ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' : 'bg-white text-slate-400 hover:text-rose-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm'}`}>
+                          <Heart className={`w-4 h-4 ${summary.isLikedByMe ? 'fill-current' : ''}`} />
+                          {summary.likes}
+                        </button>
+                      </div>
+                    </div>
                     );
                   })}
               </div>
@@ -2017,6 +2061,59 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload / Edit Summary Modal */}
+      {isSummaryModalOpen && token && (
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
+            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                {editingSummaryId ? 'עריכת סיכום' : 'העלאת סיכום'}
+              </h2>
+              <button onClick={() => setIsSummaryModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
+            </div>
+            <form onSubmit={handleSubmitSummary} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שם הקובץ בתצוגה</label>
+                <input
+                  required
+                  type="text"
+                  placeholder="לדוגמה: סיכום הרצאות מלא"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-slate-800 dark:text-slate-100"
+                  value={summaryFormData.filename}
+                  onChange={e => setSummaryFormData({ ...summaryFormData, filename: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {editingSummaryId ? 'דריסת קובץ (אופציונלי - להחלפת התוכן)' : 'בחירת קובץ'}
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.zip"
+                  required={!editingSummaryId}
+                  className="w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 dark:file:bg-emerald-900/30 dark:file:text-emerald-400 cursor-pointer border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900"
+                  onChange={e => {
+                    const file = e.target.files?.[0] || null;
+                    // Auto-fill the filename input if it's empty!
+                    if (file && !editingSummaryId && !summaryFormData.filename) {
+                       setSummaryFormData({ filename: file.name.replace(/\.[^/.]+$/, ""), file });
+                    } else {
+                       setSummaryFormData(prev => ({ ...prev, file }));
+                    }
+                  }}
+                />
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsSummaryModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button>
+                <button type="submit" disabled={isUploadingSummary} className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center gap-2">
+                  {isUploadingSummary ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'שמירה'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
