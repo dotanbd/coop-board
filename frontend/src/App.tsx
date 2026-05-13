@@ -1141,21 +1141,22 @@ export default function App() {
   };
 
   const renderAttachment = (att: Attachment, assignmentId: number) => (
-    <div key={att.id} className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 rounded p-1.5 border border-slate-100 dark:border-slate-700/50 group/file">
+    <div key={att.id} className="flex items-start justify-between bg-slate-50 dark:bg-slate-900/50 rounded p-1.5 border border-slate-100 dark:border-slate-700/50 group/file gap-2">
+      
       {editingFileId === att.id ? (
-        <div className="flex items-center gap-2 flex-1 ml-4" onClick={e => e.preventDefault()}>
+        <div className="flex items-center gap-2 flex-1 ml-1" onClick={e => e.preventDefault()}>
           <input autoFocus type="text" value={editFileName} onChange={e => setEditFileName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRenameAttachment(assignmentId, att.id)} className="text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 rounded px-1.5 py-0.5 w-full outline-none focus:ring-1 focus:ring-blue-500" />
-          <button onClick={() => handleRenameAttachment(assignmentId, att.id)} className="text-emerald-500 hover:text-emerald-600 p-0.5"><Check className="w-3 h-3" /></button>
-          <button onClick={() => setEditingFileId(null)} className="text-slate-400 hover:text-red-500 p-0.5"><X className="w-3 h-3" /></button>
+          <button onClick={() => handleRenameAttachment(assignmentId, att.id)} className="text-emerald-500 hover:text-emerald-600 p-0.5 shrink-0"><Check className="w-3 h-3" /></button>
+          <button onClick={() => setEditingFileId(null)} className="text-slate-400 hover:text-red-500 p-0.5 shrink-0"><X className="w-3 h-3" /></button>
         </div>
       ) : (
-        <a href={att.url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 overflow-hidden hover:underline ${att.category === 'solution' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
-          <FileText className="w-3.5 h-3.5 shrink-0" />
-          <span className="text-xs truncate" dir="ltr">{att.filename}</span>
+        <a href={att.url} target="_blank" rel="noopener noreferrer" className={`flex items-start gap-1.5 flex-1 hover:underline ${att.category === 'solution' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
+          <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span className="text-xs break-all leading-relaxed" dir="ltr">{att.filename}</span>
         </a>
       )}
 
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-start gap-2 shrink-0">
         {att.category === 'solution' && (
           <button
             onClick={(e) => { e.preventDefault(); handleToggleLike(assignmentId, att.id, att.isLikedByMe); }}
@@ -1167,7 +1168,7 @@ export default function App() {
           </button>
         )}
         {!editingFileId && token && (userProfile?.id === att.uploader_id || userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
-          <div className="flex gap-1 opacity-0 group-hover/file:opacity-100 transition-opacity">
+          <div className="flex gap-1 opacity-0 group-hover/file:opacity-100 transition-opacity mt-0.5">
             <button onClick={(e) => { e.preventDefault(); setEditingFileId(att.id); setEditFileName(att.filename.replace(/\.[^/.]+$/, "")); }} className="text-slate-400 hover:text-blue-500" title="שינוי שם"><Edit className="w-3.5 h-3.5" /></button>
             <button onClick={(e) => { e.preventDefault(); handleDeleteAttachment(assignmentId, att.id); }} className="text-slate-400 hover:text-red-500" title="מחיקה"><XCircle className="w-3.5 h-3.5" /></button>
           </div>
