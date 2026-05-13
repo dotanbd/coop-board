@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   BookOpen, Calendar, Clock, Plus, CheckCircle, RefreshCw,
-  AlertCircle, Edit, Trash, Tag, Filter, Circle, Sun, Moon,
-  LogIn, User, Search, X, Check, Paperclip, FileText, Upload, Coffee,
-  XCircle, Lightbulb, Calculator, Shield, Settings, ChevronDown,
-  Heart, Users, ShieldAlert, ArrowRight, ArrowLeft, ListChecks, Ban,
+  AlertCircle, Edit, Trash, Filter, Sun, Moon,
+  LogIn, User, Search, X, Check, Paperclip, FileText, Coffee,
+  XCircle, Calculator, Shield, Settings, ChevronDown,
+  Heart, Users, ShieldAlert, ArrowLeft, ListChecks, Ban,
   Trophy, LayoutGrid, List, Download, UploadCloud
 } from 'lucide-react';
 
@@ -1140,15 +1140,6 @@ export default function App() {
     return `${dateStr} ב-${date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
   };
 
-  const getCardClasses = (deadline: string, courseTheme: CourseTheme, isCompleted: boolean, isOptional: boolean) => {
-    if (isCompleted) return 'border-solid border-s-slate-300 dark:border-s-slate-600 border-y-slate-200 dark:border-y-slate-700 border-e-slate-200 dark:border-e-slate-700 bg-slate-100/60 dark:bg-slate-800/60 opacity-60 grayscale-[0.3] hover:opacity-80';
-    const hoursLeft = (new Date(deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60);
-
-    if (hoursLeft < 0 && !isOptional) return 'border-solid border-s-red-500 border-y-red-200 dark:border-y-red-900/50 border-e-red-200 dark:border-e-red-900/50 bg-red-50 dark:bg-red-900/20';
-    if (hoursLeft < 48 && !isOptional) return 'border-solid border-s-orange-500 border-y-orange-200 dark:border-y-orange-9０/5０ border-e-orange-2０ dark:border-e-orange-9０/5０ bg-orange-5０ dark:bg-orange-9０/2０';
-    return `border-solid ${courseTheme.startBorder} border-y-slate-200 dark:border-y-slate-700 border-e-slate-200 dark:border-e-slate-700 bg-white dark:bg-slate-800 ${courseTheme.hover}`;
-  };
-
   const renderAttachment = (att: Attachment, assignmentId: number) => (
     <div key={att.id} className="flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 rounded p-1.5 border border-slate-100 dark:border-slate-700/50 group/file">
       {editingFileId === att.id ? (
@@ -1186,90 +1177,117 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans pb-12 transition-colors duration-200" dir="rtl">
+    <div className="min-h-screen bg-[#FAF9F6] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-12 transition-colors duration-200" dir="rtl">
       {/* Header */}
-      <header className={`sticky top-0 z-40 backdrop-blur-md border-b transition-colors ${IS_DEV
-        ? 'bg-orange-50/95 dark:bg-orange-950/80 border-orange-200 dark:border-orange-900'
-        : 'bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800'
+      <header className={`sticky top-0 z-40 backdrop-blur-xl border-b transition-colors ${IS_DEV
+        ? 'bg-[#FAF9F6]/90 dark:bg-slate-950/90 border-orange-200 dark:border-orange-900'
+        : 'bg-[#FAF9F6]/90 dark:bg-slate-950/90 border-slate-200/60 dark:border-slate-800'
         }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-3 py-3 sm:flex-row sm:justify-between sm:items-center">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg text-white ${IS_DEV
-                ? 'bg-gradient-to-br from-orange-400 to-red-500 shadow-orange-500/20'
-                : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/20'
-                }`}>
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            {/* Logo Area (Right) */}
+            <div className="flex items-center gap-4">
+              <span className="text-2xl font-black tracking-tight text-[#1a202c] dark:text-white">Teaspoon</span>
+              <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center text-white shadow-sm ${IS_DEV ? 'bg-orange-500' : 'bg-rose-500'}`}>
                 <Coffee size={24} strokeWidth={2.5} />
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-                    {IS_DEV ? 'Teaspoon-dev' : 'Teaspoon'}
-                  </h1>
-                </div>
-                {token ? <p className="text-sm text-slate-500 dark:text-slate-400">שלום {userProfile?.name?.split(' ')[0]}!</p> : <p className="text-sm text-slate-500 dark:text-slate-400 italic">מצב אורח</p>}
-              </div>
-              {/* The Unified App Pillar Switcher */}
-              <div className="hidden sm:flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner">
-                <button
-                  onClick={() => setCurrentView('app')}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${currentView === 'app' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                >
-                  <ListChecks className="w-4 h-4" /> מעקב מטלות
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentView('summaries');
-                    const validCourses = myCourses.filter(c => c !== '9990999');
-                    if (!selectedSummaryCourse && validCourses.length > 0) {
-                      setSelectedSummaryCourse(validCourses[0]);
-                    }
-                  }}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-bold rounded-lg transition-all ${currentView === 'summaries' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-                >
-                  <BookOpen className="w-4 h-4" /> מאגר סיכומים
-                </button>
-              </div>
+              {IS_DEV && <span className="rounded-full bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1">Sandbox</span>}
+            </div>
+
+            {/* Desktop Center Navigation */}
+            <div className="hidden md:flex items-center h-full gap-8">
+              <button
+                onClick={() => setCurrentView('app')}
+                className={`h-full flex items-center font-bold text-sm border-b-[3px] transition-all pt-[3px] ${currentView === 'app' ? 'border-rose-500 text-rose-600 dark:text-rose-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+              >
+                מטלות
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentView('summaries');
+                  const validCourses = myCourses.filter(c => c !== '9990999');
+                  if (!selectedSummaryCourse && validCourses.length > 0) {
+                    setSelectedSummaryCourse(validCourses[0]);
+                  }
+                }}
+                className={`h-full flex items-center font-bold text-sm border-b-[3px] transition-all pt-[3px] ${currentView === 'summaries' ? 'border-rose-500 text-rose-600 dark:text-rose-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
+              >
+                סיכומים
+              </button>
               {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
                 <button
-                  onClick={() => setCurrentView(v => v === 'admin' ? 'app' : 'admin')}
-                  className={`relative flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-bold transition-all shadow-sm ${currentView === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-300 dark:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700' : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600'}`}
+                  onClick={() => setCurrentView('admin')}
+                  className={`h-full flex items-center font-bold text-sm border-b-[3px] transition-all pt-[3px] relative ${currentView === 'admin' ? 'border-purple-500 text-purple-600 dark:text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'}`}
                 >
-                  {currentView === 'admin' ? <><ArrowRight className="w-4 h-4" /> חזרה למערכת</> : <><ShieldAlert className="w-4 h-4" /> פאנל ניהול</>}
+                  ניהול
                   {logs && logs.length > 0 && currentView !== 'admin' && (
-                    <span className="absolute -top-1.5 -left-1.5 flex h-3.5 w-3.5 z-50">
+                    <span className="absolute top-6 -left-3 flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-orange-500 border border-white dark:border-slate-800"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
                     </span>
                   )}
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-3 justify-end">
-              <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><Moon className="w-5 h-5 hidden dark:block" /><Sun className="w-5 h-5 block dark:hidden" /></button>
+
+            {/* User & Actions Area (Left) */}
+            <div className="flex items-center gap-2 sm:gap-4">
+              {/* Calendar Sync */}
               <button
                 onClick={handleCalendarSync}
-                className={`flex items-center gap-2 border px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm ${isCalendarCopied ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200'
-                  }`}
+                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors shadow-sm border ${isCalendarCopied ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                title="סנכרון ליומן"
               >
                 {isCalendarCopied ? <Check className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
-                <span className="hidden sm:inline">{isCalendarCopied ? 'הקישור הועתק!' : 'סנכרון ליומן'}</span>
+                <span className="hidden xl:inline">{isCalendarCopied ? 'הקישור הועתק!' : 'סנכרון ליומן'}</span>
               </button>
+
+              {/* Leaderboard */}
+              {token && (
+                <button
+                  onClick={fetchLeaderboard}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-full text-sm font-bold border border-rose-200/60 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-sm"
+                  title="לוח הפותרים המובילים"
+                >
+                  <Heart className="w-4 h-4 fill-current" /> <span>{userProfile?.totalLikesReceived || 0}</span>
+                </button>
+              )}
+
+              {/* Theme Toggle */}
+              <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shadow-sm transition-colors">
+                <Moon className="w-4 h-4 hidden dark:block" />
+                <Sun className="w-4 h-4 block dark:hidden" />
+              </button>
+              
               {token ? (
-                <>
-                  <button
-                    onClick={fetchLeaderboard}
-                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs sm:text-sm font-medium border border-rose-200 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-sm cursor-pointer hover:scale-105 active:scale-95"
-                    title="לוח הפותרים המובילים"
-                  >
-                    <Heart className="w-4 h-4 fill-current" />
-                    <span className="font-bold">{userProfile?.totalLikesReceived || 0}</span>
-                  </button>
-                  <button onClick={() => { localStorage.removeItem('teaspoon_jwt'); setToken(null); setUserProfile(null); }} className="flex items-center gap-2 p-2 px-3 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors text-xs sm:text-sm font-medium" title="התנתק"><User className="w-4 h-4 sm:w-5 sm:h-5" /> התנתק</button>
-                  <button onClick={openAddModal} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm"><Plus className="w-4 h-4" /> הוספת מטלה</button>
-                </>
+                <div className="relative group/user pb-2 -mb-2"> {/* Padding trick to keep hover menu open */}
+                  <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 py-1.5 px-2 rounded-full shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                    <div className="hidden sm:flex flex-col items-end pe-2">
+                      <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{userProfile?.name?.split(' ')[0]}</span>
+                      <span className="text-[10px] text-slate-500 font-medium">הגדרות חשבון</span>
+                    </div>
+                    <img src={userProfile?.picture || '/api/placeholder/32/32'} alt="" className="w-9 h-9 rounded-full border border-slate-100 dark:border-slate-700" referrerPolicy="no-referrer" />
+                    <ChevronDown className="w-4 h-4 text-slate-400 ms-1 me-2" />
+                  </div>
+
+                  {/* Hover Dropdown */}
+                  <div className="absolute top-full left-0 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all z-50">
+                    <button
+                      onClick={handleCalendarSync}
+                      className="w-full flex sm:hidden items-center gap-2 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors"
+                    >
+                      {isCalendarCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Calendar className="w-4 h-4" />}
+                      <span>{isCalendarCopied ? 'הקישור הועתק!' : 'סנכרון ליומן'}</span>
+                    </button>
+                    <button onClick={() => { localStorage.removeItem('teaspoon_jwt'); setToken(null); setUserProfile(null); }} className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl text-sm font-bold text-red-600 dark:text-red-400 transition-colors mt-1">
+                      <LogIn className="w-4 h-4 rotate-180" /> התנתק
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <button onClick={() => window.location.href = `${API_BASE_URL}/auth/login`} className="flex items-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 py-2 sm:px-4 rounded-lg text-xs sm:text-sm font-medium transition-colors shadow-sm"><LogIn className="w-4 h-4" /> התחברות לעריכה</button>
+                <button onClick={() => window.location.href = `${API_BASE_URL}/auth/login`} className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-sm font-bold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-md">
+                  <LogIn className="w-4 h-4" /> התחברות
+                </button>
               )}
             </div>
           </div>
@@ -1443,281 +1461,211 @@ export default function App() {
           </div>
         ) : (
           <>
-            {/* Right Menu */}
-            <aside className="w-full md:w-72 flex flex-col gap-6 shrink-0 md:sticky md:top-24 md:h-[calc(100vh-7rem)] z-30">
-              <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors flex-1 flex flex-col overflow-hidden relative">
-                <h2 className="font-semibold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2 shrink-0"><BookOpen className="w-5 h-5 text-slate-700 dark:text-slate-300" /> הקורסים שלי</h2>
-                <div className="relative mb-6 shrink-0">
-                  <div className="relative">
-                    <input type="text" placeholder="חיפוש קורס..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-2 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-colors dark:text-slate-100" />
-                    <Search className="w-4 h-4 absolute right-3 top-2.5 text-slate-400" />
-                  </div>
+            {/* Right Menu (Sidebar) */}
+            <aside className="w-full xl:w-[22rem] flex flex-col gap-6 shrink-0 md:sticky md:top-28 md:h-[calc(100vh-8rem)] z-30">
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-200/60 dark:border-slate-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex-1 flex flex-col overflow-hidden relative">
+                
+                {/* Header */}
+                <div className="flex justify-between items-center mb-6 shrink-0">
+                  <h2 className="font-black text-xl text-[#1a202c] dark:text-white">הקורסים שלי</h2>
+                  {/* ✨ RESTORED: Add Course / Assignment Shortcut */}
+                  <button onClick={() => setIsAddCourseModalOpen(true)} className="w-10 h-10 rounded-full bg-rose-50 text-rose-500 dark:bg-rose-900/30 dark:text-rose-400 flex items-center justify-center hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors" title="הוספת קורס חדש">
+                    <Plus className="w-5 h-5" />
+                  </button>
+                </div>
 
+                {/* Search */}
+                <div className="relative mb-6 shrink-0">
+                  <input type="text" placeholder="חיפוש מהיר..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-3 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 border-none text-sm font-medium focus:ring-2 focus:ring-slate-200 outline-none transition-colors dark:text-slate-100" />
+                  <Search className="w-4 h-4 absolute right-4 top-3.5 text-slate-400" />
+                  
                   {isSearchFocused && searchQuery && (
-                    <div className="absolute z-30 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto flex flex-col">
+                    <div className="absolute z-30 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl max-h-60 overflow-y-auto flex flex-col">
                       {searchResults.length > 0 && searchResults.map(([code, syl]) => (
-                        <button key={code} onClick={() => handleAddCourse(code)} className="w-full text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-start border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors">
+                        <button key={code} onClick={() => handleAddCourse(code)} className="w-full text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-start border-b border-slate-50 dark:border-slate-700 last:border-0 transition-colors">
                           <div className="flex justify-between items-center w-full"><span className="text-sm font-bold text-slate-800 dark:text-slate-100">{syl.name}</span>{myCourses.includes(code) && <CheckCircle className="w-4 h-4 text-emerald-500" />}</div>
                           <span className="text-xs text-slate-500">{code}</span>
                         </button>
                       ))}
-
-                      {searchQuery && !myCourses.includes(searchQuery) && (
-                        <button
-                          onMouseDown={(e) => { e.preventDefault(); setNewCourseCode(searchQuery); setNewCourseName(''); setCourseCodeError(''); setIsAddCourseModalOpen(true); }}
-                          className="w-full text-right px-4 py-3 hover:bg-blue-50 dark:hover:bg-slate-700 flex items-center gap-2 border-t border-slate-100 dark:border-slate-700 text-blue-600 dark:text-blue-400 transition-colors mt-auto"
-                        >
-                          <Plus className="w-4 h-4" />
-                          <span className="text-sm font-bold">הוסף קורס: {searchQuery}</span>
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2 flex-1 overflow-y-auto pe-2 scrollbar-thin">
+                {/* Course List */}
+                <div className="space-y-3 flex-1 overflow-y-auto pe-2 scrollbar-thin">
                   {myCourses.map(code => {
                     const courseTheme = getCourseTheme(code);
                     return (
-                      <div key={code} className="flex items-center justify-between p-2 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors group">
-                        <label className="flex items-start gap-3 cursor-pointer flex-1">
-                          <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="w-4 h-4 mt-1 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-blue-600 focus:ring-blue-500 dark:focus:ring-offset-slate-800" />
-                          <div className="flex flex-col flex-1">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${courseTheme.dot}`}></div>
-                              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
+                      <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
+                        <label className="flex items-center gap-4 cursor-pointer flex-1">
+                          <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
+                          <div className={`w-12 h-12 rounded-[0.8rem] flex items-center justify-center font-black text-white shadow-sm transition-transform ${visibleCourses.includes(code) ? courseTheme.dot : 'bg-slate-200 dark:bg-slate-700 opacity-50 scale-90'}`}>
+                            <div className="flex flex-col items-center leading-none">
+                              <span className="text-sm">{code.substring(0, 2)}</span>
+                              <span className="text-[10px] opacity-80">.{code.substring(2, 4)}</span>
                             </div>
-                            <span className="text-xs text-slate-500 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 me-4 text-start" dir="ltr">{code}</span>
+                          </div>
+                          <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
+                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
+                            <span className="text-[11px] font-semibold text-slate-400" dir="ltr">{code}</span>
                           </div>
                         </label>
-                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          {token && (<button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-all"><Settings className="w-4 h-4" /></button>)}
-                          <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-all focus:opacity-100"><X className="w-4 h-4" /></button>
+                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                           <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
+                           <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="text-slate-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
                     );
                   })}
                 </div>
+
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 shrink-0">
+                  <button className="w-full py-3 rounded-xl bg-[#FAF9F6] dark:bg-slate-900 text-slate-600 dark:text-slate-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                     <Settings className="w-4 h-4" /> ניהול קורסים
+                  </button>
+                </div>
               </div>
             </aside>
 
-            {/* Main Content (Assignments) */}
-            <div className="flex-1 relative z-10 flex flex-col min-h-full">
+            {/* Main Content (Assignments & Stats) */}
+            <div className="flex-1 relative z-10 flex flex-col min-h-full gap-8">
 
-              {/* Unified Filter Row */}
-
-              {/* 1. Mobile Filter Trigger & View Toggle (Hidden on Desktop) */}
-              <div className="md:hidden flex items-center justify-between mb-6 relative z-20 bg-white dark:bg-slate-800 p-2 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                <button
-                  onClick={() => setIsMobileFilterModalOpen(true)}
-                  className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm ${activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end
-                    ? 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800'
-                    : 'bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                    }`}
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  מסננים פעילים {(activeTypeFilter !== 'All' || hideCompleted || dateRange.start || dateRange.end) ? '(!)' : ''}
-                </button>
-              </div>
-
-              {/* 2. Desktop Filter Row (Hidden on Mobile) */}
-              <div ref={desktopFilterRef} className="hidden md:flex flex-wrap items-center gap-3 sm:gap-4 mb-6 relative z-20">
-                <div className="flex items-center gap-2 ms-1 sm:ms-2 text-slate-500 dark:text-slate-400">
-                  <Filter className="w-4 h-4" />
-                  <span className="text-sm font-semibold">סינון:</span>
-                </div>
-
-                {/* Type Filter */}
-                <div
-                  className="relative"
-                  onMouseEnter={() => window.innerWidth >= 768 && setOpenFilter('type')}
-                  onMouseLeave={() => window.innerWidth >= 768 && setOpenFilter(null)}
-                >
-                  <button
-                    onClick={() => setOpenFilter(prev => prev === 'type' ? null : 'type')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-60"
-                  >
-                    סוג: <span className="font-bold text-blue-600 dark:text-blue-400">{typeTranslations[activeTypeFilter]}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'type' ? 'rotate-180' : ''}`} />
-                  </button>
-                  {openFilter === 'type' && (
-                    <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-70">
-                      {assignmentTypes.map(type => (
-                        <button
-                          key={type}
-                          onClick={() => { setActiveTypeFilter(type); setOpenFilter(null); }}
-                          className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${activeTypeFilter === type ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300'}`}
-                        >
-                          {typeTranslations[type]}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Status Filter */}
-                <div
-                  className="relative"
-                  onMouseEnter={() => window.innerWidth >= 768 && setOpenFilter('status')}
-                  onMouseLeave={() => window.innerWidth >= 768 && setOpenFilter(null)}
-                >
-                  <button
-                    onClick={() => setOpenFilter(prev => prev === 'status' ? null : 'status')}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm relative z-60"
-                  >
-                    סטטוס: <span className="font-bold text-blue-600 dark:text-blue-400">{hideCompleted ? 'לא בוצעו' : 'הכל'}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'status' ? 'rotate-180' : ''}`} />
-                  </button>
-                  {openFilter === 'status' && (
-                    <div className="absolute top-full right-0 pt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl transition-all duration-200 overflow-hidden flex flex-col z-70">
-                      <button
-                        onClick={() => { setHideCompleted(false); setOpenFilter(null); }}
-                        className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${!hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300'}`}
-                      >
-                        הכל
-                      </button>
-                      <button
-                        onClick={() => { setHideCompleted(true); setOpenFilter(null); }}
-                        className={`text-right px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors ${hideCompleted ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-slate-700/50' : 'text-slate-700 dark:text-slate-300'}`}
-                      >
-                        לא בוצעו
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Dates Filter */}
-                <div className="relative">
-                  <button
-                    onClick={() => setOpenFilter(prev => prev === 'date' ? null : 'date')}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-lg text-sm font-medium transition-colors shadow-sm relative z-60 ${(dateRange.start || dateRange.end) ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                  >
-                    <Calendar className={`w-4 h-4 ${(dateRange.start || dateRange.end) ? 'text-blue-500' : 'text-slate-400'}`} />
-                    תאריכים {(dateRange.start || dateRange.end) && '(פעיל)'}
-                    <ChevronDown className={`w-3.5 h-3.5 opacity-50 transition-transform ${openFilter === 'date' ? 'rotate-180' : ''}`} />
-                  </button>
-
-                  {openFilter === 'date' && (
-                    <div className="absolute top-full right-0 mt-1 w-64 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-70 cursor-default">
-                      <div className="space-y-3">
+              {/* Top Action Bar */}
+              <div className="flex flex-wrap items-center justify-between mt-2 gap-4">
+                 <h2 className="text-2xl font-black text-[#1a202c] dark:text-white hidden sm:block">מטלות קרובות</h2>
+                 <div className="flex items-center gap-3 w-full sm:w-auto">
+                    {/* ✨ RESTORED: openAddModal Button! */}
+                    <button onClick={openAddModal} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#1a202c] dark:bg-blue-600 text-white text-sm font-bold shadow-md hover:bg-slate-800 dark:hover:bg-blue-700 transition-colors">
+                       <Plus className="w-4 h-4" /> מטלה חדשה
+                    </button>
+                    
+                    <button onClick={() => setOpenFilter(prev => prev ? null : 'status')} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold shadow-sm border border-slate-200/50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative z-20">
+                       <Filter className="w-4 h-4" /> סינון
+                    </button>
+                    
+                    {/* Filter Menus Container (Only visible when active) */}
+                    {(openFilter === 'status' || openFilter === 'type' || openFilter === 'date') && (
+                      <div className="absolute top-[4.5rem] left-0 right-0 sm:right-auto sm:left-auto bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4 min-w-[250px]">
+                        {/* Type Filter */}
                         <div>
-                          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">מתאריך:</label>
-                          <input
-                            type="date"
-                            value={dateRange.start}
-                            onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
-                          />
+                          <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
+                          <div className="flex gap-2">
+                             {['All', 'Assignment', 'Webwork', 'Exam'].map(type => (
+                               <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
+                                 {typeTranslations[type]}
+                               </button>
+                             ))}
+                          </div>
                         </div>
+                        {/* Status Filter */}
                         <div>
-                          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">עד תאריך:</label>
-                          <input
-                            type="date"
-                            value={dateRange.end}
-                            onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                            className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500"
-                          />
+                          <label className="text-xs font-bold text-slate-500 mb-2 block">סטטוס:</label>
+                          <div className="flex gap-2">
+                             <button onClick={() => setHideCompleted(false)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${!hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>הכל</button>
+                             <button onClick={() => setHideCompleted(true)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>לא בוצעו</button>
+                          </div>
                         </div>
-                        {(dateRange.start || dateRange.end) && (
-                          <button
-                            onClick={() => { setDateRange({ start: '', end: '' }); setOpenFilter(null); }}
-                            className="w-full text-center text-xs text-red-500 hover:text-red-600 dark:hover:text-red-400 font-semibold pt-2 border-t border-slate-100 dark:border-slate-700 mt-2 transition-colors"
-                          >
-                            נקה תאריכים
-                          </button>
-                        )}
                       </div>
+                    )}
+                    
+                    {/* View Toggle */}
+                    <div className="hidden md:flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 p-1.5 rounded-full shadow-sm">
+                      <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-full transition-all ${viewMode === 'cards' ? 'bg-[#FAF9F6] dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><LayoutGrid className="w-4 h-4" /></button>
+                      <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-all ${viewMode === 'list' ? 'bg-[#FAF9F6] dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><List className="w-4 h-4" /></button>
                     </div>
-                  )}
-                </div>
-                {/* The View Toggle (Pushed to the left edge using ms-auto) */}
-                <div className="ms-auto flex items-center gap-1 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1 rounded-lg">
-                  <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-md transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><LayoutGrid className="w-4 h-4" /></button>
-                  <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><List className="w-4 h-4" /></button>
-                </div>
+                 </div>
               </div>
 
+              {/* Assignment List */}
               {loading ? (<div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div>)
-                : fetchError ? (<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div>)
-                  : filteredAssignments.length === 0 ? (<div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-12 text-center transition-colors"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-medium text-slate-900 dark:text-slate-50 mb-1">אין מטלות להצגה</h3></div>)
+                : fetchError ? (<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-[2rem] p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div>)
+                  : filteredAssignments.length === 0 ? (<div className="bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 rounded-[2rem] p-12 text-center shadow-sm"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-1">הכל נקי!</h3><p className="text-slate-500">אין מטלות קרובות להצגה.</p></div>)
                     : (
-                      <div className={viewMode === 'cards' ? "grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-3 flex-1 content-start"}>
+                      <div className={viewMode === 'cards' ? "grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-4 flex-1 content-start"}>
                         {filteredAssignments.map((assignment) => {
                           const courseTheme = getCourseTheme(assignment.courseCode);
                           const isList = viewMode === 'list';
-
+                          
                           return (
-                            <div key={assignment.id} className={`relative rounded-xl border-s-4 shadow-sm group transition-all duration-200 ${getCardClasses(assignment.deadline, courseTheme, assignment.isCompleted, assignment.isOptional)} ${isList ? 'p-5 lg:p-4 flex flex-col lg:flex-row gap-0 lg:gap-6' : 'p-5 flex flex-col justify-between'}`}>
+                            <div key={assignment.id} className={`relative bg-white dark:bg-slate-800 rounded-[2rem] p-4 sm:p-5 flex flex-col ${isList ? 'sm:flex-row sm:items-center' : 'h-full justify-between'} gap-4 sm:gap-6 border border-slate-200/40 dark:border-slate-700 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200 group ${assignment.isCompleted ? 'opacity-50 grayscale-[0.2]' : ''}`}>
+                              
+                              {/* Colored Right Border indicator */}
+                              <div className={`absolute right-0 top-6 bottom-6 w-1.5 rounded-s-md ${courseTheme.dot}`}></div>
 
-                              {/* Left Side (Or Top in Card Mode): Content */}
-                              <div className={`flex-1 min-w-0 ${isList ? 'lg:py-1' : ''}`}>
+                              <div className={`flex items-start ${isList ? 'items-center sm:w-auto w-full' : ''} gap-4 flex-1 min-w-0`}>
+                                {/* Checkbox */}
+                                <button onClick={() => toggleCompletion(assignment.id)} className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 ml-2 transition-colors ${assignment.isCompleted ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'}`}>
+                                  {assignment.isCompleted && <Check className="w-4 h-4 text-emerald-500" />}
+                                </button>
 
-                                {/* ✨ MOVED: Edit/Delete buttons are now inside the document flow to prevent overlaps! */}
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-md border ${assignment.isCompleted ? 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600' : `${courseTheme.badgeBg} ${courseTheme.badgeText} ${courseTheme.badgeBorder}`}`} dir="ltr">
-                                      {assignment.courseCode} - {coursesMap[assignment.courseCode]?.name}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md border bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 shadow-sm">
-                                      <Tag className="w-3 h-3" /> {typeTranslations[assignment.type]}
-                                    </span>
-                                  </div>
-
-                                  {token && (
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ms-2">
-                                      <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Edit className="w-4 h-4" /></button>
-                                      <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-md transition-colors"><Trash className="w-4 h-4" /></button>
-                                    </div>
-                                  )}
-                                </div>
-
-                                <div className="flex items-start gap-3 mb-1">
-                                  <button onClick={() => toggleCompletion(assignment.id)} className="shrink-0 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 mt-0.5">
-                                    {assignment.isCompleted ? <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" /> : <Circle className="w-5 h-5" />}
-                                  </button>
-                                  <h3 className={`text-lg font-bold ${assignment.isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-50'}`}>{assignment.title}</h3>
-                                </div>
-
-                                <div className={`flex items-center justify-between ms-8 ${assignment.isCompleted ? 'text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                                  <div className={`flex items-center gap-2 text-sm font-medium ${assignment.isOptional && !assignment.isCompleted ? 'text-amber-600 dark:text-amber-400' : ''}`}>
-                                    <Clock className="w-4 h-4" />
-                                    <span>
-                                      {formatDateTime(assignment.deadline)}
-                                      {assignment.isOptional && <span className="text-xs font-bold opacity-80 ms-1">(רשות)</span>}
+                                {/* Main Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-3 mb-1.5">
+                                    <h3 className={`text-lg font-black truncate ${assignment.isCompleted ? 'line-through text-slate-500' : 'text-[#1a202c] dark:text-white'}`}>{assignment.title}</h3>
+                                    <span className="text-[10px] uppercase font-black tracking-wider px-2.5 py-1 rounded-md bg-[#FAF9F6] dark:bg-slate-900 text-slate-500 border border-slate-100 dark:border-slate-700 shadow-inner shrink-0">
+                                      {assignment.type === 'Assignment' ? 'גיליון' : assignment.type === 'Webwork' ? 'וובוורק' : 'מבחן'}
                                     </span>
                                   </div>
-                                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-1 shadow-sm">
-                                    <span className="text-[10px] font-bold uppercase text-slate-400">ציון</span>
-                                    <input type="number" min="0" max="100" placeholder="--" className="w-8 text-sm bg-transparent text-center font-bold outline-none text-slate-800 dark:text-slate-100" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
+                                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                    <div className={`w-2 h-2 rounded-sm ${courseTheme.dot}`}></div>
+                                    <span>{coursesMap[assignment.courseCode]?.name} <span dir="ltr" className="opacity-60">({assignment.courseCode})</span></span>
+                                    <span className="hidden sm:inline opacity-30">•</span>
+                                    <span className={`flex items-center gap-1.5 ${assignment.isOptional && !assignment.isCompleted ? 'text-amber-600' : assignment.isCompleted ? '' : 'text-rose-500'}`}>
+                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה: {formatDateTime(assignment.deadline)}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
 
-                              {/* Right Side (Or Bottom in Card Mode): Attachments */}
-                              {/* MOBILE FIX: The layout now identical to Card View on screens < lg, keeping the ms-8 indent! */}
-                              <div className={`${isList ? 'mt-4 ms-8 lg:ms-0 lg:mt-0 border-t lg:border-t-0 lg:border-s lg:ps-6 pt-3 lg:pt-0 lg:w-[380px] shrink-0 flex flex-col justify-center' : 'mt-4 ms-8 border-t pt-3'} border-slate-200 dark:border-slate-700/50`}>
-                                <div className="flex items-center justify-between mb-3">
-                                  <span className="text-xs font-semibold flex items-center gap-1 text-slate-500 dark:text-slate-400"><Paperclip className="w-3 h-3" /> קבצים ({assignment.attachments?.length || 0})</span>
-                                  {token && (
-                                    <div className="flex items-center gap-3">
-                                      <label className={`text-xs flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> מטלה</label>
-                                      <label className={`text-xs flex items-center gap-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}><input type="file" className="hidden" onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} disabled={uploadingId === assignment.id} /><Upload className="w-3 h-3" /> פתרון</label>
-                                      {uploadingId === assignment.id && <RefreshCw className="w-3 h-3 animate-spin text-slate-400" />}
-                                    </div>
-                                  )}
+                              {/* Actions / Right Side */}
+                              <div className={`flex items-center gap-3 sm:gap-4 border-slate-100 dark:border-slate-700 ${isList ? 'sm:ml-4 border-t sm:border-t-0 pt-3 sm:pt-0 shrink-0' : 'border-t pt-4 mt-auto justify-between w-full'}`}>
+                                {/* Attachments Button */}
+                                <div className="relative group/attach">
+                                  <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FAF9F6] dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                    <Paperclip className="w-4 h-4" /> {assignment.attachments?.length || 0} קבצים
+                                  </button>
+                                  
+                                  {/* Hover Menu for Uploads/Files */}
+                                  <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/attach:opacity-100 group-hover/attach:visible transition-all z-20">
+                                      {token && (
+                                        <div className="flex gap-2 mb-2 p-1 border-b border-slate-100 dark:border-slate-700">
+                                          <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} />
+                                            + מטלה
+                                          </label>
+                                          <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer hover:bg-emerald-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} />
+                                            + עזר
+                                          </label>
+                                        </div>
+                                      )}
+                                      
+                                      {uploadingId === assignment.id && (
+                                        <div className="flex justify-center items-center py-2">
+                                          <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                                        </div>
+                                      )}
+                                      
+                                      <div className="max-h-32 overflow-y-auto space-y-1">
+                                        {assignment.attachments?.map(att => renderAttachment(att, assignment.id))}
+                                        {(!assignment.attachments || assignment.attachments.length === 0) && uploadingId !== assignment.id && (
+                                          <div className="text-xs text-center text-slate-400 py-2">אין קבצים מצורפים</div>
+                                        )}
+                                      </div>
+                                  </div>
                                 </div>
-                                {(assignment.attachments?.filter(a => a.category === 'assignment').length || 0) > 0 && (<div className="mb-3"><span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1.5 block">קבצי מטלה</span><div className="space-y-1.5">{assignment.attachments?.filter(a => a.category === 'assignment').map(att => renderAttachment(att, assignment.id))}</div></div>)}
 
-                                {(assignment.attachments?.filter(a => a.category === 'solution').length || 0) > 0 && (
-                                  <div>
-                                    <span className="text-[10px] font-bold text-emerald-500 dark:text-emerald-600 uppercase mb-1.5 flex items-center gap-1">
-                                      <Lightbulb className="w-3 h-3" /> רפרנסים ועזרים
-                                    </span>
-                                    <div className="space-y-1.5">
-                                      {assignment.attachments?.filter(a => a.category === 'solution')
-                                        .sort((a, b) => (b.likes || 0) - (a.likes || 0))
-                                        .map(att => renderAttachment(att, assignment.id))}
-                                    </div>
+                                {/* Grade Input */}
+                                <div className="flex flex-col items-center justify-center w-[4.5rem] h-[3.5rem] rounded-[1rem] bg-[#FAF9F6] dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 shadow-inner">
+                                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">ציון</span>
+                                  <input type="number" placeholder="--" className="w-full text-center bg-transparent text-lg font-black outline-none text-[#1a202c] dark:text-white placeholder:text-slate-300" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
+                                </div>
+
+                                {/* Admin Actions (Hidden until hover) */}
+                                {token && (
+                                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 left-4">
+                                    <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Edit className="w-3.5 h-3.5" /></button>
+                                    <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Trash className="w-3.5 h-3.5" /></button>
                                   </div>
                                 )}
                               </div>
@@ -1726,30 +1674,32 @@ export default function App() {
                         })}
                       </div>
                     )}
-
+                    
+              {/* Grade Summary Component */}
               {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
-                <div className="mt-12 border-t border-slate-200 dark:border-slate-700 pt-8 mb-4">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> מצב ציונים</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
+                  <h3 className="text-lg font-bold text-[#1a202c] dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> מצב ציונים משוקלל</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                     {visibleCourses.map(code => {
                       const summary = calculateCourseGrade(code);
                       if (!summary) return null;
                       const themeObj = getCourseTheme(code);
                       return (
-                        <div key={`grade-${code}`} className={`p-4 rounded-xl border ${themeObj.badgeBg} ${themeObj.badgeBorder} shadow-sm`}>
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex flex-col">
-                              <span className={`font-bold ${themeObj.badgeText} text-sm line-clamp-1`}>{coursesMap[code]?.name || 'קורס מותאם'}</span>
-                              <span className={`text-xs ${themeObj.badgeText} opacity-70`} dir="ltr">{code}</span>
+                        <div key={`grade-${code}`} className={`p-5 rounded-[1.5rem] border bg-white dark:bg-slate-800 ${themeObj.badgeBorder} shadow-sm relative overflow-hidden`}>
+                          <div className={`absolute top-0 right-0 w-full h-1 ${themeObj.dot}`}></div>
+                          <div className="flex justify-between items-start mb-3 mt-1">
+                            <div className="flex flex-col pr-1">
+                              <span className="font-bold text-[#1a202c] dark:text-white text-sm line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
+                              <span className="text-xs text-slate-500 font-medium mt-0.5" dir="ltr">{code}</span>
                             </div>
-                            <div className="flex gap-1">
-                              {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון משוקלל" className="cursor-help"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-orange-500" /></span>}
-                              {summary.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 mt-0.5 shrink-0 ${themeObj.badgeText}`} /></span>}
+                            <div className="flex gap-1 pl-1">
+                              {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון משוקלל" className="cursor-help"><AlertCircle className="w-4 h-4 text-orange-500" /></span>}
+                              {summary.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 ${themeObj.badgeText}`} /></span>}
                             </div>
                           </div>
-                          <div className="flex items-baseline gap-1.5" dir="ltr">
-                            <span className={`text-3xl font-black leading-none ${themeObj.badgeText}`}>{summary.earned}</span>
-                            <span className={`text-lg font-medium leading-none ${themeObj.badgeText} opacity-60 mb-0.5`}>/ {summary.possible}</span>
+                          <div className="flex items-baseline gap-1.5 pr-1 mt-2" dir="ltr">
+                            <span className={`text-3xl font-black leading-none ${themeObj.badgeText.replace('800', '600').replace('300', '400')}`}>{summary.earned}</span>
+                            <span className="text-sm font-bold leading-none text-slate-400">/ {summary.possible}</span>
                           </div>
                         </div>
                       );
@@ -1757,6 +1707,33 @@ export default function App() {
                   </div>
                 </div>
               )}
+
+              {/* Bottom Recommended Summaries Block (Static visual match for mockup) */}
+              <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
+                <h2 className="text-xl font-black text-[#1a202c] dark:text-white mb-4">סיכומי קהילה מומלצים</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button onClick={() => setCurrentView('summaries')} className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 text-right border border-slate-200/50 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between group">
+                     <div>
+                       <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider mb-1 block">Top Rated</span>
+                       <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">דף נוסחאות למבחן סוף</h3>
+                       <p className="text-sm text-slate-500 font-medium">מבנה הנתונים 1א' (10234)</p>
+                     </div>
+                     <div className="w-12 h-12 rounded-full bg-[#FAF9F6] dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/30 transition-colors">
+                       <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-rose-500" />
+                     </div>
+                  </button>
+                  <button onClick={() => setCurrentView('summaries')} className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 text-right border border-slate-200/50 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between group">
+                     <div>
+                       <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-1 block">New</span>
+                       <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">פתרון בחינות עבר 2022-2023</h3>
+                       <p className="text-sm text-slate-500 font-medium">חדו"א 2 מ' (104013)</p>
+                     </div>
+                     <div className="w-12 h-12 rounded-full bg-[#FAF9F6] dark:bg-slate-900 flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 transition-colors">
+                       <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-blue-500" />
+                     </div>
+                  </button>
+                </div>
+              </div>
             </div>
           </>
         )}
