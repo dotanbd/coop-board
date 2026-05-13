@@ -1263,12 +1263,11 @@ export default function App() {
               {token ? (
                 <div className="relative group/user pb-2 -mb-2">
                   <div className="flex items-center gap-2 sm:gap-3 bg-transparent sm:bg-white sm:dark:bg-slate-800 sm:border border-slate-200/60 dark:border-slate-700 py-1 sm:py-1.5 px-1 sm:px-2 rounded-full sm:shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                    <img src={userProfile?.picture || '/api/placeholder/32/32'} alt="" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 sm:border-slate-100 dark:border-slate-700" referrerPolicy="no-referrer" />
                     <div className="hidden sm:flex flex-col items-end pe-2">
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{userProfile?.name?.split(' ')[0]}</span>
                       <span className="text-[10px] text-slate-500 font-medium">הגדרות חשבון</span>
                     </div>
-                    {/* ✨ Profile is now just a clean picture on mobile! */}
-                    <img src={userProfile?.picture || '/api/placeholder/32/32'} alt="" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 sm:border-slate-100 dark:border-slate-700" referrerPolicy="no-referrer" />
                     <ChevronDown className="hidden sm:block w-4 h-4 text-slate-400 ms-1 me-2" />
                   </div>
 
@@ -1299,33 +1298,50 @@ export default function App() {
 
       {/* View Routing Logic */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 flex flex-col md:flex-row gap-8 items-start">
-        {/* ✨ Mobile App Pillar Switcher (Native App Feel) */}
-        {currentView !== 'admin' && (
-          <div className="flex sm:hidden w-full bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner mb-4 shrink-0">
+        {/* Mobile App Pillar Switcher (Native App Feel) */}
+        <div className="flex sm:hidden w-full bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl border border-slate-200 dark:border-slate-800 shadow-inner mb-4 shrink-0">
+          <button
+            onClick={() => setCurrentView('app')}
+            className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-all ${currentView === 'app' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+          >
+            <ListChecks className="w-4 h-4" /> מטלות
+          </button>
+          <button
+            onClick={() => {
+              setCurrentView('summaries');
+              const validCourses = myCourses.filter(c => c !== '9990999');
+              if (!selectedSummaryCourse && validCourses.length > 0) {
+                setSelectedSummaryCourse(validCourses[0]);
+              }
+            }}
+            className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-all ${currentView === 'summaries' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+          >
+            <BookOpen className="w-4 h-4" /> סיכומים
+          </button>
+          
+          {/* Admin Mobile Tab */}
+          {(userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
             <button
-              onClick={() => setCurrentView('app')}
-              className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-all ${currentView === 'app' ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
+              onClick={() => setCurrentView('admin')}
+              className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-all relative ${currentView === 'admin' ? 'bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
             >
-              <ListChecks className="w-4 h-4" /> מטלות
+              <ShieldAlert className="w-4 h-4" /> ניהול
+              
+              {/* Notification Dot for Mobile Tab */}
+              {logs && logs.length > 0 && currentView !== 'admin' && (
+                <span className="absolute top-1.5 right-2 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                </span>
+              )}
             </button>
-            <button
-              onClick={() => {
-                setCurrentView('summaries');
-                if (!selectedSummaryCourse && myCourses.length > 0) {
-                  setSelectedSummaryCourse(myCourses[0]);
-                }
-              }}
-              className={`flex-1 flex justify-center items-center gap-1.5 py-2 text-sm font-bold rounded-lg transition-all ${currentView === 'summaries' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}
-            >
-              <BookOpen className="w-4 h-4" /> סיכומים
-            </button>
-          </div>
-        )}
+          )}
+        </div>
         {currentView === 'admin' && token ? (
           <div className="w-full">
             <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-3">
               <ShieldAlert className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-              מערכת ניהול ובקרת איכות
+              מערכת ניהול
             </h2>
             <AdminDashboard token={token} logs={logs} setLogs={setLogs} coursesMap={coursesMap} />
           </div>
@@ -1661,7 +1677,7 @@ export default function App() {
                                         </label>
                                         <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer hover:bg-emerald-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
                                           <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} />
-                                          + עזר
+                                          + חומר עזר
                                         </label>
                                       </div>
                                     )}
