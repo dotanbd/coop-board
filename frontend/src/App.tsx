@@ -1188,10 +1188,10 @@ export default function App() {
           <div className="flex items-center justify-between h-20 gap-2">
             {/* Logo Area (Right) */}
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-              <span className="text-2xl font-black tracking-tight text-[#1a202c] dark:text-white hidden sm:block">Teaspoon</span>
               <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-[0.8rem] sm:rounded-[1rem] flex items-center justify-center text-white shadow-sm ${IS_DEV ? 'bg-orange-500' : 'bg-rose-500'}`}>
                 <Coffee className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.5} />
               </div>
+              <span className="text-2xl font-black tracking-tight text-[#1a202c] dark:text-white hidden sm:block">Teaspoon</span>
               {IS_DEV && <span className="hidden sm:block rounded-full bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1">Sandbox</span>}
             </div>
 
