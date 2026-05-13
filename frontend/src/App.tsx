@@ -880,19 +880,19 @@ export default function App() {
   };
   const handleAddCourse = async (code: string) => {
     if (!code.trim()) return false;
-    
+
     if (!myCourses.includes(code)) {
       const updated = [...myCourses, code];
-      
+
       if (token) {
         try {
           // Await the server response BEFORE updating the UI!
-          const res = await fetch(`${API_BASE_URL}/users/me/courses`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-            body: JSON.stringify(updated) 
+          const res = await fetch(`${API_BASE_URL}/users/me/courses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(updated)
           });
-          
+
           if (!res.ok) throw new Error('Sync failed');
         } catch (e) {
           alert("אופס! נראה שיש בעיית חיבור. השינוי לא נשמר בשרת.");
@@ -901,12 +901,12 @@ export default function App() {
       } else {
         localStorage.setItem('guest_courses', JSON.stringify(updated));
       }
-      
-      setMyCourses(updated); 
+
+      setMyCourses(updated);
       setVisibleCourses(prev => [...prev, code]);
     }
-    
-    setSearchQuery(''); 
+
+    setSearchQuery('');
     setIsSearchFocused(false);
     return true; // Success!
   };
@@ -1258,7 +1258,7 @@ export default function App() {
                 <Moon className="w-4 h-4 hidden dark:block" />
                 <Sun className="w-4 h-4 block dark:hidden" />
               </button>
-              
+
               {token ? (
                 <div className="relative group/user pb-2 -mb-2"> {/* Padding trick to keep hover menu open */}
                   <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 py-1.5 px-2 rounded-full shadow-sm cursor-pointer hover:shadow-md transition-shadow">
@@ -1355,7 +1355,7 @@ export default function App() {
                 </select>
 
                 {token && selectedSummaryCourse && (
-                  <button 
+                  <button
                     onClick={() => {
                       setEditingSummaryId(null);
                       setSummaryFormData({ filename: '', file: null });
@@ -1390,70 +1390,70 @@ export default function App() {
 
                     return (
                       <div key={summary.id} className="bg-white dark:bg-slate-800 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex flex-col group relative">
-                      
-                      {/* Action Buttons (Absolute corner) */}
-                      {isOwnerOrAdmin && (
-                        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 z-10 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all">
-                          <button 
-                            onClick={() => {
-                              setEditingSummaryId(summary.id);
-                              setSummaryFormData({ filename: summary.filename, file: null });
-                              setIsSummaryModalOpen(true);
-                            }} 
-                            className="p-1.5 text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-transparent hover:border-blue-100 dark:hover:border-blue-900/50" title="עריכה"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={() => deleteSummary(summary.id, summary.uploader_id)} 
-                            className="p-1.5 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-transparent hover:border-red-100 dark:hover:border-red-900/50" title="מחיקה"
-                          >
-                            <Trash className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
 
-                      <div className="flex items-start gap-3 mb-4 pe-12 sm:pe-10">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/50 shadow-sm">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate text-sm" title={summary.filename}>{summary.filename}</h3>
-                          
-                          <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                            {/* mini avatar next to the name */}
-                            {summary.uploader_picture ? (
-                              <img 
-                                src={summary.uploader_picture} 
-                                alt={summary.uploader_name} 
-                                className="w-4 h-4 rounded-full shrink-0 border border-slate-200 dark:border-slate-700" 
-                                referrerPolicy="no-referrer" 
-                              />
-                            ) : (
-                              <User className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                            )}
-                            
-                            <span className="truncate max-w-[100px] sm:max-w-[120px]" title={summary.uploader_name}>
-                              {summary.uploader_name}
-                            </span>
-                            <span className="opacity-50">•</span>
-                            <span>{new Date(summary.upload_date).toLocaleDateString('he-IL')}</span>
+                        {/* Action Buttons (Absolute corner) */}
+                        {isOwnerOrAdmin && (
+                          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-1 z-10 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-all">
+                            <button
+                              onClick={() => {
+                                setEditingSummaryId(summary.id);
+                                setSummaryFormData({ filename: summary.filename, file: null });
+                                setIsSummaryModalOpen(true);
+                              }}
+                              className="p-1.5 text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-transparent hover:border-blue-100 dark:hover:border-blue-900/50" title="עריכה"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteSummary(summary.id, summary.uploader_id)}
+                              className="p-1.5 text-slate-300 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-transparent hover:border-red-100 dark:hover:border-red-900/50" title="מחיקה"
+                            >
+                              <Trash className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+
+                        <div className="flex items-start gap-3 mb-4 pe-12 sm:pe-10">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/50 shadow-sm">
+                            <FileText className="w-5 h-5" />
+                          </div>
+
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate text-sm" title={summary.filename}>{summary.filename}</h3>
+
+                            <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                              {/* mini avatar next to the name */}
+                              {summary.uploader_picture ? (
+                                <img
+                                  src={summary.uploader_picture}
+                                  alt={summary.uploader_name}
+                                  className="w-4 h-4 rounded-full shrink-0 border border-slate-200 dark:border-slate-700"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <User className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                              )}
+
+                              <span className="truncate max-w-[100px] sm:max-w-[120px]" title={summary.uploader_name}>
+                                {summary.uploader_name}
+                              </span>
+                              <span className="opacity-50">•</span>
+                              <span>{new Date(summary.upload_date).toLocaleDateString('he-IL')}</span>
+                            </div>
                           </div>
                         </div>
+
+                        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50">
+                          <a href={summary.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg">
+                            <Download className="w-4 h-4" /> הורד
+                          </a>
+
+                          <button onClick={() => toggleSummaryLike(summary.id)} className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-lg transition-colors border ${summary.isLikedByMe ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' : 'bg-white text-slate-400 hover:text-rose-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm'}`}>
+                            <Heart className={`w-4 h-4 ${summary.isLikedByMe ? 'fill-current' : ''}`} />
+                            {summary.likes}
+                          </button>
+                        </div>
                       </div>
-                      
-                      <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700/50">
-                        <a href={summary.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-lg">
-                          <Download className="w-4 h-4" /> הורד
-                        </a>
-                        
-                        <button onClick={() => toggleSummaryLike(summary.id)} className={`flex items-center gap-1.5 text-sm font-bold px-3 py-1.5 rounded-lg transition-colors border ${summary.isLikedByMe ? 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50' : 'bg-white text-slate-400 hover:text-rose-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700 shadow-sm'}`}>
-                          <Heart className={`w-4 h-4 ${summary.isLikedByMe ? 'fill-current' : ''}`} />
-                          {summary.likes}
-                        </button>
-                      </div>
-                    </div>
                     );
                   })}
               </div>
@@ -1464,7 +1464,7 @@ export default function App() {
             {/* Right Menu (Sidebar) */}
             <aside className="w-full xl:w-[22rem] flex flex-col gap-6 shrink-0 md:sticky md:top-28 md:h-[calc(100vh-8rem)] z-30">
               <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-200/60 dark:border-slate-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex-1 flex flex-col overflow-hidden relative">
-                
+
                 {/* Header */}
                 <div className="flex justify-between items-center mb-6 shrink-0">
                   <h2 className="font-black text-xl text-[#1a202c] dark:text-white">הקורסים שלי</h2>
@@ -1478,7 +1478,7 @@ export default function App() {
                 <div className="relative mb-6 shrink-0">
                   <input type="text" placeholder="חיפוש מהיר..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-3 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 border-none text-sm font-medium focus:ring-2 focus:ring-slate-200 outline-none transition-colors dark:text-slate-100" />
                   <Search className="w-4 h-4 absolute right-4 top-3.5 text-slate-400" />
-                  
+
                   {isSearchFocused && searchQuery && (
                     <div className="absolute z-30 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl max-h-60 overflow-y-auto flex flex-col">
                       {searchResults.length > 0 && searchResults.map(([code, syl]) => (
@@ -1511,18 +1511,12 @@ export default function App() {
                           </div>
                         </label>
                         <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                           <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
-                           <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="text-slate-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                          <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
+                          <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="text-slate-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
                     );
                   })}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 shrink-0">
-                  <button className="w-full py-3 rounded-xl bg-[#FAF9F6] dark:bg-slate-900 text-slate-600 dark:text-slate-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                     <Settings className="w-4 h-4" /> ניהול קורסים
-                  </button>
                 </div>
               </div>
             </aside>
@@ -1532,48 +1526,83 @@ export default function App() {
 
               {/* Top Action Bar */}
               <div className="flex flex-wrap items-center justify-between mt-2 gap-4">
-                 <h2 className="text-2xl font-black text-[#1a202c] dark:text-white hidden sm:block">מטלות קרובות</h2>
-                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    {/* ✨ RESTORED: openAddModal Button! */}
-                    <button onClick={openAddModal} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#1a202c] dark:bg-blue-600 text-white text-sm font-bold shadow-md hover:bg-slate-800 dark:hover:bg-blue-700 transition-colors">
-                       <Plus className="w-4 h-4" /> מטלה חדשה
-                    </button>
-                    
-                    <button onClick={() => setOpenFilter(prev => prev ? null : 'status')} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold shadow-sm border border-slate-200/50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative z-20">
-                       <Filter className="w-4 h-4" /> סינון
-                    </button>
-                    
-                    {/* Filter Menus Container (Only visible when active) */}
-                    {(openFilter === 'status' || openFilter === 'type' || openFilter === 'date') && (
-                      <div className="absolute top-[4.5rem] left-0 right-0 sm:right-auto sm:left-auto bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4 min-w-[250px]">
-                        {/* Type Filter */}
-                        <div>
-                          <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
-                          <div className="flex gap-2">
-                             {['All', 'Assignment', 'Webwork', 'Exam'].map(type => (
-                               <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>
-                                 {typeTranslations[type]}
-                               </button>
-                             ))}
-                          </div>
+                <h2 className="text-2xl font-black text-[#1a202c] dark:text-white hidden sm:block">מטלות קרובות</h2>
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  {/* openAddModal Button! */}
+                  <button onClick={openAddModal} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#1a202c] dark:bg-blue-600 text-white text-sm font-bold shadow-md hover:bg-slate-800 dark:hover:bg-blue-700 transition-colors">
+                    <Plus className="w-4 h-4" /> מטלה חדשה
+                  </button>
+
+                  <button onClick={() => setOpenFilter(prev => prev ? null : 'status')} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold shadow-sm border border-slate-200/50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative z-20">
+                    <Filter className="w-4 h-4" /> סינון
+                  </button>
+
+                  {/* Filter Menus Container (Only visible when active) */}
+                  {(openFilter === 'status' || openFilter === 'type' || openFilter === 'date') && (
+                    <div className="absolute top-[4.5rem] left-0 right-0 sm:right-auto sm:left-auto bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4 min-w-[280px]">
+
+                      {/* Type Filter */}
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
+                        <div className="flex gap-2">
+                          {['All', 'Assignment', 'Webwork', 'Exam'].map(type => (
+                            <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>
+                              {typeTranslations[type]}
+                            </button>
+                          ))}
                         </div>
-                        {/* Status Filter */}
-                        <div>
-                          <label className="text-xs font-bold text-slate-500 mb-2 block">סטטוס:</label>
-                          <div className="flex gap-2">
-                             <button onClick={() => setHideCompleted(false)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${!hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>הכל</button>
-                             <button onClick={() => setHideCompleted(true)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}`}>לא בוצעו</button>
+                      </div>
+
+                      {/* Status Filter */}
+                      <div>
+                        <label className="text-xs font-bold text-slate-500 mb-2 block">סטטוס:</label>
+                        <div className="flex gap-2">
+                          <button onClick={() => setHideCompleted(false)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${!hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>הכל</button>
+                          <button onClick={() => setHideCompleted(true)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>לא בוצעו</button>
+                        </div>
+                      </div>
+
+                      {/* ✨ RESTORED: Dates Filter */}
+                      <div className="border-t border-slate-100 dark:border-slate-700 pt-4 mt-1">
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-xs font-bold text-slate-500">טווח תאריכים:</label>
+                          {(dateRange.start || dateRange.end) && (
+                            <button onClick={() => setDateRange({ start: '', end: '' })} className="text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors">
+                              נקה תאריכים
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-[10px] text-slate-400 mb-1">מתאריך</label>
+                            <input
+                              type="date"
+                              value={dateRange.start}
+                              onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                              className="w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-lg outline-none text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] text-slate-400 mb-1">עד תאריך</label>
+                            <input
+                              type="date"
+                              value={dateRange.end}
+                              onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                              className="w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-lg outline-none text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                            />
                           </div>
                         </div>
                       </div>
-                    )}
-                    
-                    {/* View Toggle */}
-                    <div className="hidden md:flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 p-1.5 rounded-full shadow-sm">
-                      <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-full transition-all ${viewMode === 'cards' ? 'bg-[#FAF9F6] dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><LayoutGrid className="w-4 h-4" /></button>
-                      <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-all ${viewMode === 'list' ? 'bg-[#FAF9F6] dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><List className="w-4 h-4" /></button>
+
                     </div>
-                 </div>
+                  )}
+
+                  {/* View Toggle */}
+                  <div className="hidden md:flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 p-1.5 rounded-full shadow-sm">
+                    <button onClick={() => setViewMode('cards')} className={`p-1.5 rounded-full transition-all ${viewMode === 'cards' ? 'bg-[#FAF9F6] dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><LayoutGrid className="w-4 h-4" /></button>
+                    <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-full transition-all ${viewMode === 'list' ? 'bg-[#FAF9F6] dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}><List className="w-4 h-4" /></button>
+                  </div>
+                </div>
               </div>
 
               {/* Assignment List */}
@@ -1585,10 +1614,10 @@ export default function App() {
                         {filteredAssignments.map((assignment) => {
                           const courseTheme = getCourseTheme(assignment.courseCode);
                           const isList = viewMode === 'list';
-                          
+
                           return (
                             <div key={assignment.id} className={`relative bg-white dark:bg-slate-800 rounded-[2rem] p-4 sm:p-5 flex flex-col ${isList ? 'sm:flex-row sm:items-center' : 'h-full justify-between'} gap-4 sm:gap-6 border border-slate-200/40 dark:border-slate-700 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200 group ${assignment.isCompleted ? 'opacity-50 grayscale-[0.2]' : ''}`}>
-                              
+
                               {/* Colored Right Border indicator */}
                               <div className={`absolute right-0 top-6 bottom-6 w-1.5 rounded-s-md ${courseTheme.dot}`}></div>
 
@@ -1624,34 +1653,34 @@ export default function App() {
                                   <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FAF9F6] dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                     <Paperclip className="w-4 h-4" /> {assignment.attachments?.length || 0} קבצים
                                   </button>
-                                  
+
                                   {/* Hover Menu for Uploads/Files */}
                                   <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/attach:opacity-100 group-hover/attach:visible transition-all z-20">
-                                      {token && (
-                                        <div className="flex gap-2 mb-2 p-1 border-b border-slate-100 dark:border-slate-700">
-                                          <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
-                                            <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} />
-                                            + מטלה
-                                          </label>
-                                          <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer hover:bg-emerald-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
-                                            <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} />
-                                            + עזר
-                                          </label>
-                                        </div>
-                                      )}
-                                      
-                                      {uploadingId === assignment.id && (
-                                        <div className="flex justify-center items-center py-2">
-                                          <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-                                        </div>
-                                      )}
-                                      
-                                      <div className="max-h-32 overflow-y-auto space-y-1">
-                                        {assignment.attachments?.map(att => renderAttachment(att, assignment.id))}
-                                        {(!assignment.attachments || assignment.attachments.length === 0) && uploadingId !== assignment.id && (
-                                          <div className="text-xs text-center text-slate-400 py-2">אין קבצים מצורפים</div>
-                                        )}
+                                    {token && (
+                                      <div className="flex gap-2 mb-2 p-1 border-b border-slate-100 dark:border-slate-700">
+                                        <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                          <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} />
+                                          + מטלה
+                                        </label>
+                                        <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer hover:bg-emerald-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                          <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} />
+                                          + עזר
+                                        </label>
                                       </div>
+                                    )}
+
+                                    {uploadingId === assignment.id && (
+                                      <div className="flex justify-center items-center py-2">
+                                        <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                                      </div>
+                                    )}
+
+                                    <div className="max-h-32 overflow-y-auto space-y-1">
+                                      {assignment.attachments?.map(att => renderAttachment(att, assignment.id))}
+                                      {(!assignment.attachments || assignment.attachments.length === 0) && uploadingId !== assignment.id && (
+                                        <div className="text-xs text-center text-slate-400 py-2">אין קבצים מצורפים</div>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
@@ -1674,7 +1703,7 @@ export default function App() {
                         })}
                       </div>
                     )}
-                    
+
               {/* Grade Summary Component */}
               {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
                 <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
@@ -1708,32 +1737,86 @@ export default function App() {
                 </div>
               )}
 
-              {/* Bottom Recommended Summaries Block (Static visual match for mockup) */}
-              <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
-                <h2 className="text-xl font-black text-[#1a202c] dark:text-white mb-4">סיכומי קהילה מומלצים</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button onClick={() => setCurrentView('summaries')} className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 text-right border border-slate-200/50 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between group">
-                     <div>
-                       <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider mb-1 block">Top Rated</span>
-                       <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">דף נוסחאות למבחן סוף</h3>
-                       <p className="text-sm text-slate-500 font-medium">מבנה הנתונים 1א' (10234)</p>
-                     </div>
-                     <div className="w-12 h-12 rounded-full bg-[#FAF9F6] dark:bg-slate-900 flex items-center justify-center group-hover:bg-rose-50 dark:group-hover:bg-rose-900/30 transition-colors">
-                       <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-rose-500" />
-                     </div>
-                  </button>
-                  <button onClick={() => setCurrentView('summaries')} className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 text-right border border-slate-200/50 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between group">
-                     <div>
-                       <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-1 block">New</span>
-                       <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">פתרון בחינות עבר 2022-2023</h3>
-                       <p className="text-sm text-slate-500 font-medium">חדו"א 2 מ' (104013)</p>
-                     </div>
-                     <div className="w-12 h-12 rounded-full bg-[#FAF9F6] dark:bg-slate-900 flex items-center justify-center group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 transition-colors">
-                       <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-blue-500" />
-                     </div>
-                  </button>
-                </div>
-              </div>
+              {/* Personal Progress Block */}
+              {(() => {
+                // Calculate progress on the fly for visible courses (excluding personal tasks)
+                const progressCourses = visibleCourses.filter(c => c !== '9990999');
+                const progressAssignments = assignments.filter(a => progressCourses.includes(a.courseCode));
+                const totalProgressAssignments = progressAssignments.length;
+                const completedProgressAssignments = progressAssignments.filter(a => a.isCompleted).length;
+                const progressPercentage = totalProgressAssignments === 0 ? 0 : Math.round((completedProgressAssignments / totalProgressAssignments) * 100);
+
+                return (
+                  <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
+                    <h2 className="text-xl font-black text-[#1a202c] dark:text-white mb-4">מצב התקדמות</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                      {/* Active Card: Assignments Progress */}
+                      <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-1 block">מטלות הסמסטר</span>
+                            <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">קצב ביצוע</h3>
+                          </div>
+                          <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 transition-transform duration-300 group-hover:scale-110">
+                            <ListChecks className="w-5 h-5" />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex items-end justify-between mb-2">
+                            <span className="text-3xl font-black text-[#1a202c] dark:text-white leading-none">{progressPercentage}%</span>
+                            <span className="text-sm font-medium text-slate-500">{completedProgressAssignments} מתוך {totalProgressAssignments}</span>
+                          </div>
+                          {/* Progress Bar */}
+                          <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden" dir="ltr">
+                            <div className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${progressPercentage}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Placeholder 1: Degree Average */}
+                      <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between opacity-80 cursor-not-allowed group relative">
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="px-4 py-1.5 bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-full shadow-md">בקרוב</span>
+                        </div>
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider mb-1 block">ממוצע תואר</span>
+                            <h3 className="font-bold text-[#1a202c] dark:text-white text-lg opacity-60">ציונים</h3>
+                          </div>
+                          <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 opacity-60">
+                            <Trophy className="w-5 h-5" />
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-3xl font-black text-slate-300 dark:text-slate-600 leading-none">--</span>
+                        </div>
+                      </div>
+
+                      {/* Placeholder 2: Credit Points */}
+                      <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between opacity-80 cursor-not-allowed group relative">
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity">
+                          <span className="px-4 py-1.5 bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-full shadow-md">בקרוב</span>
+                        </div>
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <span className="text-[10px] font-black text-purple-500 uppercase tracking-wider mb-1 block">נקודות זכות</span>
+                            <h3 className="font-bold text-[#1a202c] dark:text-white text-lg opacity-60">התקדמות לתואר</h3>
+                          </div>
+                          <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500 opacity-60">
+                            <BookOpen className="w-5 h-5" />
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-3xl font-black text-slate-300 dark:text-slate-600 leading-none">--</span>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </>
         )}
@@ -1790,7 +1873,7 @@ export default function App() {
               if (!codeRegex.test(newCourseCode)) { setCourseCodeError('קוד קורס חייב להיות בפורמט: XXX0XXX (לדוגמה: 1150204)'); return; }
               if (!newCourseName.trim()) { setCourseCodeError('שם הקורס לא יכול להיות ריק'); return; }
               if (myCourses.includes(newCourseCode)) { setCourseCodeError('קורס זה כבר קיים, ניתן לערוך אותו מרשימת "הקורסים שלי"'); return; }
-              
+
               // Lock the form and clear previous errors
               setIsAddingCourse(true);
               setCourseCodeError('');
@@ -1805,7 +1888,7 @@ export default function App() {
                       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                       body: JSON.stringify({ ...newSyl, hw_drop: 0, ww_drop: 0 })
                     });
-                    
+
                     if (!res.ok) throw new Error("Course creation failed");
                     setCoursesMap(prev => ({ ...prev, [newCourseCode]: newSyl }));
                   } else {
@@ -1813,14 +1896,14 @@ export default function App() {
                     setCoursesMap(prev => ({ ...prev, [newCourseCode]: { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false } }));
                   }
                 }
-                
+
                 // Link the course to the user using our pessimistic function
                 const success = await handleAddCourse(newCourseCode);
-                
+
                 if (success) {
                   // Only close the modal if the server said YES
-                  setIsAddCourseModalOpen(false); 
-                  setNewCourseCode(''); 
+                  setIsAddCourseModalOpen(false);
+                  setNewCourseCode('');
                   setNewCourseName('');
                 } else {
                   setCourseCodeError('בעיית תקשורת בשמירת הקורס. אנא נסה שוב.');
@@ -1842,16 +1925,16 @@ export default function App() {
               </div>
               {courseCodeError && <p className="text-sm text-red-600 dark:text-red-400">{courseCodeError}</p>}
               <div className="pt-4 flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => setIsAddCourseModalOpen(false)} 
+                <button
+                  type="button"
+                  onClick={() => setIsAddCourseModalOpen(false)}
                   disabled={isAddingCourse}
                   className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50"
                 >
                   ביטול
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isAddingCourse}
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center gap-2 disabled:opacity-70"
                 >
@@ -2157,9 +2240,9 @@ export default function App() {
                     const file = e.target.files?.[0] || null;
                     // Auto-fill the filename input if it's empty!
                     if (file && !editingSummaryId && !summaryFormData.filename) {
-                       setSummaryFormData({ filename: file.name.replace(/\.[^/.]+$/, ""), file });
+                      setSummaryFormData({ filename: file.name.replace(/\.[^/.]+$/, ""), file });
                     } else {
-                       setSummaryFormData(prev => ({ ...prev, file }));
+                      setSummaryFormData(prev => ({ ...prev, file }));
                     }
                   }}
                 />
