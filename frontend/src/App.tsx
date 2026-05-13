@@ -1187,10 +1187,10 @@ export default function App() {
           <div className="flex items-center justify-between h-20">
             {/* Logo Area (Right) */}
             <div className="flex items-center gap-4">
-              <span className="text-2xl font-black tracking-tight text-[#1a202c] dark:text-white">Teaspoon</span>
               <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center text-white shadow-sm ${IS_DEV ? 'bg-orange-500' : 'bg-rose-500'}`}>
                 <Coffee size={24} strokeWidth={2.5} />
               </div>
+              <span className="text-2xl font-black tracking-tight text-[#1a202c] dark:text-white">Teaspoon</span>
               {IS_DEV && <span className="rounded-full bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1">Sandbox</span>}
             </div>
 
@@ -1262,11 +1262,11 @@ export default function App() {
               {token ? (
                 <div className="relative group/user pb-2 -mb-2"> {/* Padding trick to keep hover menu open */}
                   <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 py-1.5 px-2 rounded-full shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+                    <img src={userProfile?.picture || '/api/placeholder/32/32'} alt="" className="w-9 h-9 rounded-full border border-slate-100 dark:border-slate-700" referrerPolicy="no-referrer" />
                     <div className="hidden sm:flex flex-col items-end pe-2">
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{userProfile?.name?.split(' ')[0]}</span>
                       <span className="text-[10px] text-slate-500 font-medium">הגדרות חשבון</span>
                     </div>
-                    <img src={userProfile?.picture || '/api/placeholder/32/32'} alt="" className="w-9 h-9 rounded-full border border-slate-100 dark:border-slate-700" referrerPolicy="no-referrer" />
                     <ChevronDown className="w-4 h-4 text-slate-400 ms-1 me-2" />
                   </div>
 
@@ -1500,10 +1500,6 @@ export default function App() {
                         <label className="flex items-center gap-4 cursor-pointer flex-1">
                           <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
                           <div className={`w-12 h-12 rounded-[0.8rem] flex items-center justify-center font-black text-white shadow-sm transition-transform ${visibleCourses.includes(code) ? courseTheme.dot : 'bg-slate-200 dark:bg-slate-700 opacity-50 scale-90'}`}>
-                            <div className="flex flex-col items-center leading-none">
-                              <span className="text-sm">{code.substring(0, 2)}</span>
-                              <span className="text-[10px] opacity-80">.{code.substring(2, 4)}</span>
-                            </div>
                           </div>
                           <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
                             <span className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
@@ -1511,8 +1507,8 @@ export default function App() {
                           </div>
                         </label>
                         <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                          <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
                           <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="text-slate-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                          <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
                     );
@@ -1693,8 +1689,8 @@ export default function App() {
                                 {/* Admin Actions (Hidden until hover) */}
                                 {token && (
                                   <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 left-4">
-                                    <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Edit className="w-3.5 h-3.5" /></button>
                                     <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Trash className="w-3.5 h-3.5" /></button>
+                                    <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Edit className="w-3.5 h-3.5" /></button>
                                   </div>
                                 )}
                               </div>
