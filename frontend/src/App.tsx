@@ -1185,14 +1185,14 @@ export default function App() {
         : 'bg-[#FAF9F6]/90 dark:bg-slate-950/90 border-slate-200/60 dark:border-slate-800'
         }`}>
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-20 gap-2">
             {/* Logo Area (Right) */}
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-[1rem] flex items-center justify-center text-white shadow-sm ${IS_DEV ? 'bg-orange-500' : 'bg-rose-500'}`}>
-                <Coffee size={24} strokeWidth={2.5} />
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <span className="text-2xl font-black tracking-tight text-[#1a202c] dark:text-white hidden sm:block">Teaspoon</span>
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-[0.8rem] sm:rounded-[1rem] flex items-center justify-center text-white shadow-sm ${IS_DEV ? 'bg-orange-500' : 'bg-rose-500'}`}>
+                <Coffee className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2.5} />
               </div>
-              <span className="text-2xl font-black tracking-tight text-[#1a202c] dark:text-white">Teaspoon</span>
-              {IS_DEV && <span className="rounded-full bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1">Sandbox</span>}
+              {IS_DEV && <span className="hidden sm:block rounded-full bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1">Sandbox</span>}
             </div>
 
             {/* Desktop Center Navigation */}
@@ -1232,7 +1232,7 @@ export default function App() {
             </div>
 
             {/* User & Actions Area (Left) */}
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               {/* Calendar Sync */}
               <button
                 onClick={handleCalendarSync}
@@ -1247,31 +1247,32 @@ export default function App() {
               {token && (
                 <button
                   onClick={fetchLeaderboard}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-full text-sm font-bold border border-rose-200/60 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-sm"
+                  className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-full text-xs sm:text-sm font-bold border border-rose-200/60 dark:border-rose-800/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors shadow-sm"
                   title="לוח הפותרים המובילים"
                 >
-                  <Heart className="w-4 h-4 fill-current" /> <span>{userProfile?.totalLikesReceived || 0}</span>
+                  <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" /> <span>{userProfile?.totalLikesReceived || 0}</span>
                 </button>
               )}
 
               {/* Theme Toggle */}
-              <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shadow-sm transition-colors">
+              <button onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')} className="p-1.5 sm:p-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 shadow-sm transition-colors">
                 <Moon className="w-4 h-4 hidden dark:block" />
                 <Sun className="w-4 h-4 block dark:hidden" />
               </button>
-
+              
               {token ? (
-                <div className="relative group/user pb-2 -mb-2"> {/* Padding trick to keep hover menu open */}
-                  <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 py-1.5 px-2 rounded-full shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-                    <img src={userProfile?.picture || '/api/placeholder/32/32'} alt="" className="w-9 h-9 rounded-full border border-slate-100 dark:border-slate-700" referrerPolicy="no-referrer" />
+                <div className="relative group/user pb-2 -mb-2">
+                  <div className="flex items-center gap-2 sm:gap-3 bg-transparent sm:bg-white sm:dark:bg-slate-800 sm:border border-slate-200/60 dark:border-slate-700 py-1 sm:py-1.5 px-1 sm:px-2 rounded-full sm:shadow-sm cursor-pointer hover:shadow-md transition-shadow">
                     <div className="hidden sm:flex flex-col items-end pe-2">
                       <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{userProfile?.name?.split(' ')[0]}</span>
                       <span className="text-[10px] text-slate-500 font-medium">הגדרות חשבון</span>
                     </div>
-                    <ChevronDown className="w-4 h-4 text-slate-400 ms-1 me-2" />
+                    {/* ✨ Profile is now just a clean picture on mobile! */}
+                    <img src={userProfile?.picture || '/api/placeholder/32/32'} alt="" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-slate-200 sm:border-slate-100 dark:border-slate-700" referrerPolicy="no-referrer" />
+                    <ChevronDown className="hidden sm:block w-4 h-4 text-slate-400 ms-1 me-2" />
                   </div>
 
-                  {/* Hover Dropdown */}
+                  {/* Hover Dropdown (Uses left-0 to perfectly expand into the screen on RTL) */}
                   <div className="absolute top-full left-0 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all z-50">
                     <button
                       onClick={handleCalendarSync}
@@ -1286,8 +1287,8 @@ export default function App() {
                   </div>
                 </div>
               ) : (
-                <button onClick={() => window.location.href = `${API_BASE_URL}/auth/login`} className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-sm font-bold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-md">
-                  <LogIn className="w-4 h-4" /> התחברות
+                <button onClick={() => window.location.href = `${API_BASE_URL}/auth/login`} className="flex items-center gap-1.5 px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-full bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs sm:text-sm font-bold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-md">
+                  <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> התחברות
                 </button>
               )}
             </div>
