@@ -1236,11 +1236,11 @@ export default function App() {
               {/* Calendar Sync */}
               <button
                 onClick={handleCalendarSync}
-                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors shadow-sm border ${isCalendarCopied ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                className={`flex items-center justify-center p-1.5 sm:px-4 sm:py-2 rounded-full text-sm font-bold transition-colors shadow-sm border ${isCalendarCopied ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-300 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-800 border-slate-200/60 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                 title="סנכרון ליומן"
               >
                 {isCalendarCopied ? <Check className="w-4 h-4" /> : <Calendar className="w-4 h-4" />}
-                <span className="hidden xl:inline">{isCalendarCopied ? 'הקישור הועתק!' : 'סנכרון ליומן'}</span>
+                <span className="hidden sm:inline ms-2">{isCalendarCopied ? 'הקישור הועתק!' : 'סנכרון ליומן'}</span>
               </button>
 
               {/* Leaderboard */}
