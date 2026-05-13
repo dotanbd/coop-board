@@ -1650,7 +1650,7 @@ export default function App() {
                                   </button>
 
                                   {/* Hover Menu for Uploads/Files */}
-                                  <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/attach:opacity-100 group-hover/attach:visible transition-all z-20">
+                                  <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/attach:opacity-100 group-hover/attach:visible transition-all z-20">
                                     {token && (
                                       <div className="flex gap-2 mb-2 p-1 border-b border-slate-100 dark:border-slate-700">
                                         <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
