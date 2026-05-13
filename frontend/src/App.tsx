@@ -653,6 +653,7 @@ export default function App() {
   const [newCourseCode, setNewCourseCode] = useState<string>('');
   const [newCourseName, setNewCourseName] = useState<string>('');
   const [courseCodeError, setCourseCodeError] = useState<string>('');
+  const [isAddingCourse, setIsAddingCourse] = useState<boolean>(false);
 
   // Intro Modal State
   const [showIntroModal, setShowIntroModal] = useState<boolean>(false);
@@ -877,10 +878,37 @@ export default function App() {
     if (token) fetch(`${API_BASE_URL}/users/me/courses`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(newCourses) });
     else localStorage.setItem('guest_courses', JSON.stringify(newCourses));
   };
-  const handleAddCourse = (code: string) => {
-    if (!code.trim()) return;
-    if (!myCourses.includes(code)) { const updated = [...myCourses, code]; setMyCourses(updated); setVisibleCourses(prev => [...prev, code]); syncCourses(updated); }
-    setSearchQuery(''); setIsSearchFocused(false);
+  const handleAddCourse = async (code: string) => {
+    if (!code.trim()) return false;
+    
+    if (!myCourses.includes(code)) {
+      const updated = [...myCourses, code];
+      
+      if (token) {
+        try {
+          // Await the server response BEFORE updating the UI!
+          const res = await fetch(`${API_BASE_URL}/users/me/courses`, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
+            body: JSON.stringify(updated) 
+          });
+          
+          if (!res.ok) throw new Error('Sync failed');
+        } catch (e) {
+          alert("אופס! נראה שיש בעיית חיבור. השינוי לא נשמר בשרת.");
+          return false;
+        }
+      } else {
+        localStorage.setItem('guest_courses', JSON.stringify(updated));
+      }
+      
+      setMyCourses(updated); 
+      setVisibleCourses(prev => [...prev, code]);
+    }
+    
+    setSearchQuery(''); 
+    setIsSearchFocused(false);
+    return true; // Success!
   };
   const handleRemoveCourse = (code: string) => { const updated = myCourses.filter(c => c !== code); setMyCourses(updated); setVisibleCourses(prev => prev.filter(c => c !== code)); syncCourses(updated); };
   const toggleVisibleCourse = (code: string) => setVisibleCourses(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
@@ -1779,29 +1807,53 @@ export default function App() {
         <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
             <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center"><h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">הוספת קורס חדש</h2><button onClick={() => setIsAddCourseModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button></div>
-            <form onSubmit={(e) => {
+            <form onSubmit={async (e) => {
               e.preventDefault();
               const codeRegex = /^\d{3}0\d{3}$/;
               if (!codeRegex.test(newCourseCode)) { setCourseCodeError('קוד קורס חייב להיות בפורמט: XXX0XXX (לדוגמה: 1150204)'); return; }
               if (!newCourseName.trim()) { setCourseCodeError('שם הקורס לא יכול להיות ריק'); return; }
               if (myCourses.includes(newCourseCode)) { setCourseCodeError('קורס זה כבר קיים, ניתן לערוך אותו מרשימת "הקורסים שלי"'); return; }
-              if (coursesMap[newCourseCode]) { handleAddCourse(newCourseCode); } else {
-                if (!myCourses.includes(newCourseCode)) {
-                  const updated = [...myCourses, newCourseCode]; setMyCourses(updated); setVisibleCourses(prev => [...prev, newCourseCode]);
-                  const newSyl = { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false };
-                  setCoursesMap(prev => ({ ...prev, [newCourseCode]: newSyl }));
+              
+              // Lock the form and clear previous errors
+              setIsAddingCourse(true);
+              setCourseCodeError('');
+
+              try {
+                // If it's a new course, create it in the database first
+                if (!coursesMap[newCourseCode]) {
                   if (token) {
-                    fetch(`${API_BASE_URL}/courses/${newCourseCode}`, {
+                    const newSyl = { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false };
+                    const res = await fetch(`${API_BASE_URL}/courses/${newCourseCode}`, {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                       body: JSON.stringify({ ...newSyl, hw_drop: 0, ww_drop: 0 })
-                    }).catch(() => console.error("Failed to save course"));
+                    });
+                    
+                    if (!res.ok) throw new Error("Course creation failed");
+                    setCoursesMap(prev => ({ ...prev, [newCourseCode]: newSyl }));
+                  } else {
+                    // Guest Mode Fallback
+                    setCoursesMap(prev => ({ ...prev, [newCourseCode]: { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false } }));
                   }
-
-                  syncCourses(updated);
                 }
+                
+                // Link the course to the user using our pessimistic function
+                const success = await handleAddCourse(newCourseCode);
+                
+                if (success) {
+                  // Only close the modal if the server said YES
+                  setIsAddCourseModalOpen(false); 
+                  setNewCourseCode(''); 
+                  setNewCourseName('');
+                } else {
+                  setCourseCodeError('בעיית תקשורת בשמירת הקורס. אנא נסה שוב.');
+                }
+              } catch (err) {
+                setCourseCodeError('שגיאה ביצירת הקורס בשרת. אנא נסה שוב.');
+              } finally {
+                // Unlock the form
+                setIsAddingCourse(false);
               }
-              setIsAddCourseModalOpen(false); setNewCourseCode(''); setNewCourseName(''); setCourseCodeError('');
             }} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">קוד קורס</label>
@@ -1812,7 +1864,23 @@ export default function App() {
                 <input required type="text" placeholder="לדוגמה: חשבון 1" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={newCourseName} onChange={(e) => { setNewCourseName(e.target.value); setCourseCodeError(''); }} />
               </div>
               {courseCodeError && <p className="text-sm text-red-600 dark:text-red-400">{courseCodeError}</p>}
-              <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsAddCourseModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">הוסף</button></div>
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddCourseModalOpen(false)} 
+                  disabled={isAddingCourse}
+                  className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors disabled:opacity-50"
+                >
+                  ביטול
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isAddingCourse}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex justify-center items-center gap-2 disabled:opacity-70"
+                >
+                  {isAddingCourse ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'הוספת קורס'}
+                </button>
+              </div>
             </form>
           </div>
         </div>
