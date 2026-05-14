@@ -1652,8 +1652,14 @@ export default function App() {
                                     <div className={`w-2 h-2 rounded-sm ${courseTheme.dot}`}></div>
                                     <span>{coursesMap[assignment.courseCode]?.name} <span dir="ltr" className="opacity-60">({assignment.courseCode})</span></span>
                                     <span className="hidden sm:inline opacity-30">•</span>
-                                    <span className={`flex items-center gap-1.5 ${assignment.isOptional && !assignment.isCompleted ? 'text-amber-600' : assignment.isCompleted ? '' : 'text-rose-500'}`}>
-                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה: {formatDateTime(assignment.deadline)}
+                                    <span className={`flex items-center gap-1.5 ${(() => {
+                                      if (assignment.isCompleted) return '';
+                                      const hoursUntilDeadline = (new Date(assignment.deadline).getTime() - Date.now()) / (1000 * 60 * 60);
+                                      if (hoursUntilDeadline <= 24) return 'text-rose-500';
+                                      if (hoursUntilDeadline <= 72) return 'text-amber-600';
+                                      return '';
+                                    })()}`}>
+                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה{assignment.isOptional ? '(רשות)' : ''}: {formatDateTime(assignment.deadline)}
                                     </span>
                                   </div>
                                 </div>
