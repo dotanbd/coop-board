@@ -1712,7 +1712,7 @@ export default function App() {
                       
                       {/* Filter Menus Container */}
                       {openFilter && (
-                        <div className="absolute top-full mt-2 left-0 right-0 sm:right-0 sm:left-auto bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 flex flex-col gap-4 min-w-[280px]">
+                        <div className="absolute top-full mt-2 right-0 sm:right-0 sm:left-auto bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 flex flex-col gap-4 min-w-[280px]">
                           
                           {/* Type Filter */}
                           <div>
