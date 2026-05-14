@@ -1561,7 +1561,7 @@ export default function App() {
                 const progressPercentage = totalProgressAssignments === 0 ? 0 : Math.round((completedProgressAssignments / totalProgressAssignments) * 100);
 
                 return (
-                  <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
+                  <div className="mt-8 pt-8 border-b border-slate-200/60 dark:border-slate-700">
                     <h2 className="text-xl font-black text-[#1a202c] dark:text-white mb-4">מצב התקדמות</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
