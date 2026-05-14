@@ -1823,7 +1823,7 @@ export default function App() {
               {/* Grade Summary Component */}
               {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
                 <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
-                  <h3 className="text-lg font-bold text-[#1a202c] dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> מצב ציונים משוקלל</h3>
+                  <h3 className="text-lg font-bold text-[#1a202c] dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> ציונים מצטברים עד כה</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                     {visibleCourses.map(code => {
                       const summary = calculateCourseGrade(code);
@@ -1838,7 +1838,7 @@ export default function App() {
                               <span className="text-xs text-slate-500 font-medium mt-0.5" dir="ltr">{code}</span>
                             </div>
                             <div className="flex gap-1 pl-1">
-                              {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון משוקלל" className="cursor-help"><AlertCircle className="w-4 h-4 text-orange-500" /></span>}
+                              {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון מצטבר" className="cursor-help"><AlertCircle className="w-4 h-4 text-orange-500" /></span>}
                               {summary.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 ${themeObj.badgeText}`} /></span>}
                             </div>
                           </div>
