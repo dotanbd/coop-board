@@ -1568,10 +1568,6 @@ export default function App() {
                             <label className="flex items-center gap-4 cursor-pointer flex-1">
                               <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
                               <div className={`w-12 h-12 rounded-[0.8rem] flex items-center justify-center font-black text-white shadow-sm transition-transform ${visibleCourses.includes(code) ? courseTheme.dot : 'bg-slate-200 dark:bg-slate-700 opacity-50 scale-90'}`}>
-                                <div className="flex flex-col items-center leading-none">
-                                  <span className="text-sm">{code.substring(0, 2)}</span>
-                                  <span className="text-[10px] opacity-80">.{code.substring(2, 4)}</span>
-                                </div>
                               </div>
                               <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
                                 <span className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
