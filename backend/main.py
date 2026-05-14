@@ -1150,6 +1150,7 @@ def download_summary(summary_id: int, expires: int, sig: str, db: Session = Depe
         raise HTTPException(status_code=404, detail="Summary not found")
 
     try:
+        print(f"DEBUG: Requesting from Bucket: '{SUMMARIES_BUCKET}', Key: '{summary.object_name}'")
         s3_response = s3_client.get_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
 
         # Extract the missing extension from the S3 object key (e.g., ".pdf")
