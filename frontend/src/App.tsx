@@ -619,6 +619,17 @@ export default function App() {
     }
   }, [isProgressMinimized]);
 
+  const [isCourseListMinimized, setIsCourseListMinimized] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem('teaspoon_course_list_minimized') === 'true';
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('teaspoon_course_list_minimized', String(isCourseListMinimized));
+    }
+  }, [isCourseListMinimized]);
+
   const [dateRange, setDateRange] = useState<{ start: string, end: string }>({ start: '', end: '' });
 
   // State for Dropdowns (Hover on desktop, Click on mobile)
@@ -1508,54 +1519,76 @@ export default function App() {
               <div className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-200/60 dark:border-slate-700 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex-1 flex flex-col overflow-hidden relative">
 
                 {/* Header */}
-                <div className="flex justify-between items-center mb-6 shrink-0">
-                  <h2 className="font-black text-xl text-[#1a202c] dark:text-white">הקורסים שלי</h2>
-                  {/* ✨ RESTORED: Add Course / Assignment Shortcut */}
+                <div className="flex justify-between items-center shrink-0">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-black text-xl text-[#1a202c] dark:text-white">הקורסים שלי</h2>
+                    {/* ✨ Mobile-only Collapse Button */}
+                    <button
+                      onClick={() => setIsCourseListMinimized(!isCourseListMinimized)}
+                      className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-200"
+                      title={isCourseListMinimized ? 'הצג קורסים' : 'הסתר קורסים'}
+                    >
+                      <ChevronDown className={`w-5 h-5 transition-transform duration-500 ease-in-out ${isCourseListMinimized ? '' : 'rotate-180'}`} />
+                    </button>
+                  </div>
+                  
+                  {/* Add Course / Assignment Shortcut */}
                   <button onClick={() => setIsAddCourseModalOpen(true)} className="w-10 h-10 rounded-full bg-rose-50 text-rose-500 dark:bg-rose-900/30 dark:text-rose-400 flex items-center justify-center hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-colors" title="הוספת קורס חדש">
                     <Plus className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Search */}
-                <div className="relative mb-6 shrink-0">
-                  <input type="text" placeholder="חיפוש מהיר..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-3 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 border-none text-sm font-medium focus:ring-2 focus:ring-slate-200 outline-none transition-colors dark:text-slate-100" />
-                  <Search className="w-4 h-4 absolute right-4 top-3.5 text-slate-400" />
+                {/* Responsive Animated Wrapper: Grid on Mobile, Flex on Desktop */}
+                <div className={`grid md:flex md:flex-1 md:flex-col transition-all duration-500 ease-in-out ${isCourseListMinimized ? 'grid-rows-[0fr] opacity-0 md:opacity-100 md:grid-rows-none md:mt-6' : 'grid-rows-[1fr] opacity-100 mt-6'}`}>
+                  <div className="overflow-hidden flex flex-col min-h-0 md:flex-1 w-full">
 
-                  {isSearchFocused && searchQuery && (
-                    <div className="absolute z-30 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl max-h-60 overflow-y-auto flex flex-col">
-                      {searchResults.length > 0 && searchResults.map(([code, syl]) => (
-                        <button key={code} onClick={() => handleAddCourse(code)} className="w-full text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-start border-b border-slate-50 dark:border-slate-700 last:border-0 transition-colors">
-                          <div className="flex justify-between items-center w-full"><span className="text-sm font-bold text-slate-800 dark:text-slate-100">{syl.name}</span>{myCourses.includes(code) && <CheckCircle className="w-4 h-4 text-emerald-500" />}</div>
-                          <span className="text-xs text-slate-500">{code}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                    {/* Search */}
+                    <div className="relative mb-6 shrink-0">
+                      <input type="text" placeholder="חיפוש מהיר..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-3 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 border-none text-sm font-medium focus:ring-2 focus:ring-slate-200 outline-none transition-colors dark:text-slate-100" />
+                      <Search className="w-4 h-4 absolute right-4 top-3.5 text-slate-400" />
 
-                {/* Course List */}
-                <div className="space-y-3 flex-1 overflow-y-auto pe-2 scrollbar-thin">
-                  {myCourses.map(code => {
-                    const courseTheme = getCourseTheme(code);
-                    return (
-                      <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
-                        <label className="flex items-center gap-4 cursor-pointer flex-1">
-                          <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
-                          <div className={`w-12 h-12 rounded-[0.8rem] flex items-center justify-center font-black text-white shadow-sm transition-transform ${visibleCourses.includes(code) ? courseTheme.dot : 'bg-slate-200 dark:bg-slate-700 opacity-50 scale-90'}`}>
-                          </div>
-                          <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
-                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
-                            <span className="text-[11px] font-semibold text-slate-400" dir="ltr">{code}</span>
-                          </div>
-                        </label>
-                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                          <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="text-slate-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
-                          <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
+                      {isSearchFocused && searchQuery && (
+                        <div className="absolute z-30 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl max-h-60 overflow-y-auto flex flex-col">
+                          {searchResults.length > 0 && searchResults.map(([code, syl]) => (
+                            <button key={code} onClick={() => handleAddCourse(code)} className="w-full text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-start border-b border-slate-50 dark:border-slate-700 last:border-0 transition-colors">
+                              <div className="flex justify-between items-center w-full"><span className="text-sm font-bold text-slate-800 dark:text-slate-100">{syl.name}</span>{myCourses.includes(code) && <CheckCircle className="w-4 h-4 text-emerald-500" />}</div>
+                              <span className="text-xs text-slate-500">{code}</span>
+                            </button>
+                          ))}
                         </div>
-                      </div>
-                    );
-                  })}
+                      )}
+                    </div>
+
+                    {/* Course List */}
+                    <div className="space-y-3 flex-1 overflow-y-auto pe-2 scrollbar-thin">
+                      {myCourses.map(code => {
+                        const courseTheme = getCourseTheme(code);
+                        return (
+                          <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
+                            <label className="flex items-center gap-4 cursor-pointer flex-1">
+                              <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
+                              <div className={`w-12 h-12 rounded-[0.8rem] flex items-center justify-center font-black text-white shadow-sm transition-transform ${visibleCourses.includes(code) ? courseTheme.dot : 'bg-slate-200 dark:bg-slate-700 opacity-50 scale-90'}`}>
+                                <div className="flex flex-col items-center leading-none">
+                                  <span className="text-sm">{code.substring(0, 2)}</span>
+                                  <span className="text-[10px] opacity-80">.{code.substring(2, 4)}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
+                                <span className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
+                                <span className="text-[11px] font-semibold text-slate-400" dir="ltr">{code}</span>
+                              </div>
+                            </label>
+                            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                              <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="text-slate-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                              <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
+
               </div>
             </aside>
 
