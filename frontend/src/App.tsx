@@ -681,6 +681,26 @@ export default function App() {
     }
   }, [token, userProfile, currentView]);
 
+  //filter menu ref for outside click detection
+  const filterMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(event.target as Node)) {
+        setOpenFilter(null); // Close the menu!
+      }
+    };
+
+    // Only attach the listener if the menu is actually open
+    if (openFilter) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openFilter]);
+
   // Summaries State
   const [summaries, setSummaries] = useState<Summary[]>([]);
   const [selectedSummaryCourse, setSelectedSummaryCourse] = useState<string>('');
@@ -1547,69 +1567,72 @@ export default function App() {
                     <Plus className="w-4 h-4" /> מטלה חדשה
                   </button>
 
-                  <button onClick={() => setOpenFilter(prev => prev ? null : 'status')} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold shadow-sm border border-slate-200/50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors relative z-20">
-                    <Filter className="w-4 h-4" /> סינון
-                  </button>
-
-                  {/* Filter Menus Container (Only visible when active) */}
-                  {(openFilter === 'status' || openFilter === 'type' || openFilter === 'date') && (
-                    <div className="absolute top-[4.5rem] left-0 right-0 sm:right-auto sm:left-auto bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 z-50 flex flex-col gap-4 min-w-[280px]">
-
-                      {/* Type Filter */}
-                      <div>
-                        <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
-                        <div className="flex gap-2">
-                          {['All', 'Assignment', 'Webwork', 'Exam'].map(type => (
-                            <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>
-                              {typeTranslations[type]}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Status Filter */}
-                      <div>
-                        <label className="text-xs font-bold text-slate-500 mb-2 block">סטטוס:</label>
-                        <div className="flex gap-2">
-                          <button onClick={() => setHideCompleted(false)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${!hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>הכל</button>
-                          <button onClick={() => setHideCompleted(true)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>לא בוצעו</button>
-                        </div>
-                      </div>
-
-                      {/* ✨ RESTORED: Dates Filter */}
-                      <div className="border-t border-slate-100 dark:border-slate-700 pt-4 mt-1">
-                        <div className="flex justify-between items-center mb-2">
-                          <label className="text-xs font-bold text-slate-500">טווח תאריכים:</label>
-                          {(dateRange.start || dateRange.end) && (
-                            <button onClick={() => setDateRange({ start: '', end: '' })} className="text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors">
-                              נקה תאריכים
-                            </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
+                  <div className="relative z-[60] flex-1 sm:flex-none" ref={filterMenuRef}>
+                      
+                      <button onClick={() => setOpenFilter(prev => prev ? null : 'status')} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold shadow-sm border border-slate-200/50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                         <Filter className="w-4 h-4" /> סינון
+                      </button>
+                      
+                      {/* Filter Menus Container */}
+                      {openFilter && (
+                        <div className="absolute top-full mt-2 left-0 right-0 sm:right-0 sm:left-auto bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 flex flex-col gap-4 min-w-[280px]">
+                          
+                          {/* Type Filter */}
                           <div>
-                            <label className="block text-[10px] text-slate-400 mb-1">מתאריך</label>
-                            <input
-                              type="date"
-                              value={dateRange.start}
-                              onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-lg outline-none text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                            />
+                            <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
+                            <div className="flex gap-2">
+                               {['All', 'Assignment', 'Webwork', 'Exam'].map(type => (
+                                 <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>
+                                   {typeTranslations[type]}
+                                 </button>
+                               ))}
+                            </div>
                           </div>
+                          
+                          {/* Status Filter */}
                           <div>
-                            <label className="block text-[10px] text-slate-400 mb-1">עד תאריך</label>
-                            <input
-                              type="date"
-                              value={dateRange.end}
-                              onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                              className="w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-lg outline-none text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
-                            />
+                            <label className="text-xs font-bold text-slate-500 mb-2 block">סטטוס:</label>
+                            <div className="flex gap-2">
+                               <button onClick={() => setHideCompleted(false)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${!hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>הכל</button>
+                               <button onClick={() => setHideCompleted(true)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>לא בוצעו</button>
+                            </div>
                           </div>
-                        </div>
-                      </div>
 
+                          {/* Dates Filter */}
+                          <div className="border-t border-slate-100 dark:border-slate-700 pt-4 mt-1">
+                            <div className="flex justify-between items-center mb-2">
+                              <label className="text-xs font-bold text-slate-500">טווח תאריכים:</label>
+                              {(dateRange.start || dateRange.end) && (
+                                <button onClick={() => setDateRange({ start: '', end: '' })} className="text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors">
+                                  נקה תאריכים
+                                </button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[10px] text-slate-400 mb-1">מתאריך</label>
+                                <input
+                                  type="date"
+                                  value={dateRange.start}
+                                  onChange={e => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                  className="w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-lg outline-none text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-slate-400 mb-1">עד תאריך</label>
+                                <input
+                                  type="date"
+                                  value={dateRange.end}
+                                  onChange={e => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                  className="w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 rounded-lg outline-none text-slate-700 dark:text-slate-300 focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      )}
                     </div>
-                  )}
 
                   {/* View Toggle */}
                   <div className="hidden md:flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 p-1.5 rounded-full shadow-sm">
