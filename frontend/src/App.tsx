@@ -1293,13 +1293,6 @@ export default function App() {
 
                   {/* Hover Dropdown (Uses left-0 to perfectly expand into the screen on RTL) */}
                   <div className="absolute top-full left-0 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/user:opacity-100 group-hover/user:visible transition-all z-50">
-                    <button
-                      onClick={handleCalendarSync}
-                      className="w-full flex sm:hidden items-center gap-2 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors"
-                    >
-                      {isCalendarCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Calendar className="w-4 h-4" />}
-                      <span>{isCalendarCopied ? 'הקישור הועתק!' : 'סנכרון ליומן'}</span>
-                    </button>
                     <button onClick={() => { localStorage.removeItem('teaspoon_jwt'); setToken(null); setUserProfile(null); }} className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl text-sm font-bold text-red-600 dark:text-red-400 transition-colors mt-1">
                       <LogIn className="w-4 h-4 rotate-180" /> התנתק
                     </button>
