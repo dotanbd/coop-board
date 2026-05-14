@@ -1163,9 +1163,14 @@ def download_summary(summary_id: int, expires: int, sig: str, db: Session = Depe
         # URL-encode it safely
         encoded_filename = quote(full_filename)
 
+        content_type = s3_response.get('ContentType')
+        if not content_type or content_type in ['application/octet-stream', 'binary/octet-stream']:
+            guessed_type, _ = mimetypes.guess_type(full_filename)
+            content_type = guessed_type or 'application/octet-stream'
+
         return StreamingResponse(
             file_stream(s3_response),
-            media_type=s3_response.get('ContentType', 'application/octet-stream'),
+            media_type=content_type,
             headers={
                 "Content-Disposition": f"inline; filename*=utf-8''{encoded_filename}",
                 "Content-Length": str(s3_response.get('ContentLength', 0))
