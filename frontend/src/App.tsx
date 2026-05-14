@@ -1576,7 +1576,9 @@ export default function App() {
                             </label>
                             <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
                               <button onClick={(e) => { e.preventDefault(); handleRemoveCourse(code); }} className="text-slate-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
-                              <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
+                              {code !== '9990999' &&
+                                <button onClick={(e) => { e.preventDefault(); openCourseSettings(code); }} className="text-slate-400 hover:text-blue-500"><Settings className="w-3.5 h-3.5" /></button>
+                              }
                             </div>
                           </div>
                         );
