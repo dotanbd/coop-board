@@ -1635,110 +1635,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Assignment List */}
-              {loading ? (<div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div>)
-                : fetchError ? (<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-[2rem] p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div>)
-                  : filteredAssignments.length === 0 ? (<div className="bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 rounded-[2rem] p-12 text-center shadow-sm"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-1">הכל נקי!</h3><p className="text-slate-500">אין מטלות קרובות להצגה.</p></div>)
-                    : (
-                      <div className={viewMode === 'cards' ? "grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-4 flex-1 content-start"}>
-                        {filteredAssignments.map((assignment) => {
-                          const courseTheme = getCourseTheme(assignment.courseCode);
-                          const isList = viewMode === 'list';
-
-                          return (
-                            <div key={assignment.id} className={`relative bg-white dark:bg-slate-800 rounded-[2rem] p-4 sm:p-5 flex flex-col ${isList ? 'sm:flex-row sm:items-center' : 'h-full justify-between'} gap-4 sm:gap-6 border border-slate-200/40 dark:border-slate-700 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200 group hover:z-50 focus-within:z-50 ${assignment.isCompleted ? 'opacity-50 grayscale-[0.2] hover:opacity-100 hover:grayscale-0' : ''}`}>
-                              {/* Colored Right Border indicator */}
-                              <div className={`absolute right-0 top-6 bottom-6 w-1.5 rounded-s-md ${courseTheme.dot}`}></div>
-
-                              <div className={`flex items-start ${isList ? 'items-center sm:w-auto w-full' : ''} gap-4 flex-1 min-w-0`}>
-                                {/* Checkbox */}
-                                <button onClick={() => toggleCompletion(assignment.id)} className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 ml-2 transition-colors ${assignment.isCompleted ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'}`}>
-                                  {assignment.isCompleted && <Check className="w-4 h-4 text-emerald-500" />}
-                                </button>
-
-                                {/* Main Info */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-3 mb-1.5">
-                                    <h3 className={`text-lg font-black truncate ${assignment.isCompleted ? 'line-through text-slate-500' : 'text-[#1a202c] dark:text-white'}`}>{assignment.title}</h3>
-                                    <span className="text-[10px] uppercase font-black tracking-wider px-2.5 py-1 rounded-md bg-[#FAF9F6] dark:bg-slate-900 text-slate-500 border border-slate-100 dark:border-slate-700 shadow-inner shrink-0">
-                                      {assignment.type === 'Assignment' ? 'גיליון' : assignment.type === 'Webwork' ? 'וובוורק' : 'מבחן'}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-medium">
-                                    <div className={`w-2 h-2 rounded-sm ${courseTheme.dot}`}></div>
-                                    <span>{coursesMap[assignment.courseCode]?.name} <span dir="ltr" className="opacity-60">({assignment.courseCode})</span></span>
-                                    <span className="hidden sm:inline opacity-30">•</span>
-                                    <span className={`flex items-center gap-1.5 ${(() => {
-                                      if (assignment.isCompleted || assignment.isOptional) return '';
-                                      const hoursUntilDeadline = (new Date(assignment.deadline).getTime() - Date.now()) / (1000 * 60 * 60);
-                                      if (hoursUntilDeadline <= 24) return 'text-rose-500';
-                                      if (hoursUntilDeadline <= 72) return 'text-amber-600';
-                                      return '';
-                                    })()}`}>
-                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה{assignment.isOptional ? '(רשות)' : ''}: {formatDateTime(assignment.deadline)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Actions / Right Side */}
-                              <div className={`flex items-center gap-3 sm:gap-4 border-slate-100 dark:border-slate-700 ${isList ? 'sm:ml-4 border-t sm:border-t-0 pt-3 sm:pt-0 shrink-0' : 'border-t pt-4 mt-auto justify-between w-full'}`}>
-                                {/* Attachments Button */}
-                                <div className="relative group/attach">
-                                  <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FAF9F6] dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                    <Paperclip className="w-4 h-4" /> {assignment.attachments?.length || 0} קבצים
-                                  </button>
-
-                                  {/* Hover Menu for Uploads/Files */}
-                                  <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/attach:opacity-100 group-hover/attach:visible transition-all z-20">
-                                    {token && (
-                                      <div className="flex gap-2 mb-2 p-1 border-b border-slate-100 dark:border-slate-700">
-                                        <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
-                                          <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} />
-                                          + מטלה
-                                        </label>
-                                        <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer hover:bg-emerald-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
-                                          <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} />
-                                          + חומר עזר
-                                        </label>
-                                      </div>
-                                    )}
-
-                                    {uploadingId === assignment.id && (
-                                      <div className="flex justify-center items-center py-2">
-                                        <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
-                                      </div>
-                                    )}
-
-                                    <div className="max-h-32 overflow-y-auto space-y-1">
-                                      {assignment.attachments?.map(att => renderAttachment(att, assignment.id))}
-                                      {(!assignment.attachments || assignment.attachments.length === 0) && uploadingId !== assignment.id && (
-                                        <div className="text-xs text-center text-slate-400 py-2">אין קבצים מצורפים</div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Grade Input */}
-                                <div className="flex flex-col items-center justify-center w-[4.5rem] h-[3.5rem] rounded-[1rem] bg-[#FAF9F6] dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 shadow-inner">
-                                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">ציון</span>
-                                  <input type="number" placeholder="--" className="w-full text-center bg-transparent text-lg font-black outline-none text-[#1a202c] dark:text-white placeholder:text-slate-300" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
-                                </div>
-
-                                {/* Admin Actions (Hidden until hover) */}
-                                {token && (
-                                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 left-4">
-                                    <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Trash className="w-3.5 h-3.5" /></button>
-                                    <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Edit className="w-3.5 h-3.5" /></button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
               {/* Grade Summary Component */}
               {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
                 <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
@@ -1852,6 +1748,110 @@ export default function App() {
                   </div>
                 );
               })()}
+
+              {/* Assignment List */}
+              {loading ? (<div className="flex justify-center items-center h-40"><RefreshCw className="w-8 h-8 text-blue-500 animate-spin" /></div>)
+                : fetchError ? (<div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-[2rem] p-8 text-center transition-colors"><AlertCircle className="w-12 h-12 text-red-400 dark:text-red-500 mx-auto mb-4" /><h3 className="text-lg font-medium text-red-900 dark:text-red-200 mb-1">שגיאת תקשורת</h3><p className="text-red-700 dark:text-red-300 text-sm max-w-md mx-auto">{fetchError}</p></div>)
+                  : filteredAssignments.length === 0 ? (<div className="bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 rounded-[2rem] p-12 text-center shadow-sm"><CheckCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" /><h3 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-1">הכל נקי!</h3><p className="text-slate-500">אין מטלות קרובות להצגה.</p></div>)
+                    : (
+                      <div className={viewMode === 'cards' ? "grid grid-cols-1 xl:grid-cols-2 gap-4 flex-1 content-start" : "flex flex-col gap-4 flex-1 content-start"}>
+                        {filteredAssignments.map((assignment) => {
+                          const courseTheme = getCourseTheme(assignment.courseCode);
+                          const isList = viewMode === 'list';
+
+                          return (
+                            <div key={assignment.id} className={`relative bg-white dark:bg-slate-800 rounded-[2rem] p-4 sm:p-5 flex flex-col ${isList ? 'sm:flex-row sm:items-center' : 'h-full justify-between'} gap-4 sm:gap-6 border border-slate-200/40 dark:border-slate-700 shadow-[0_4px_20px_rgb(0,0,0,0.03)] transition-all duration-200 group hover:z-50 focus-within:z-50 ${assignment.isCompleted ? 'opacity-50 grayscale-[0.2] hover:opacity-100 hover:grayscale-0' : ''}`}>
+                              {/* Colored Right Border indicator */}
+                              <div className={`absolute right-0 top-6 bottom-6 w-1.5 rounded-s-md ${courseTheme.dot}`}></div>
+
+                              <div className={`flex items-start ${isList ? 'items-center sm:w-auto w-full' : ''} gap-4 flex-1 min-w-0`}>
+                                {/* Checkbox */}
+                                <button onClick={() => toggleCompletion(assignment.id)} className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 ml-2 transition-colors ${assignment.isCompleted ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30' : 'border-slate-200 dark:border-slate-600 hover:border-slate-300'}`}>
+                                  {assignment.isCompleted && <Check className="w-4 h-4 text-emerald-500" />}
+                                </button>
+
+                                {/* Main Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-3 mb-1.5">
+                                    <h3 className={`text-lg font-black truncate ${assignment.isCompleted ? 'line-through text-slate-500' : 'text-[#1a202c] dark:text-white'}`}>{assignment.title}</h3>
+                                    <span className="text-[10px] uppercase font-black tracking-wider px-2.5 py-1 rounded-md bg-[#FAF9F6] dark:bg-slate-900 text-slate-500 border border-slate-100 dark:border-slate-700 shadow-inner shrink-0">
+                                      {assignment.type === 'Assignment' ? 'גיליון' : assignment.type === 'Webwork' ? 'וובוורק' : 'מבחן'}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                    <div className={`w-2 h-2 rounded-sm ${courseTheme.dot}`}></div>
+                                    <span>{coursesMap[assignment.courseCode]?.name} <span dir="ltr" className="opacity-60">({assignment.courseCode})</span></span>
+                                    <span className="hidden sm:inline opacity-30">•</span>
+                                    <span className={`flex items-center gap-1.5 ${(() => {
+                                      if (assignment.isCompleted || assignment.isOptional) return '';
+                                      const hoursUntilDeadline = (new Date(assignment.deadline).getTime() - Date.now()) / (1000 * 60 * 60);
+                                      if (hoursUntilDeadline <= 24) return 'text-rose-500';
+                                      if (hoursUntilDeadline <= 72) return 'text-amber-600';
+                                      return '';
+                                    })()}`}>
+                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה{assignment.isOptional ? '(רשות)' : ''}: {formatDateTime(assignment.deadline)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Actions / Right Side */}
+                              <div className={`flex items-center gap-3 sm:gap-4 border-slate-100 dark:border-slate-700 ${isList ? 'sm:ml-4 border-t sm:border-t-0 pt-3 sm:pt-0 shrink-0' : 'border-t pt-4 mt-auto justify-between w-full'}`}>
+                                {/* Attachments Button */}
+                                <div className="relative group/attach">
+                                  <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FAF9F6] dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                    <Paperclip className="w-4 h-4" /> {assignment.attachments?.length || 0} קבצים
+                                  </button>
+
+                                  {/* Hover Menu for Uploads/Files */}
+                                  <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl p-2 opacity-0 invisible group-hover/attach:opacity-100 group-hover/attach:visible transition-all z-20">
+                                    {token && (
+                                      <div className="flex gap-2 mb-2 p-1 border-b border-slate-100 dark:border-slate-700">
+                                        <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-blue-50 text-blue-600 rounded-lg cursor-pointer hover:bg-blue-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                          <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'assignment')} />
+                                          + מטלה
+                                        </label>
+                                        <label className={`flex-1 text-center py-1.5 text-xs font-bold bg-emerald-50 text-emerald-600 rounded-lg cursor-pointer hover:bg-emerald-100 ${uploadingId === assignment.id ? 'opacity-50 pointer-events-none' : ''}`}>
+                                          <input type="file" className="hidden" disabled={uploadingId === assignment.id} onChange={(e) => handleFileUpload(assignment.id, e, 'solution')} />
+                                          + חומר עזר
+                                        </label>
+                                      </div>
+                                    )}
+
+                                    {uploadingId === assignment.id && (
+                                      <div className="flex justify-center items-center py-2">
+                                        <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                                      </div>
+                                    )}
+
+                                    <div className="max-h-32 overflow-y-auto space-y-1">
+                                      {assignment.attachments?.map(att => renderAttachment(att, assignment.id))}
+                                      {(!assignment.attachments || assignment.attachments.length === 0) && uploadingId !== assignment.id && (
+                                        <div className="text-xs text-center text-slate-400 py-2">אין קבצים מצורפים</div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Grade Input */}
+                                <div className="flex flex-col items-center justify-center w-[4.5rem] h-[3.5rem] rounded-[1rem] bg-[#FAF9F6] dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 shadow-inner">
+                                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">ציון</span>
+                                  <input type="number" placeholder="--" className="w-full text-center bg-transparent text-lg font-black outline-none text-[#1a202c] dark:text-white placeholder:text-slate-300" value={assignment.grade ?? ''} onChange={(e) => handleGradeUpdate(assignment.id, e.target.value)} />
+                                </div>
+
+                                {/* Admin Actions (Hidden until hover) */}
+                                {token && (
+                                  <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute top-4 left-4">
+                                    <button onClick={() => handleDelete(assignment.id)} className="p-1.5 text-slate-400 hover:text-red-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Trash className="w-3.5 h-3.5" /></button>
+                                    <button onClick={() => openEditModal(assignment)} className="p-1.5 text-slate-400 hover:text-blue-600 bg-white dark:bg-slate-800 rounded-md shadow-sm border border-slate-100 dark:border-slate-700"><Edit className="w-3.5 h-3.5" /></button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
             </div>
           </>
         )}
