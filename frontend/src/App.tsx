@@ -1567,7 +1567,7 @@ export default function App() {
                           <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
                             <label className="flex items-center gap-4 cursor-pointer flex-1">
                               <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
-                              <div className={`w-12 h-12 rounded-[0.8rem] flex items-center justify-center font-black text-white shadow-sm transition-transform ${visibleCourses.includes(code) ? courseTheme.dot : 'bg-slate-200 dark:bg-slate-700 opacity-50 scale-90'}`}>
+                              <div className={`w-8 h-8 rounded-[0.8rem] flex items-center justify-center font-black text-white shadow-sm transition-transform ${visibleCourses.includes(code) ? courseTheme.dot : 'bg-slate-200 dark:bg-slate-700 opacity-50 scale-90'}`}>
                               </div>
                               <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
                                 <span className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
@@ -1819,7 +1819,7 @@ export default function App() {
                                       if (hoursUntilDeadline <= 72) return 'text-amber-600';
                                       return '';
                                     })()}`}>
-                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה{assignment.isOptional ? '(רשות)' : ''}: {formatDateTime(assignment.deadline)}
+                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה{assignment.isOptional ? ' (רשות)' : ''}: {formatDateTime(assignment.deadline)}
                                     </span>
                                   </div>
                                 </div>
