@@ -1150,19 +1150,25 @@ def download_summary(summary_id: int, expires: int, sig: str, db: Session = Depe
         raise HTTPException(status_code=404, detail="Summary not found")
 
     try:
-        # Get the object directly from S3/MinIO (instead of generating a URL)
         s3_response = s3_client.get_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
 
-        # URL-encode the Hebrew filename safely
-        encoded_filename = quote(summary.filename)
+        # Extract the missing extension from the S3 object key (e.g., ".pdf")
+        _, ext = os.path.splitext(summary.object_name)
 
-        # Stream the file back to the browser in chunks
+        # Stitch the extension back onto the clean Hebrew name
+        full_filename = summary.filename
+        if ext and not full_filename.lower().endswith(ext.lower()):
+            full_filename += ext
+
+        # URL-encode it safely
+        encoded_filename = quote(full_filename)
+
         return StreamingResponse(
             file_stream(s3_response),
             media_type=s3_response.get('ContentType', 'application/octet-stream'),
             headers={
-                "Content-Disposition": f"attachment; filename*=utf-8''{encoded_filename}",
-                "Content-Length": str(s3_response.get('ContentLength', 0))  # Helps the browser show a progress bar
+                "Content-Disposition": f"inline; filename*=utf-8''{encoded_filename}",
+                "Content-Length": str(s3_response.get('ContentLength', 0))
             }
         )
     except Exception as e:
