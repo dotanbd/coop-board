@@ -284,13 +284,20 @@ def get_write_user(current_user: dict = Depends(get_current_user), db: Session =
     return current_user  # Returns the normal payload so your routes don't break
 
 
-# -- Secure MinIO Link Generation --
+# -- MinIO helper functions --
 def generate_secure_download_query(attachment_id: int, expires_in_seconds: int = 3600) -> str:
     """Generates a cryptographically signed query string with an expiration timestamp."""
     expires_at = int(time.time()) + expires_in_seconds
     message = f"{attachment_id}:{expires_at}".encode()
     signature = hmac.new(APP_SECRET, message, hashlib.sha256).hexdigest()
     return f"?expires={expires_at}&sig={signature}"
+
+
+def file_stream(response):
+    """Yields large files from S3 in 1MB chunks to prevent memory overload"""
+    for chunk in response['Body'].iter_chunks(chunk_size=1024 * 1024):
+        if chunk:
+            yield chunk
 
 
 # --- Auth Routes ---
@@ -922,15 +929,11 @@ def download_attachment(attachment_id: int, expires: int, sig: str, db: Session 
     try:
         s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=att.object_name)
 
-        def file_stream():
-            for chunk in s3_response['Body'].iter_chunks():
-                yield chunk
-
         content_type, _ = mimetypes.guess_type(att.filename)
         encoded_filename = quote(att.filename)
 
         return StreamingResponse(
-            file_stream(),
+            file_stream(s3_response),
             media_type=content_type or "application/octet-stream",
             headers={"Content-Disposition": f"inline; filename*=utf-8''{encoded_filename}"}
         )
@@ -1083,12 +1086,9 @@ def admin_preview_summary(summary_id: int, token: str, db: Session = Depends(get
 
     try:
         s3_response = s3_client.get_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
-        def file_stream():
-            for chunk in s3_response['Body'].iter_chunks():
-                yield chunk
         content_type, _ = mimetypes.guess_type(summary.filename)
         return StreamingResponse(
-            file_stream(),
+            file_stream(s3_response),
             media_type=content_type or "application/octet-stream",
             headers={"Content-Disposition": f"inline; filename*=utf-8''{quote(summary.filename)}"}
         )
@@ -1150,22 +1150,23 @@ def download_summary(summary_id: int, expires: int, sig: str, db: Session = Depe
         raise HTTPException(status_code=404, detail="Summary not found")
 
     try:
+        # Get the object directly from S3/MinIO (instead of generating a URL)
         s3_response = s3_client.get_object(Bucket=SUMMARIES_BUCKET, Key=summary.object_name)
 
-        def file_stream():
-            for chunk in s3_response['Body'].iter_chunks():
-                yield chunk
-
-        content_type, _ = mimetypes.guess_type(summary.filename)
+        # URL-encode the Hebrew filename safely
         encoded_filename = quote(summary.filename)
 
+        # Stream the file back to the browser in chunks
         return StreamingResponse(
-            file_stream(),
-            media_type=content_type or "application/octet-stream",
-            headers={"Content-Disposition": f"inline; filename*=utf-8''{encoded_filename}"}
+            file_stream(s3_response),
+            media_type=s3_response.get('ContentType', 'application/octet-stream'),
+            headers={
+                "Content-Disposition": f"attachment; filename*=utf-8''{encoded_filename}",
+                "Content-Length": str(s3_response.get('ContentLength', 0))  # Helps the browser show a progress bar
+            }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Error retrieving file from storage")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # --- Admin Dashboard Routes ---
