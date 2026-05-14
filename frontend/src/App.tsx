@@ -1572,86 +1572,94 @@ export default function App() {
                 const progressPercentage = totalProgressAssignments === 0 ? 0 : Math.round((completedProgressAssignments / totalProgressAssignments) * 100);
 
                 return (
-                  <div className="mb-8 pb-8 border-b border-slate-200/60 dark:border-slate-700 relative group/progress transition-all duration-300">
-                    <div className="flex justify-between items-center mb-4">
+                  <div className="mb-8 pb-8 border-b border-slate-200/60 dark:border-slate-700 relative group/progress">
+                    
+                    {/* Header (Removed static mb-4 so the collapse is flush) */}
+                    <div className="flex justify-between items-center">
                       <h2 className="text-xl font-black text-[#1a202c] dark:text-white">מצב התקדמות</h2>
                       
+                      {/* The Minimize/Maximize Button */}
                       <button
                         onClick={() => setIsProgressMinimized(!isProgressMinimized)}
                         className={`p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-200 ${isProgressMinimized ? 'opacity-100' : 'opacity-0 group-hover/progress:opacity-100'}`}
                         title={isProgressMinimized ? 'הצג מצב התקדמות' : 'הסתר מצב התקדמות'}
                       >
-                        <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isProgressMinimized ? '' : 'rotate-180'}`} />
+                        <ChevronDown className={`w-5 h-5 transition-transform duration-500 ease-in-out ${isProgressMinimized ? '' : 'rotate-180'}`} />
                       </button>
                     </div>
 
-                    {!isProgressMinimized && (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {/* ✨ The Animated Wrapper: CSS Grid 0fr to 1fr Trick! */}
+                    <div className={`grid transition-all duration-500 ease-in-out ${isProgressMinimized ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
+                      <div className="overflow-hidden">
                         
-                        {/* Active Card: Assignments Progress */}
-                        <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-1 block">מטלות הסמסטר</span>
-                              <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">קצב ביצוע</h3>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 transition-transform duration-300 group-hover:scale-110">
-                              <ListChecks className="w-5 h-5" />
-                            </div>
-                          </div>
+                        {/* Inner Grid Container (Added pt-4 here instead of mb-4 on header) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 pb-1">
                           
-                          <div>
-                            <div className="flex items-end justify-between mb-2">
-                              <span className="text-3xl font-black text-[#1a202c] dark:text-white leading-none">{progressPercentage}%</span>
-                              <span className="text-sm font-medium text-slate-500">{completedProgressAssignments} מתוך {totalProgressAssignments}</span>
+                          {/* Active Card: Assignments Progress */}
+                          <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-wider mb-1 block">מטלות הסמסטר</span>
+                                <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">קצב ביצוע</h3>
+                              </div>
+                              <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 transition-transform duration-300 group-hover:scale-110">
+                                <ListChecks className="w-5 h-5" />
+                              </div>
                             </div>
-                            {/* Progress Bar */}
-                            <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden" dir="ltr">
-                              <div className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${progressPercentage}%` }}></div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Placeholder 1: Degree Average */}
-                        <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between opacity-80 cursor-not-allowed group relative">
-                          <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="px-4 py-1.5 bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-full shadow-md">בקרוב</span>
-                          </div>
-                          <div className="flex justify-between items-start mb-4">
+                            
                             <div>
-                              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider mb-1 block">ממוצע תואר</span>
-                              <h3 className="font-bold text-[#1a202c] dark:text-white text-lg opacity-60">ציונים</h3>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 opacity-60">
-                              <Trophy className="w-5 h-5" />
+                              <div className="flex items-end justify-between mb-2">
+                                <span className="text-3xl font-black text-[#1a202c] dark:text-white leading-none">{progressPercentage}%</span>
+                                <span className="text-sm font-medium text-slate-500">{completedProgressAssignments} מתוך {totalProgressAssignments}</span>
+                              </div>
+                              {/* Progress Bar */}
+                              <div className="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden" dir="ltr">
+                                <div className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out delay-300" style={{ width: `${progressPercentage}%` }}></div>
+                              </div>
                             </div>
                           </div>
-                          <div>
-                            <span className="text-3xl font-black text-slate-300 dark:text-slate-600 leading-none">--</span>
-                          </div>
-                        </div>
 
-                        {/* Placeholder 2: Credit Points */}
-                        <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between opacity-80 cursor-not-allowed group relative">
-                          <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span className="px-4 py-1.5 bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-full shadow-md">בקרוב</span>
-                          </div>
-                          <div className="flex justify-between items-start mb-4">
+                          {/* Placeholder 1: Degree Average */}
+                          <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between opacity-80 cursor-not-allowed group/card relative">
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 rounded-[2rem] opacity-0 group-hover/card:opacity-100 transition-opacity">
+                              <span className="px-4 py-1.5 bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-full shadow-md">בקרוב</span>
+                            </div>
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider mb-1 block">ממוצע תואר</span>
+                                <h3 className="font-bold text-[#1a202c] dark:text-white text-lg opacity-60">ציונים</h3>
+                              </div>
+                              <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 opacity-60">
+                                <Trophy className="w-5 h-5" />
+                              </div>
+                            </div>
                             <div>
-                              <span className="text-[10px] font-black text-purple-500 uppercase tracking-wider mb-1 block">נקודות זכות</span>
-                              <h3 className="font-bold text-[#1a202c] dark:text-white text-lg opacity-60">התקדמות לתואר</h3>
-                            </div>
-                            <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500 opacity-60">
-                              <BookOpen className="w-5 h-5" />
+                              <span className="text-3xl font-black text-slate-300 dark:text-slate-600 leading-none">--</span>
                             </div>
                           </div>
-                          <div>
-                            <span className="text-3xl font-black text-slate-300 dark:text-slate-600 leading-none">--</span>
-                          </div>
-                        </div>
 
+                          {/* Placeholder 2: Credit Points */}
+                          <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between opacity-80 cursor-not-allowed group/card relative">
+                            <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 rounded-[2rem] opacity-0 group-hover/card:opacity-100 transition-opacity">
+                              <span className="px-4 py-1.5 bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-full shadow-md">בקרוב</span>
+                            </div>
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                <span className="text-[10px] font-black text-purple-500 uppercase tracking-wider mb-1 block">נקודות זכות</span>
+                                <h3 className="font-bold text-[#1a202c] dark:text-white text-lg opacity-60">התקדמות לתואר</h3>
+                              </div>
+                              <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500 opacity-60">
+                                <BookOpen className="w-5 h-5" />
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-3xl font-black text-slate-300 dark:text-slate-600 leading-none">--</span>
+                            </div>
+                          </div>
+
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 );
               })()}
