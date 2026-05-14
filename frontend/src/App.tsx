@@ -1536,7 +1536,7 @@ export default function App() {
             </aside>
 
             {/* Main Content (Assignments & Stats) */}
-            <div className="flex-1 relative z-10 flex flex-col min-h-full gap-8">
+            <div className="flex-1 relative z-10 flex flex-col min-h-full gap-8 min-w-0">
 
               {/* Top Action Bar */}
               <div className="flex flex-wrap items-center justify-between mt-2 gap-4">
