@@ -1653,7 +1653,7 @@ export default function App() {
                                     <span>{coursesMap[assignment.courseCode]?.name} <span dir="ltr" className="opacity-60">({assignment.courseCode})</span></span>
                                     <span className="hidden sm:inline opacity-30">•</span>
                                     <span className={`flex items-center gap-1.5 ${(() => {
-                                      if (assignment.isCompleted) return '';
+                                      if (assignment.isCompleted || assignment.isOptional) return '';
                                       const hoursUntilDeadline = (new Date(assignment.deadline).getTime() - Date.now()) / (1000 * 60 * 60);
                                       if (hoursUntilDeadline <= 24) return 'text-rose-500';
                                       if (hoursUntilDeadline <= 72) return 'text-amber-600';
