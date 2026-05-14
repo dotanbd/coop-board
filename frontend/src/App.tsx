@@ -1522,7 +1522,7 @@ export default function App() {
                 <div className="flex justify-between items-center shrink-0">
                   <div className="flex items-center gap-2">
                     <h2 className="font-black text-xl text-[#1a202c] dark:text-white">הקורסים שלי</h2>
-                    {/* ✨ Mobile-only Collapse Button */}
+                    {/* Mobile-only Collapse Button */}
                     <button
                       onClick={() => setIsCourseListMinimized(!isCourseListMinimized)}
                       className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-all duration-200"
@@ -1539,7 +1539,7 @@ export default function App() {
                 </div>
 
                 {/* Responsive Animated Wrapper: Grid on Mobile, Flex on Desktop */}
-                <div className={`grid md:flex md:flex-1 md:flex-col transition-all duration-500 ease-in-out ${isCourseListMinimized ? 'grid-rows-[0fr] opacity-0 md:opacity-100 md:grid-rows-none md:mt-6' : 'grid-rows-[1fr] opacity-100 mt-6'}`}>
+                <div className={`grid md:flex md:flex-1 md:flex-col min-h-0 transition-all duration-500 ease-in-out ${isCourseListMinimized ? 'grid-rows-[0fr] opacity-0 md:opacity-100 md:grid-rows-none md:mt-6' : 'grid-rows-[1fr] opacity-100 mt-6'}`}>
                   <div className="overflow-hidden flex flex-col min-h-0 md:flex-1 w-full">
 
                     {/* Search */}
