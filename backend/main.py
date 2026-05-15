@@ -19,7 +19,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import StreamingResponse
 import mimetypes
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update, Float
 from sqlalchemy import or_, and_, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
@@ -94,6 +94,10 @@ class DBUser(Base):
     picture = Column(String)
     role = Column(String, default="student")
     followed_courses = relationship("DBCourse", secondary=user_courses)
+    total_credits = Column(Float, default=0.0)
+    weighted_sum = Column(Float, default=0.0)
+    previous_total_credits = Column(Float, default=0.0)
+    previous_weighted_sum = Column(Float, default=0.0)
 
 class DBCourse(Base):
     __tablename__ = "courses"
@@ -206,6 +210,13 @@ class GradeUpdate(BaseModel):
 
 class CourseCodeUpdate(BaseModel):
     new_code: str
+
+
+class ProgressUpdateReq(BaseModel):
+    is_redo: bool
+    credits: float
+    new_score: float
+    old_score: Optional[float] = None
 
 
 # --- App Setup ---
@@ -1458,3 +1469,49 @@ def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session 
         "semester": process_board(semester_board),
         "all_time": process_board(all_time_board)
     }
+
+
+@app.post("/api/v2/users/me/progress/update")
+def update_degree_progress(req: ProgressUpdateReq, db: Session = Depends(get_db),
+                           current_user: DBUser = Depends(get_current_user)):
+    # 1. Stash current state for the "Undo" feature
+    current_user.previous_total_credits = current_user.total_credits
+    current_user.previous_weighted_sum = current_user.weighted_sum
+
+    # 2. Apply the new math
+    if req.is_redo:
+        if req.old_score is None:
+            raise HTTPException(status_code=400, detail="old_score is required for a redo")
+        # Credits stay the same, only the weighted sum delta is applied
+        delta = (req.new_score - req.old_score) * req.credits
+        current_user.weighted_sum += delta
+    else:
+        # Brand-new course
+        current_user.total_credits += req.credits
+        current_user.weighted_sum += (req.new_score * req.credits)
+
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@app.post("/api/v2/users/me/progress/undo")
+def undo_degree_progress(db: Session = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
+    # Restore the stashed state
+    current_user.total_credits = current_user.previous_total_credits
+    current_user.weighted_sum = current_user.previous_weighted_sum
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@app.post("/api/v2/users/me/progress/reset")
+def reset_degree_progress(db: Session = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
+    # Nuke everything back to zero
+    current_user.total_credits = 0.0
+    current_user.weighted_sum = 0.0
+    current_user.previous_total_credits = 0.0
+    current_user.previous_weighted_sum = 0.0
+    db.commit()
+    db.refresh(current_user)
+    return current_user
