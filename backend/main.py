@@ -113,6 +113,9 @@ class DBCourse(Base):
     hw_magen = Column(Boolean, default=False)
     ww_magen = Column(Boolean, default=False)
     exam_magen = Column(Boolean, default=False)
+    lab_report_weight = Column(Integer, default=0)
+    lab_report_keep = Column(Integer, default=0)
+    lab_report_magen = Column(Boolean, default=False)
     last_edited = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class DBAssignment(Base):
@@ -197,9 +200,12 @@ class CourseUpdate(BaseModel):
     ww_weight: int = 0
     ww_drop: int = 0
     exam_weight: int = 0
+    lab_report_weight: Optional[int] = 0
+    lab_report_keep: Optional[int] = 0
     hw_magen: bool = False
     ww_magen: bool = False
     exam_magen: bool = False
+    lab_report_magen: Optional[bool] = False
 
 
 class AttachmentUpdate(BaseModel):
