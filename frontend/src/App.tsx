@@ -36,7 +36,7 @@ const IS_DEV = isDevEnvironment();
 // --- TypeScript Interfaces ---
 interface Attachment { id: number; filename: string; url: string; uploader_id: number; category: string; likes?: number; isLikedByMe?: boolean; }
 interface Assignment { id: number; title: string; courseCode: string; type: string; deadline: string; isOptional: boolean; isCompleted: boolean; grade: number | null; attachments: Attachment[]; }
-interface UserProfile { id: number; email: string; name: string; picture: string; role: string; totalLikesReceived?: number; }
+interface UserProfile { id: number; email: string; name: string; picture: string; role: string; totalLikesReceived?: number; total_credits?: number; weighted_sum?: number; previous_total_credits?: number; previous_weighted_sum?: number;}
 interface CourseSyllabus { name: string; hw_weight: number; hw_keep: number; hw_magen: boolean; ww_weight: number; ww_keep: number; ww_magen: boolean; exam_weight: number; exam_magen: boolean; }
 interface CoursesMap { [key: string]: CourseSyllabus; }
 interface AssignmentFormData { title: string; courseCode: string; courseName: string; type: string; deadline: string; time: string; isOptional: boolean; }
@@ -653,7 +653,7 @@ export default function App() {
   const [activeTypeFilter, setActiveTypeFilter] = useState<string>('All');
   const assignmentTypes = ['All', 'Assignment', 'Webwork', 'Exam'];
 
-  // Modals State
+  // Assignments Modal State
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [currentEditId, setCurrentEditId] = useState<number | null>(null);
@@ -683,6 +683,16 @@ export default function App() {
 
   // Mobile Filter Modal State
   const [isMobileFilterModalOpen, setIsMobileFilterModalOpen] = useState<boolean>(false);
+
+  // Degree Progress Modal State
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [progressForm, setProgressForm] = useState({
+    is_redo: false,
+    credits: '',
+    new_score: '',
+    old_score: ''
+  });
+  const [isProgressUpdating, setIsProgressUpdating] = useState(false);
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
 
@@ -1099,6 +1109,52 @@ export default function App() {
       return { earned: avg.toFixed(1), possible: '100', isMagen: false, unconfigured: true };
     }
     return { earned: totalEarned.toFixed(1), possible: totalPossible.toFixed(1), isMagen: isMagenActive, unconfigured: false };
+  };
+
+  
+
+    const handleProgressUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    setIsProgressUpdating(true);
+    try {
+      const payload = {
+        is_redo: progressForm.is_redo,
+        credits: parseFloat(progressForm.credits),
+        new_score: parseFloat(progressForm.new_score),
+        old_score: progressForm.is_redo ? parseFloat(progressForm.old_score) : null
+      };
+      const res = await fetch(`${API_BASE_URL}/users/me/progress/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        setUserProfile(await res.json());
+        setIsProgressModalOpen(false);
+        setProgressForm({ is_redo: false, credits: '', new_score: '', old_score: '' });
+      } else {
+        alert("שגיאה בעדכון הנתונים");
+      }
+    } catch {
+      alert("שגיאת תקשורת");
+    } finally {
+      setIsProgressUpdating(false);
+    }
+  };
+
+  const handleProgressAction = async (action: 'undo' | 'reset') => {
+    if (action === 'reset' && !window.confirm("האם לאפס לחלוטין את חישוב הממוצע ונקודות הזכות?")) return;
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/users/me/progress/${action}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) setUserProfile(await res.json());
+    } catch {
+      alert("שגיאת תקשורת");
+    }
   };
 
   const handleCalendarSync = () => {
@@ -1626,7 +1682,7 @@ export default function App() {
                         {/* Inner Grid Container (Added pt-4 here instead of mb-4 on header) */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 pb-1">
                           
-                          {/* Active Card: Assignments Progress */}
+                          {/* Assignments Progress */}
                           <div className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between relative overflow-hidden group">
                             <div className="flex justify-between items-start mb-4">
                               <div>
@@ -1650,41 +1706,45 @@ export default function App() {
                             </div>
                           </div>
 
-                          {/* Placeholder 1: Degree Average */}
-                          <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between opacity-80 cursor-not-allowed group/card relative">
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 rounded-[2rem] opacity-0 group-hover/card:opacity-100 transition-opacity">
-                              <span className="px-4 py-1.5 bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-full shadow-md">בקרוב</span>
-                            </div>
+                          {/* Degree Average */}
+                          <div 
+                            onClick={() => setIsProgressModalOpen(true)}
+                            className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between group/card relative cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors"
+                          >
                             <div className="flex justify-between items-start mb-4">
                               <div>
                                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-wider mb-1 block">ממוצע תואר</span>
-                                <h3 className="font-bold text-[#1a202c] dark:text-white text-lg opacity-60">ציונים</h3>
+                                <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">ציונים</h3>
                               </div>
-                              <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 opacity-60">
+                              <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 transition-transform duration-300 group-hover/card:scale-110">
                                 <Trophy className="w-5 h-5" />
                               </div>
                             </div>
                             <div>
-                              <span className="text-3xl font-black text-slate-300 dark:text-slate-600 leading-none">--</span>
+                              <span className="text-3xl font-black text-[#1a202c] dark:text-white leading-none">
+                                {userProfile?.total_credits ? (userProfile.weighted_sum! / userProfile.total_credits).toFixed(2) : '--'}
+                              </span>
                             </div>
                           </div>
 
-                          {/* Placeholder 2: Credit Points */}
-                          <div className="bg-slate-50 dark:bg-slate-800/40 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between opacity-80 cursor-not-allowed group/card relative">
-                            <div className="absolute inset-0 flex items-center justify-center bg-white/40 dark:bg-slate-900/60 backdrop-blur-[2px] z-10 rounded-[2rem] opacity-0 group-hover/card:opacity-100 transition-opacity">
-                              <span className="px-4 py-1.5 bg-[#1a202c] dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-full shadow-md">בקרוב</span>
-                            </div>
+                          {/* Credit Points */}
+                          <div 
+                            onClick={() => setIsProgressModalOpen(true)}
+                            className="bg-white dark:bg-slate-800 rounded-[2rem] p-6 border border-slate-200/50 dark:border-slate-700 shadow-sm flex flex-col justify-between group/card relative cursor-pointer hover:border-purple-300 dark:hover:border-purple-700 transition-colors"
+                          >
                             <div className="flex justify-between items-start mb-4">
                               <div>
                                 <span className="text-[10px] font-black text-purple-500 uppercase tracking-wider mb-1 block">נקודות זכות</span>
-                                <h3 className="font-bold text-[#1a202c] dark:text-white text-lg opacity-60">התקדמות לתואר</h3>
+                                <h3 className="font-bold text-[#1a202c] dark:text-white text-lg">התקדמות לתואר</h3>
                               </div>
-                              <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500 opacity-60">
+                              <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500 transition-transform duration-300 group-hover/card:scale-110">
                                 <BookOpen className="w-5 h-5" />
                               </div>
                             </div>
                             <div>
-                              <span className="text-3xl font-black text-slate-300 dark:text-slate-600 leading-none">--</span>
+                              <span className="text-3xl font-black text-[#1a202c] dark:text-white leading-none">
+                                {userProfile?.total_credits ? userProfile.total_credits.toFixed(1) : '--'}
+                              </span>
                             </div>
                           </div>
 
@@ -1712,7 +1772,7 @@ export default function App() {
                       
                       {/* Filter Menus Container */}
                       {openFilter && (
-                        <div className="absolute top-full mt-2 left-0 right-0 sm:right-0 sm:left-auto bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 flex flex-col gap-4 min-w-[280px]">
+                        <div className="absolute top-full mt-2 left-0 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 flex flex-col gap-4 min-w-[280px]">
                           
                           {/* Type Filter */}
                           <div>
@@ -2351,6 +2411,68 @@ export default function App() {
                   {isUploadingSummary ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'שמירה'}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Degree Progress Modal */}
+      {isProgressModalOpen && token && (
+        <div className="fixed inset-0 bg-slate-900/50 dark:bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
+            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <Calculator className="w-5 h-5 text-blue-500" />
+                עדכון ממוצע התואר
+              </h2>
+              <button onClick={() => setIsProgressModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-2xl leading-none">&times;</button>
+            </div>
+            
+            <form onSubmit={handleProgressUpdate} className="p-6 space-y-5">
+              
+              {/* Type Switcher */}
+              <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+                <button type="button" onClick={() => setProgressForm(prev => ({ ...prev, is_redo: false }))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-colors ${!progressForm.is_redo ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500'}`}>
+                  קורס חדש
+                </button>
+                <button type="button" onClick={() => setProgressForm(prev => ({ ...prev, is_redo: true }))} className={`flex-1 py-1.5 text-sm font-bold rounded-lg transition-colors ${progressForm.is_redo ? 'bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500'}`}>
+                  שיפור ציון (Redo)
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">נקודות זכות לקורס</label>
+                  <input required type="number" step="0.5" min="0" placeholder="לדוגמה: 3.5" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={progressForm.credits} onChange={e => setProgressForm({ ...progressForm, credits: e.target.value })} />
+                </div>
+                
+                {progressForm.is_redo && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ציון קודם</label>
+                    <input required type="number" min="0" max="100" placeholder="הציון שברצונך לדרוס" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-slate-800 dark:text-slate-100" value={progressForm.old_score} onChange={e => setProgressForm({ ...progressForm, old_score: e.target.value })} />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{progressForm.is_redo ? 'ציון חדש' : 'ציון סופי'}</label>
+                  <input required type="number" min="0" max="100" placeholder="לדוגמה: 95" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={progressForm.new_score} onChange={e => setProgressForm({ ...progressForm, new_score: e.target.value })} />
+                </div>
+              </div>
+
+              <button type="submit" disabled={isProgressUpdating} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors flex justify-center items-center gap-2">
+                {isProgressUpdating ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'שמור והוסף לממוצע'}
+              </button>
+
+              {/* Typo Correction Tools */}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                <button type="button" onClick={() => handleProgressAction('undo')} disabled={userProfile?.total_credits === userProfile?.previous_total_credits && userProfile?.weighted_sum === userProfile?.previous_weighted_sum} className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 disabled:opacity-30 transition-colors">
+                  ↩ בטל פעולה אחרונה
+                </button>
+                <button type="button" onClick={() => handleProgressAction('reset')} className="text-xs font-bold text-red-400 hover:text-red-600 transition-colors">
+                  איפוס נתונים
+                </button>
+              </div>
+
             </form>
           </div>
         </div>
