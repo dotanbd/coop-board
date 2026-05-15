@@ -35,11 +35,11 @@ const IS_DEV = isDevEnvironment();
 
 // --- TypeScript Interfaces ---
 interface Attachment { id: number; filename: string; url: string; uploader_id: number; category: string; likes?: number; isLikedByMe?: boolean; }
-interface Assignment { id: number; title: string; courseCode: string; type: string; deadline: string; isOptional: boolean; isCompleted: boolean; grade: number | null; attachments: Attachment[]; }
+interface Assignment { id: number; title: string; courseCode: string; type: string; deadline: string; recommended_deadline?: string | null; isCompleted: boolean; grade: number | null; attachments: Attachment[]; }
 interface UserProfile { id: number; email: string; name: string; picture: string; role: string; totalLikesReceived?: number; total_credits?: number; weighted_sum?: number; previous_total_credits?: number; previous_weighted_sum?: number; binary_credits?: number; previous_binary_credits?: number;}
 interface CourseSyllabus { name: string; hw_weight: number; hw_keep: number; hw_magen: boolean; ww_weight: number; ww_keep: number; ww_magen: boolean; lab_report_weight: number; lab_report_keep: number; lab_report_magen: boolean; exam_weight: number; exam_magen: boolean; }
 interface CoursesMap { [key: string]: CourseSyllabus; }
-interface AssignmentFormData { title: string; courseCode: string; courseName: string; type: string; deadline: string; time: string; isOptional: boolean; }
+interface AssignmentFormData { title: string; courseCode: string; courseName: string; type: string; deadline: string; time: string; recommended_date: string; recommended_time: string; }
 interface CourseTheme { startBorder: string; hover: string; badgeBg: string; badgeText: string; badgeBorder: string; dot: string; }
 interface GradeSummary { earned: string; possible: string; isMagen: boolean; magenStatus: string; unconfigured: boolean; }
 
@@ -657,7 +657,11 @@ export default function App() {
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [currentEditId, setCurrentEditId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<AssignmentFormData>({ title: '', courseCode: '', courseName: '', type: 'Assignment', deadline: '', time: '', isOptional: false });
+  const [formData, setFormData] = useState<AssignmentFormData>({ 
+    title: '', courseCode: '', courseName: '', type: 'Assignment', 
+    deadline: '', time: '', 
+    recommended_date: '', recommended_time: ''
+  });
 
   // Course Settings Modal State
   const [isCourseModalOpen, setIsCourseModalOpen] = useState<boolean>(false);
@@ -1045,29 +1049,65 @@ export default function App() {
     }
   };
 
-  const openAddModal = () => { setIsEditing(false); setCurrentEditId(null); setFormData({ title: '', courseCode: '', courseName: '', type: 'Assignment', deadline: '', time: '', isOptional: false }); setIsAssignmentModalOpen(true); };
+  const openAddModal = () => { 
+    setIsEditing(false); 
+    setCurrentEditId(null); 
+    setFormData({ 
+      title: '', courseCode: '', courseName: '', type: 'Assignment', 
+      deadline: '', time: '', 
+      recommended_date: '', recommended_time: '' 
+    }); 
+    setIsAssignmentModalOpen(true); 
+  };
 
   const openEditModal = (assignment: Assignment) => {
-    const d = new Date(assignment.deadline); setIsEditing(true); setCurrentEditId(assignment.id);
-    setFormData({ title: assignment.title, courseCode: assignment.courseCode, courseName: coursesMap[assignment.courseCode]?.name || '', type: assignment.type, isOptional: assignment.isOptional || false, deadline: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` });
+    const d = new Date(assignment.deadline); 
+    const r = assignment.recommended_deadline ? new Date(assignment.recommended_deadline) : null;
+    
+    setIsEditing(true); 
+    setCurrentEditId(assignment.id);
+    
+    setFormData({ 
+      title: assignment.title, 
+      courseCode: assignment.courseCode, 
+      courseName: coursesMap[assignment.courseCode]?.name || '', 
+      type: assignment.type, 
+      deadline: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, 
+      time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`,
+      recommended_date: r ? `${r.getFullYear()}-${String(r.getMonth() + 1).padStart(2, '0')}-${String(r.getDate()).padStart(2, '0')}` : '',
+      recommended_time: r ? `${String(r.getHours()).padStart(2, '0')}:${String(r.getMinutes()).padStart(2, '0')}` : ''
+    });
     setIsAssignmentModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("למחוק מטלה זו?")) return;
-    try { await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); setAssignments(prev => prev.filter(a => a.id !== id)); } catch { alert("שגיאה במחיקה."); }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!token) return;
-    const payload = { title: formData.title, courseCode: formData.courseCode, type: formData.type, deadline: new Date(`${formData.deadline}T${formData.time || '23:59'}:00`).toISOString(), isOptional: formData.isOptional };
+    e.preventDefault(); 
+    if (!token) return;
+    
+    const rec_deadline = formData.recommended_date ? new Date(`${formData.recommended_date}T${formData.recommended_time || '23:59'}:00`).toISOString() : null;
+    
+    const payload = { 
+      title: formData.title, 
+      courseCode: formData.courseCode, 
+      type: formData.type, 
+      deadline: new Date(`${formData.deadline}T${formData.time || '23:59'}:00`).toISOString(), 
+      recommended_deadline: rec_deadline
+    };
+    
     try {
       if (!coursesMap[formData.courseCode]) {
         await fetch(`${API_BASE_URL}/courses/${formData.courseCode}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name: formData.courseName, hw_weight: 0, hw_drop: 0, ww_weight: 0, ww_drop: 0, exam_weight: 0, hw_magen: false, ww_magen: false, exam_magen: false }) });
       }
       await fetch(`${API_BASE_URL}/assignments${isEditing ? `/${currentEditId}` : ''}`, { method: isEditing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(payload) });
-      fetchAllData(); setIsAssignmentModalOpen(false); if (!myCourses.includes(payload.courseCode)) handleAddCourse(payload.courseCode);
+      fetchAllData(); 
+      setIsAssignmentModalOpen(false); 
+      if (!myCourses.includes(payload.courseCode)) handleAddCourse(payload.courseCode);
     } catch { alert("שגיאה בשמירה."); }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("למחוק מטלה זו?")) return;
+    try { await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); setAssignments(prev => prev.filter(a => a.id !== id)); } catch { alert("שגיאה במחיקה."); }
   };
 
   const calculateCourseGrade = (code: string): GradeSummary | null => {
@@ -1108,31 +1148,40 @@ export default function App() {
     let final_lab_earned = lab.earned; let final_lab_possible = lab.possible;
     let final_exam_earned = exam.earned; let final_exam_possible = exam.possible;
     
-    let configuredMagens = 0;
-    if (syllabus.hw_magen) configuredMagens++;
-    if (syllabus.ww_magen) configuredMagens++;
-    if (syllabus.lab_report_magen) configuredMagens++;
-    
-    let triggeredMagens = 0;
+    let activeCategories = 0;
+    let magenCategories = 0;
 
-    if (exam.possible > 0 && exam.rawAvg !== undefined) {
-      if (syllabus.hw_magen && hw.possible > 0 && hw.rawAvg !== undefined && hw.rawAvg < exam.rawAvg) {
-        final_exam_possible += hw.possible; final_exam_earned += (exam.rawAvg / 100) * hw.possible; final_hw_possible = 0; final_hw_earned = 0; 
-        triggeredMagens++;
-      }
-      if (syllabus.ww_magen && ww.possible > 0 && ww.rawAvg !== undefined && ww.rawAvg < exam.rawAvg) {
-        final_exam_possible += ww.possible; final_exam_earned += (exam.rawAvg / 100) * ww.possible; final_ww_possible = 0; final_ww_earned = 0; 
-        triggeredMagens++;
-      }
-      if (syllabus.lab_report_magen && lab.possible > 0 && lab.rawAvg !== undefined && lab.rawAvg < exam.rawAvg) {
-        final_exam_possible += lab.possible; final_exam_earned += (exam.rawAvg / 100) * lab.possible; final_lab_possible = 0; final_lab_earned = 0; 
-        triggeredMagens++;
-      }
+    // Only count categories that actually have weight in the syllabus
+    if (hw.possible > 0) {
+      activeCategories++;
+      if (syllabus.hw_magen) magenCategories++;
+    }
+    if (ww.possible > 0) {
+      activeCategories++;
+      if (syllabus.ww_magen) magenCategories++;
+    }
+    if (lab.possible > 0) {
+      activeCategories++;
+      if (syllabus.lab_report_magen) magenCategories++;
     }
 
     let magenStatus: 'none' | 'partial' | 'full' = 'none';
-    if (configuredMagens > 0) {
-      magenStatus = triggeredMagens === configuredMagens ? 'full' : 'partial';
+    if (magenCategories > 0) {
+      // If all active assignment types have a magen, it's 'full'. Otherwise, it's 'partial' (mixed).
+      magenStatus = (magenCategories === activeCategories) ? 'full' : 'partial';
+    }
+
+    // The actual grade calculation math (remains unchanged)
+    if (exam.possible > 0 && exam.rawAvg !== undefined) {
+      if (syllabus.hw_magen && hw.possible > 0 && hw.rawAvg !== undefined && hw.rawAvg < exam.rawAvg) {
+        final_exam_possible += hw.possible; final_exam_earned += (exam.rawAvg / 100) * hw.possible; final_hw_possible = 0; final_hw_earned = 0; 
+      }
+      if (syllabus.ww_magen && ww.possible > 0 && ww.rawAvg !== undefined && ww.rawAvg < exam.rawAvg) {
+        final_exam_possible += ww.possible; final_exam_earned += (exam.rawAvg / 100) * ww.possible; final_ww_possible = 0; final_ww_earned = 0; 
+      }
+      if (syllabus.lab_report_magen && lab.possible > 0 && lab.rawAvg !== undefined && lab.rawAvg < exam.rawAvg) {
+        final_exam_possible += lab.possible; final_exam_earned += (exam.rawAvg / 100) * lab.possible; final_lab_possible = 0; final_lab_earned = 0; 
+      }
     }
 
     const totalEarned = final_hw_earned + final_ww_earned + final_lab_earned + final_exam_earned; 
@@ -1920,14 +1969,24 @@ export default function App() {
                                     <span>{coursesMap[assignment.courseCode]?.name} <span dir="ltr" className="opacity-60">({assignment.courseCode})</span></span>
                                     <span className="hidden sm:inline opacity-30">•</span>
                                     <span className={`flex items-center gap-1.5 ${(() => {
-                                      if (assignment.isCompleted || assignment.isOptional) return '';
+                                      if (assignment.isCompleted) return '';
                                       const hoursUntilDeadline = (new Date(assignment.deadline).getTime() - Date.now()) / (1000 * 60 * 60);
                                       if (hoursUntilDeadline <= 24) return 'text-rose-500';
                                       if (hoursUntilDeadline <= 72) return 'text-amber-600';
                                       return '';
                                     })()}`}>
-                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה{assignment.isOptional ? ' (רשות)' : ''}: {formatDateTime(assignment.deadline)}
+                                      <Clock className="w-3.5 h-3.5" /> מועד הגשה סופי: {formatDateTime(assignment.deadline)}
                                     </span>
+
+                                    {/* ✨ Conditional Recommended Deadline */}
+                                    {assignment.recommended_deadline && (
+                                      <>
+                                        <span className="hidden sm:inline opacity-30">•</span>
+                                        <span className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
+                                          <Calendar className="w-3.5 h-3.5" /> יעד מומלץ: {formatDateTime(assignment.recommended_deadline)}
+                                        </span>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -2011,13 +2070,13 @@ export default function App() {
                               {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון מצטבר" className="cursor-help"><AlertCircle className="w-4 h-4 text-orange-500" /></span>}
                               
                               {summary.magenStatus === 'full' && (
-                                <span title="מגן מלא מופעל!" className="cursor-default">
+                                <span title="ציון מגן" className="cursor-default">
                                   <Shield className={`w-4 h-4 ${themeObj.badgeText}`} fill="currentColor" />
                                 </span>
                               )}
                               
                               {summary.magenStatus === 'partial' && (
-                                <span title="מגן חלקי מופעל" className="cursor-default opacity-50">
+                                <span title="ציון מגן חלקי" className="cursor-default opacity-50">
                                   <Shield className={`w-4 h-4 ${themeObj.badgeText}`} />
                                 </span>
                               )}
@@ -2078,12 +2137,13 @@ export default function App() {
 
               <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">כותרת</label><input required type="text" placeholder="לדוגמה: גיליון 1, בוחן אמצע" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">תאריך הגשה</label><input required type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.deadline} onChange={e => setFormData({ ...formData, deadline: e.target.value })} /></div>
-                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שעה (רשות)</label><input type="time" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} /></div>
+                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">מועד הגשה סופי</label><input required type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.deadline} onChange={e => setFormData({ ...formData, deadline: e.target.value })} /></div>
+                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שעה סופית</label><input type="time" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} /></div>
               </div>
-              <div className="flex items-center gap-3 pt-2">
-                <input type="checkbox" id="isOptional" checked={formData.isOptional} onChange={e => setFormData({ ...formData, isOptional: e.target.checked })} className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded focus:ring-2 focus:ring-blue-500 accent-blue-600 cursor-pointer" />
-                <label htmlFor="isOptional" className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer">תאריך רשות (ללא התראה)</label>
+              
+              <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-700 pt-4">
+                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">יעד מומלץ לביצוע <span className="text-xs font-normal opacity-70">(רשות)</span></label><input type="date" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.recommended_date} onChange={e => setFormData({ ...formData, recommended_date: e.target.value })} /></div>
+                <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שעת יעד</label><input type="time" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.recommended_time} onChange={e => setFormData({ ...formData, recommended_time: e.target.value })} /></div>
               </div>
               <div className="pt-4 flex gap-3"><button type="button" onClick={() => setIsAssignmentModalOpen(false)} className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">ביטול</button><button type="submit" className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">שמירה</button></div>
             </form>
@@ -2214,7 +2274,7 @@ export default function App() {
                 <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.ww_magen} onChange={e => setCourseFormData({ ...courseFormData, ww_magen: e.target.checked })} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
               </div>
               
-              <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-3 items-end">
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל דוחות מעבדה (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.lab_report_weight} onChange={e => setCourseFormData({ ...courseFormData, lab_report_weight: parseInt(e.target.value) || 0 })} /></div>
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר דוחות תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.lab_report_keep} onChange={e => setCourseFormData({ ...courseFormData, lab_report_keep: parseInt(e.target.value) || 0 })} /></div>
                 <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.lab_report_magen} onChange={e => setCourseFormData({ ...courseFormData, lab_report_magen: e.target.checked })} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
