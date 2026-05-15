@@ -16,6 +16,7 @@ services:
       - "10.0.0.124:8001:8001"
     volumes:
       - ./backend/data:/app/data
+      - ./alembic:/app/alembic
     env_file:
       - .env
     restart: always
