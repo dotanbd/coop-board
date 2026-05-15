@@ -1525,7 +1525,7 @@ def update_degree_progress(req: ProgressUpdateReq, db: Session = Depends(get_db)
 
 @app.post("/api/v2/users/me/progress/undo")
 def undo_degree_progress(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    db_user = db.query(User).filter(User.id == current_user['id']).first()
+    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -1538,7 +1538,7 @@ def undo_degree_progress(db: Session = Depends(get_db), current_user: dict = Dep
 
 @app.post("/api/v2/users/me/progress/reset")
 def reset_degree_progress(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    db_user = db.query(User).filter(User.id == current_user['id']).first()
+    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
