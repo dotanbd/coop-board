@@ -98,6 +98,8 @@ class DBUser(Base):
     weighted_sum = Column(Float, default=0.0)
     previous_total_credits = Column(Float, default=0.0)
     previous_weighted_sum = Column(Float, default=0.0)
+    binary_credits = Column(Float, default=0.0)
+    previous_binary_credits = Column(Float, default=0.0)
 
 class DBCourse(Base):
     __tablename__ = "courses"
@@ -214,9 +216,11 @@ class CourseCodeUpdate(BaseModel):
 
 class ProgressUpdateReq(BaseModel):
     is_redo: bool
+    is_pass_fail: bool = False
     credits: float
-    new_score: float
+    new_score: Optional[float] = None
     old_score: Optional[float] = None
+    old_was_pass_fail: bool = False
 
 
 # --- App Setup ---
@@ -1482,17 +1486,37 @@ def update_degree_progress(req: ProgressUpdateReq, db: Session = Depends(get_db)
     # Stash the current state for the "Undo" feature (using 'or 0.0' to prevent NoneType math errors on fresh users)
     db_user.previous_total_credits = db_user.total_credits or 0.0
     db_user.previous_weighted_sum = db_user.weighted_sum or 0.0
+    db_user.previous_binary_credits = db_user.binary_credits or 0.0
 
     # Apply the new math
     if req.is_redo:
-        if req.old_score is None:
-            raise HTTPException(status_code=400, detail="old_score is required for a redo")
-        delta = (req.new_score - req.old_score) * req.credits
-        db_user.weighted_sum = (db_user.weighted_sum or 0.0) + delta
+        # Subtract the old course
+        if req.old_was_pass_fail:
+            db_user.binary_credits = (db_user.binary_credits or 0.0) - req.credits
+        else:
+            if req.old_score is None:
+                raise HTTPException(status_code=400, detail="old_score required")
+            db_user.total_credits = (db_user.total_credits or 0.0) - req.credits
+            db_user.weighted_sum = (db_user.weighted_sum or 0.0) - (req.old_score * req.credits)
+
+        # Add the new course
+        if req.is_pass_fail:
+            db_user.binary_credits = (db_user.binary_credits or 0.0) + req.credits
+        else:
+            if req.new_score is None:
+                raise HTTPException(status_code=400, detail="new_score required")
+            db_user.total_credits = (db_user.total_credits or 0.0) + req.credits
+            db_user.weighted_sum = (db_user.weighted_sum or 0.0) + (req.new_score * req.credits)
+
     else:
-        # Brand-new course
-        db_user.total_credits = (db_user.total_credits or 0.0) + req.credits
-        db_user.weighted_sum = (db_user.weighted_sum or 0.0) + (req.new_score * req.credits)
+        # Brand new course
+        if req.is_pass_fail:
+            db_user.binary_credits = (db_user.binary_credits or 0.0) + req.credits
+        else:
+            if req.new_score is None:
+                raise HTTPException(status_code=400, detail="new_score required")
+            db_user.total_credits = (db_user.total_credits or 0.0) + req.credits
+            db_user.weighted_sum = (db_user.weighted_sum or 0.0) + (req.new_score * req.credits)
 
     db.commit()
     db.refresh(db_user)
@@ -1501,29 +1525,29 @@ def update_degree_progress(req: ProgressUpdateReq, db: Session = Depends(get_db)
 
 @app.post("/api/v2/users/me/progress/undo")
 def undo_degree_progress(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
+    db_user = db.query(User).filter(User.id == current_user['id']).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Restore the stashed state
     db_user.total_credits = db_user.previous_total_credits or 0.0
     db_user.weighted_sum = db_user.previous_weighted_sum or 0.0
+    db_user.binary_credits = db_user.previous_binary_credits or 0.0
     db.commit()
     db.refresh(db_user)
     return db_user
 
-
 @app.post("/api/v2/users/me/progress/reset")
 def reset_degree_progress(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
+    db_user = db.query(User).filter(User.id == current_user['id']).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Nuke everything back to zero
     db_user.total_credits = 0.0
     db_user.weighted_sum = 0.0
+    db_user.binary_credits = 0.0
     db_user.previous_total_credits = 0.0
     db_user.previous_weighted_sum = 0.0
+    db_user.previous_binary_credits = 0.0
     db.commit()
     db.refresh(db_user)
     return db_user
