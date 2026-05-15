@@ -126,7 +126,6 @@ class DBAssignment(Base):
     type = Column(String)
     deadline = Column(String)
     recommended_deadline = Column(String, nullable=True)
-    isOptional = Column(Boolean, default=False)
     attachments = relationship("DBAttachment", back_populates="assignment", cascade="all, delete-orphan")
     user_id = Column(Integer, ForeignKey("users.id"))
 
@@ -192,7 +191,6 @@ class AssignmentCreate(BaseModel):
     type: str
     deadline: str
     recommended_deadline: Optional[str] = None
-    isOptional: bool = False
 
 
 class CourseUpdate(BaseModel):
@@ -600,7 +598,6 @@ def get_assignments(optional_user: dict = Depends(get_optional_user), db: Sessio
             "courseCode": a.courseCode,
             "type": a.type,
             "deadline": a.deadline,
-            "isOptional": a.isOptional,
             "isCompleted": user_data.get(a.id, {}).get("completed", False),
             "grade": user_data.get(a.id, {}).get("grade", None),
             "attachments": attachments
@@ -654,7 +651,6 @@ def update_assignment(assignment_id: int, assignment: AssignmentCreate,
         "courseCode": db_assignment.courseCode,
         "type": db_assignment.type,
         "deadline": db_assignment.deadline,
-        "isOptional": db_assignment.isOptional
     }
 
     # Always apply changes optimistically
