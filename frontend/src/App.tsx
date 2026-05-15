@@ -1107,40 +1107,32 @@ export default function App() {
     let final_ww_earned = ww.earned; let final_ww_possible = ww.possible;
     let final_lab_earned = lab.earned; let final_lab_possible = lab.possible;
     let final_exam_earned = exam.earned; let final_exam_possible = exam.possible;
-    let eligibleMagens = 0;
+    
+    let configuredMagens = 0;
+    if (syllabus.hw_magen) configuredMagens++;
+    if (syllabus.ww_magen) configuredMagens++;
+    if (syllabus.lab_report_magen) configuredMagens++;
+    
     let triggeredMagens = 0;
 
     if (exam.possible > 0 && exam.rawAvg !== undefined) {
-      // Check HW Magen
-      if (syllabus.hw_magen && hw.possible > 0 && hw.rawAvg !== undefined) {
-        eligibleMagens++;
-        if (hw.rawAvg < exam.rawAvg) {
-          final_exam_possible += hw.possible; final_exam_earned += (exam.rawAvg / 100) * hw.possible; final_hw_possible = 0; final_hw_earned = 0; 
-          triggeredMagens++;
-        }
+      if (syllabus.hw_magen && hw.possible > 0 && hw.rawAvg !== undefined && hw.rawAvg < exam.rawAvg) {
+        final_exam_possible += hw.possible; final_exam_earned += (exam.rawAvg / 100) * hw.possible; final_hw_possible = 0; final_hw_earned = 0; 
+        triggeredMagens++;
       }
-      // Check Webwork Magen
-      if (syllabus.ww_magen && ww.possible > 0 && ww.rawAvg !== undefined) {
-        eligibleMagens++;
-        if (ww.rawAvg < exam.rawAvg) {
-          final_exam_possible += ww.possible; final_exam_earned += (exam.rawAvg / 100) * ww.possible; final_ww_possible = 0; final_ww_earned = 0; 
-          triggeredMagens++;
-        }
+      if (syllabus.ww_magen && ww.possible > 0 && ww.rawAvg !== undefined && ww.rawAvg < exam.rawAvg) {
+        final_exam_possible += ww.possible; final_exam_earned += (exam.rawAvg / 100) * ww.possible; final_ww_possible = 0; final_ww_earned = 0; 
+        triggeredMagens++;
       }
-      // Check Lab Report Magen
-      if (syllabus.lab_report_magen && lab.possible > 0 && lab.rawAvg !== undefined) {
-        eligibleMagens++;
-        if (lab.rawAvg < exam.rawAvg) {
-          final_exam_possible += lab.possible; final_exam_earned += (exam.rawAvg / 100) * lab.possible; final_lab_possible = 0; final_lab_earned = 0; 
-          triggeredMagens++;
-        }
+      if (syllabus.lab_report_magen && lab.possible > 0 && lab.rawAvg !== undefined && lab.rawAvg < exam.rawAvg) {
+        final_exam_possible += lab.possible; final_exam_earned += (exam.rawAvg / 100) * lab.possible; final_lab_possible = 0; final_lab_earned = 0; 
+        triggeredMagens++;
       }
     }
 
-    // Determine the shield status
     let magenStatus: 'none' | 'partial' | 'full' = 'none';
-    if (triggeredMagens > 0) {
-      magenStatus = triggeredMagens === eligibleMagens ? 'full' : 'partial';
+    if (configuredMagens > 0) {
+      magenStatus = triggeredMagens === configuredMagens ? 'full' : 'partial';
     }
 
     const totalEarned = final_hw_earned + final_ww_earned + final_lab_earned + final_exam_earned; 
@@ -1153,7 +1145,6 @@ export default function App() {
       return { earned: avg.toFixed(1), possible: '100', isMagen: false, magenStatus: 'none', unconfigured: true };
     }
     
-    // ✨ Return the new magenStatus string
     return { earned: totalEarned.toFixed(1), possible: totalPossible.toFixed(1), isMagen: magenStatus !== 'none', magenStatus, unconfigured: false };
   };
 
@@ -2069,7 +2060,20 @@ export default function App() {
                   </select>
                 </div>
 
-                <div className="col-span-2 sm:col-span-1"><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">סוג המטלה</label><select className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}><option value="Assignment">גיליון</option><option value="Webwork">וובוורק</option><option value="Exam">מבחן</option></select></div>
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">סוג המטלה</label>
+                  <select 
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" 
+                    value={formData.type} 
+                    onChange={e => setFormData({ ...formData, type: e.target.value })}
+                  >
+                    <option value="Assignment">גיליון</option>
+                    <option value="Webwork">וובוורק</option>
+                    <option value="lab_report">דוח מעבדה</option>
+                    <option value="Exam">מבחן</option>
+                    <option value="other">אחר</option>
+                  </select>
+                </div>
               </div>
 
               <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">כותרת</label><input required type="text" placeholder="לדוגמה: גיליון 1, בוחן אמצע" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} /></div>
@@ -2209,6 +2213,13 @@ export default function App() {
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר וובוורקים תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.ww_keep} onChange={e => setCourseFormData({ ...courseFormData, ww_keep: parseInt(e.target.value) || 0 })} /></div>
                 <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.ww_magen} onChange={e => setCourseFormData({ ...courseFormData, ww_magen: e.target.checked })} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
               </div>
+              
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
+                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל דוחות מעבדה (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.lab_report_weight} onChange={e => setCourseFormData({ ...courseFormData, lab_report_weight: parseInt(e.target.value) || 0 })} /></div>
+                <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">מספר דוחות תקפים</label><input type="number" min="0" max="20" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.lab_report_keep} onChange={e => setCourseFormData({ ...courseFormData, lab_report_keep: parseInt(e.target.value) || 0 })} /></div>
+                <label className="flex items-center gap-1.5 cursor-pointer pb-2 text-xs font-medium text-slate-700 dark:text-slate-300 w-16"><input type="checkbox" checked={courseFormData.lab_report_magen} onChange={e => setCourseFormData({ ...courseFormData, lab_report_magen: e.target.checked })} className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-blue-600 focus:ring-blue-500" /> מגן</label>
+              </div>
+
               <div className="grid grid-cols-[1fr_1fr_auto] gap-3 border-t border-slate-100 dark:border-slate-700 pt-4 items-end">
                 <div><label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">משקל בוחן אמצע (%)</label><input type="number" min="0" max="100" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={courseFormData.exam_weight} onChange={e => setCourseFormData({ ...courseFormData, exam_weight: parseInt(e.target.value) || 0 })} /></div>
                 <div></div>
