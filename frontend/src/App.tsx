@@ -36,7 +36,7 @@ const IS_DEV = isDevEnvironment();
 // --- TypeScript Interfaces ---
 interface Attachment { id: number; filename: string; url: string; uploader_id: number; category: string; likes?: number; isLikedByMe?: boolean; }
 interface Assignment { id: number; title: string; courseCode: string; type: string; deadline: string; isOptional: boolean; isCompleted: boolean; grade: number | null; attachments: Attachment[]; }
-interface UserProfile { id: number; email: string; name: string; picture: string; role: string; totalLikesReceived?: number; total_credits?: number; weighted_sum?: number; previous_total_credits?: number; previous_weighted_sum?: number;}
+interface UserProfile { id: number; email: string; name: string; picture: string; role: string; totalLikesReceived?: number; total_credits?: number; weighted_sum?: number; previous_total_credits?: number; previous_weighted_sum?: number; binary_credits?: number; previous_binary_credits?: number;}
 interface CourseSyllabus { name: string; hw_weight: number; hw_keep: number; hw_magen: boolean; ww_weight: number; ww_keep: number; ww_magen: boolean; exam_weight: number; exam_magen: boolean; }
 interface CoursesMap { [key: string]: CourseSyllabus; }
 interface AssignmentFormData { title: string; courseCode: string; courseName: string; type: string; deadline: string; time: string; isOptional: boolean; }
@@ -688,6 +688,8 @@ export default function App() {
   const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
   const [progressForm, setProgressForm] = useState({
     is_redo: false,
+    is_pass_fail: false,
+    old_was_pass_fail: false,
     credits: '',
     new_score: '',
     old_score: ''
@@ -1120,19 +1122,25 @@ export default function App() {
     try {
       const payload = {
         is_redo: progressForm.is_redo,
+        is_pass_fail: progressForm.is_pass_fail,
+        old_was_pass_fail: progressForm.old_was_pass_fail,
         credits: parseFloat(progressForm.credits),
-        new_score: parseFloat(progressForm.new_score),
-        old_score: progressForm.is_redo ? parseFloat(progressForm.old_score) : null
+        // Send null if it's a pass/fail course, otherwise parse the score
+        new_score: progressForm.is_pass_fail ? null : parseFloat(progressForm.new_score),
+        old_score: (progressForm.is_redo && !progressForm.old_was_pass_fail) ? parseFloat(progressForm.old_score) : null
       };
+
       const res = await fetch(`${API_BASE_URL}/users/me/progress/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
+
       if (res.ok) {
         setUserProfile(await res.json());
         setIsProgressModalOpen(false);
-        setProgressForm({ is_redo: false, credits: '', new_score: '', old_score: '' });
+        // Reset all fields including the new checkboxes
+        setProgressForm({ is_redo: false, is_pass_fail: false, old_was_pass_fail: false, credits: '', new_score: '', old_score: '' });
       } else {
         alert("שגיאה בעדכון הנתונים");
       }
@@ -1743,7 +1751,8 @@ export default function App() {
                             </div>
                             <div>
                               <span className="text-3xl font-black text-[#1a202c] dark:text-white leading-none">
-                                {userProfile?.total_credits ? userProfile.total_credits.toFixed(1) : '--'}
+                                {(userProfile?.total_credits || userProfile?.binary_credits) ? 
+                                  ((userProfile.total_credits || 0) + (userProfile.binary_credits || 0)).toFixed(1) : '--'}
                               </span>
                             </div>
                           </div>
@@ -2447,15 +2456,33 @@ export default function App() {
                 </div>
                 
                 {progressForm.is_redo && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ציון קודם</label>
-                    <input required type="number" min="0" max="100" placeholder="הציון שברצונך לדרוס" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-slate-800 dark:text-slate-100" value={progressForm.old_score} onChange={e => setProgressForm({ ...progressForm, old_score: e.target.value })} />
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={progressForm.old_was_pass_fail} onChange={e => setProgressForm({ ...progressForm, old_was_pass_fail: e.target.checked })} className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">הקורס הקודם היה בינארי (עובר/לא עובר)</span>
+                    </label>
+                    
+                    {!progressForm.old_was_pass_fail && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ציון קודם</label>
+                        <input required type="number" min="0" max="100" placeholder="הציון שברצונך לדרוס" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-slate-800 dark:text-slate-100" value={progressForm.old_score} onChange={e => setProgressForm({ ...progressForm, old_score: e.target.value })} />
+                      </div>
+                    )}
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{progressForm.is_redo ? 'ציון חדש' : 'ציון סופי'}</label>
-                  <input required type="number" min="0" max="100" placeholder="לדוגמה: 95" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={progressForm.new_score} onChange={e => setProgressForm({ ...progressForm, new_score: e.target.value })} />
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={progressForm.is_pass_fail} onChange={e => setProgressForm({ ...progressForm, is_pass_fail: e.target.checked })} className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" />
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">קורס בינארי (עובר/לא עובר)</span>
+                  </label>
+
+                  {!progressForm.is_pass_fail && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{progressForm.is_redo ? 'ציון חדש' : 'ציון סופי'}</label>
+                      <input required type="number" min="0" max="100" placeholder="לדוגמה: 95" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-100" value={progressForm.new_score} onChange={e => setProgressForm({ ...progressForm, new_score: e.target.value })} />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2465,7 +2492,7 @@ export default function App() {
 
               {/* Typo Correction Tools */}
               <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
-                <button type="button" onClick={() => handleProgressAction('undo')} disabled={userProfile?.total_credits === userProfile?.previous_total_credits && userProfile?.weighted_sum === userProfile?.previous_weighted_sum} className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 disabled:opacity-30 transition-colors">
+                <button type="button" onClick={() => handleProgressAction('undo')} disabled={userProfile?.total_credits === userProfile?.previous_total_credits && userProfile?.weighted_sum === userProfile?.previous_weighted_sum && userProfile?.binary_credits === userProfile?.previous_binary_credits} className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 disabled:opacity-30 transition-colors">
                   ↩ בטל פעולה אחרונה
                 </button>
                 <button type="button" onClick={() => handleProgressAction('reset')} className="text-xs font-bold text-red-400 hover:text-red-600 transition-colors">
