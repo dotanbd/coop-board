@@ -37,11 +37,11 @@ const IS_DEV = isDevEnvironment();
 interface Attachment { id: number; filename: string; url: string; uploader_id: number; category: string; likes?: number; isLikedByMe?: boolean; }
 interface Assignment { id: number; title: string; courseCode: string; type: string; deadline: string; isOptional: boolean; isCompleted: boolean; grade: number | null; attachments: Attachment[]; }
 interface UserProfile { id: number; email: string; name: string; picture: string; role: string; totalLikesReceived?: number; total_credits?: number; weighted_sum?: number; previous_total_credits?: number; previous_weighted_sum?: number; binary_credits?: number; previous_binary_credits?: number;}
-interface CourseSyllabus { name: string; hw_weight: number; hw_keep: number; hw_magen: boolean; ww_weight: number; ww_keep: number; ww_magen: boolean; exam_weight: number; exam_magen: boolean; }
+interface CourseSyllabus { name: string; hw_weight: number; hw_keep: number; hw_magen: boolean; ww_weight: number; ww_keep: number; ww_magen: boolean; lab_report_weight: number; lab_report_keep: number; lab_report_magen: boolean; exam_weight: number; exam_magen: boolean; }
 interface CoursesMap { [key: string]: CourseSyllabus; }
 interface AssignmentFormData { title: string; courseCode: string; courseName: string; type: string; deadline: string; time: string; isOptional: boolean; }
 interface CourseTheme { startBorder: string; hover: string; badgeBg: string; badgeText: string; badgeBorder: string; dot: string; }
-interface GradeSummary { earned: string; possible: string; isMagen: boolean; unconfigured: boolean; }
+interface GradeSummary { earned: string; possible: string; isMagen: boolean; magenStatus: string; unconfigured: boolean; }
 
 // Admin Interfaces
 interface AdminUser { id: number; name: string; email: string; role: string; picture: string; }
@@ -64,7 +64,7 @@ interface Summary {
   isLikedByMe: boolean;
 }
 
-const typeTranslations: Record<string, string> = { 'All': 'הכל', 'Assignment': 'גיליון', 'Webwork': 'וובוורק', 'Exam': 'מבחן' };
+const typeTranslations: Record<string, string> = { 'All': 'הכל', 'Assignment': 'גיליון', 'Webwork': 'וובוורק', 'Exam': 'מבחן', 'lab_report': 'דוח מעבדה', 'other': 'אחר' };
 
 const courseThemes: CourseTheme[] = [
   { startBorder: 'border-s-blue-500', hover: 'hover:border-blue-300 dark:hover:border-blue-400', badgeBg: 'bg-blue-100 dark:bg-blue-900/30', badgeText: 'text-blue-800 dark:text-blue-300', badgeBorder: 'border-blue-200 dark:border-blue-800/50', dot: 'bg-blue-500' },
@@ -663,7 +663,7 @@ export default function App() {
   const [isCourseModalOpen, setIsCourseModalOpen] = useState<boolean>(false);
   const [editingCourseCode, setEditingCourseCode] = useState<string | null>(null);
   const [editModalCourseCode, setEditModalCourseCode] = useState<string>('');
-  const [courseFormData, setCourseFormData] = useState<CourseSyllabus>({ name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false });
+  const [courseFormData, setCourseFormData] = useState<CourseSyllabus>({ name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, lab_report_weight: 0, lab_report_keep: 0, lab_report_magen: false, exam_weight: 0, exam_magen: false });
 
   // File Interaction State
   const [uploadingId, setUploadingId] = useState<number | null>(null);
@@ -901,7 +901,7 @@ export default function App() {
 
       const rawMap = await coursesRes.json(); const mappedMap: CoursesMap = {};
       Object.entries(rawMap).forEach(([k, v]: [string, any]) => {
-        mappedMap[k] = { name: v.name || '', hw_weight: v.hw_weight || 0, hw_keep: v.hw_keep !== undefined ? v.hw_keep : (v.hw_drop || 0), hw_magen: v.hw_magen || false, ww_weight: v.ww_weight || 0, ww_keep: v.ww_keep !== undefined ? v.ww_keep : (v.ww_drop || 0), ww_magen: v.ww_magen || false, exam_weight: v.exam_weight || 0, exam_magen: v.exam_magen || false };
+        mappedMap[k] = { name: v.name || '', hw_weight: v.hw_weight || 0, hw_keep: v.hw_keep !== undefined ? v.hw_keep : (v.hw_drop || 0), hw_magen: v.hw_magen || false, ww_weight: v.ww_weight || 0, ww_keep: v.ww_keep !== undefined ? v.ww_keep : (v.ww_drop || 0), ww_magen: v.ww_magen || false, exam_weight: v.exam_weight || 0, exam_magen: v.exam_magen || false, lab_report_weight: v.lab_report_weight || 0, lab_report_keep: v.lab_report_keep !== undefined ? v.lab_report_keep : (v.lab_report_drop || 0), lab_report_magen: v.lab_report_magen || false };
       });
       setCoursesMap(mappedMap);
 
@@ -1071,46 +1071,90 @@ export default function App() {
   };
 
   const calculateCourseGrade = (code: string): GradeSummary | null => {
-    const syllabus = coursesMap[code] || { name: '', hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false };
+    const syllabus = coursesMap[code] || { 
+      name: '', 
+      hw_weight: 0, hw_keep: 0, hw_magen: false, 
+      ww_weight: 0, ww_keep: 0, ww_magen: false, 
+      lab_report_weight: 0, lab_report_keep: 0, lab_report_magen: false, 
+      exam_weight: 0, exam_magen: false 
+    };
+    
     const courseAssignments = assignments.filter(a => a.courseCode === code);
     if (courseAssignments.length === 0 || !courseAssignments.some(a => a.grade !== null)) return null;
 
     const processCategory = (type: string, weight: number, keepCount: number) => {
       if (weight === 0) return { earned: 0, possible: 0, rawAvg: undefined };
-      const items = courseAssignments.filter(a => a.type === type); const gradedItems = items.filter(a => a.grade !== null);
+      const items = courseAssignments.filter(a => a.type === type); 
+      const gradedItems = items.filter(a => a.grade !== null);
+      
       if (gradedItems.length === 0) return { earned: 0, possible: weight, rawAvg: undefined };
+      
       const actualKeep = keepCount > 0 ? keepCount : Math.max(1, gradedItems.length);
       let grades = gradedItems.map(a => a.grade as number).sort((a, b) => b - a);
       if (keepCount > 0) { while (grades.length < actualKeep) { grades.push(0); } }
-      const keptGrades = grades.slice(0, actualKeep); const avg = keptGrades.reduce((sum, g) => sum + g, 0) / actualKeep;
+      
+      const keptGrades = grades.slice(0, actualKeep); 
+      const avg = keptGrades.reduce((sum, g) => sum + g, 0) / actualKeep;
       return { earned: (avg / 100) * weight, possible: weight, rawAvg: avg };
     };
 
     const hw = processCategory('Assignment', syllabus.hw_weight || 0, syllabus.hw_keep || 0);
     const ww = processCategory('Webwork', syllabus.ww_weight || 0, syllabus.ww_keep || 0);
+    const lab = processCategory('lab_report', syllabus.lab_report_weight || 0, syllabus.lab_report_keep || 0);
     const exam = processCategory('Exam', syllabus.exam_weight || 0, 0);
 
     let final_hw_earned = hw.earned; let final_hw_possible = hw.possible;
     let final_ww_earned = ww.earned; let final_ww_possible = ww.possible;
+    let final_lab_earned = lab.earned; let final_lab_possible = lab.possible;
     let final_exam_earned = exam.earned; let final_exam_possible = exam.possible;
-    let isMagenActive = false;
+    let eligibleMagens = 0;
+    let triggeredMagens = 0;
 
     if (exam.possible > 0 && exam.rawAvg !== undefined) {
-      if (syllabus.hw_magen && hw.possible > 0 && hw.rawAvg !== undefined && hw.rawAvg < exam.rawAvg) {
-        final_exam_possible += hw.possible; final_exam_earned += (exam.rawAvg / 100) * hw.possible; final_hw_possible = 0; final_hw_earned = 0; isMagenActive = true;
+      // Check HW Magen
+      if (syllabus.hw_magen && hw.possible > 0 && hw.rawAvg !== undefined) {
+        eligibleMagens++;
+        if (hw.rawAvg < exam.rawAvg) {
+          final_exam_possible += hw.possible; final_exam_earned += (exam.rawAvg / 100) * hw.possible; final_hw_possible = 0; final_hw_earned = 0; 
+          triggeredMagens++;
+        }
       }
-      if (syllabus.ww_magen && ww.possible > 0 && ww.rawAvg !== undefined && ww.rawAvg < exam.rawAvg) {
-        final_exam_possible += ww.possible; final_exam_earned += (exam.rawAvg / 100) * ww.possible; final_ww_possible = 0; final_ww_earned = 0; isMagenActive = true;
+      // Check Webwork Magen
+      if (syllabus.ww_magen && ww.possible > 0 && ww.rawAvg !== undefined) {
+        eligibleMagens++;
+        if (ww.rawAvg < exam.rawAvg) {
+          final_exam_possible += ww.possible; final_exam_earned += (exam.rawAvg / 100) * ww.possible; final_ww_possible = 0; final_ww_earned = 0; 
+          triggeredMagens++;
+        }
+      }
+      // Check Lab Report Magen
+      if (syllabus.lab_report_magen && lab.possible > 0 && lab.rawAvg !== undefined) {
+        eligibleMagens++;
+        if (lab.rawAvg < exam.rawAvg) {
+          final_exam_possible += lab.possible; final_exam_earned += (exam.rawAvg / 100) * lab.possible; final_lab_possible = 0; final_lab_earned = 0; 
+          triggeredMagens++;
+        }
       }
     }
 
-    const totalEarned = final_hw_earned + final_ww_earned + final_exam_earned; const totalPossible = final_hw_possible + final_ww_possible + final_exam_possible;
-    if (totalPossible === 0) {
-      const gradedItems = courseAssignments.filter(a => a.grade !== null);
-      const avg = gradedItems.reduce((sum, a) => sum + (a.grade as number), 0) / gradedItems.length;
-      return { earned: avg.toFixed(1), possible: '100', isMagen: false, unconfigured: true };
+    // Determine the shield status
+    let magenStatus: 'none' | 'partial' | 'full' = 'none';
+    if (triggeredMagens > 0) {
+      magenStatus = triggeredMagens === eligibleMagens ? 'full' : 'partial';
     }
-    return { earned: totalEarned.toFixed(1), possible: totalPossible.toFixed(1), isMagen: isMagenActive, unconfigured: false };
+
+    const totalEarned = final_hw_earned + final_ww_earned + final_lab_earned + final_exam_earned; 
+    const totalPossible = final_hw_possible + final_ww_possible + final_lab_possible + final_exam_possible;
+    
+    if (totalPossible === 0) {
+      const gradedItems = courseAssignments.filter(a => a.grade !== null && a.type !== 'other');
+      if (gradedItems.length === 0) return null;
+      const avg = gradedItems.reduce((sum, a) => sum + (a.grade as number), 0) / gradedItems.length;
+      return { earned: avg.toFixed(1), possible: '100', isMagen: false, magenStatus: 'none', unconfigured: true };
+    }
+    
+    // ✨ Return the new magenStatus string
+    return { earned: totalEarned.toFixed(1), possible: totalPossible.toFixed(1), isMagen: magenStatus !== 'none', magenStatus, unconfigured: false };
   };
 
   
@@ -1661,7 +1705,10 @@ export default function App() {
               {(() => {
                 // Calculate progress on the fly for visible courses (excluding personal tasks)
                 const progressCourses = visibleCourses.filter(c => c !== '9990999');
-                const progressAssignments = assignments.filter(a => progressCourses.includes(a.courseCode));
+                const progressAssignments = assignments.filter(a => 
+                  progressCourses.includes(a.courseCode) && 
+                  a.type !== 'other'
+                );
                 const totalProgressAssignments = progressAssignments.length;
                 const completedProgressAssignments = progressAssignments.filter(a => a.isCompleted).length;
                 const progressPercentage = totalProgressAssignments === 0 ? 0 : Math.round((completedProgressAssignments / totalProgressAssignments) * 100);
@@ -1787,7 +1834,7 @@ export default function App() {
                           <div>
                             <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
                             <div className="flex gap-2">
-                               {['All', 'Assignment', 'Webwork', 'Exam'].map(type => (
+                               {['All', 'Assignment', 'Webwork', 'Exam', 'lab_report', 'other'].map(type => (
                                  <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>
                                    {typeTranslations[type]}
                                  </button>
@@ -1971,7 +2018,18 @@ export default function App() {
                             </div>
                             <div className="flex gap-1 pl-1">
                               {summary.unconfigured && <span title="יש להגדיר משקלים למטלות בהגדרות הקורס להצגת ציון מצטבר" className="cursor-help"><AlertCircle className="w-4 h-4 text-orange-500" /></span>}
-                              {summary.isMagen && <span title="ציון מגן פעיל"><Shield className={`w-4 h-4 ${themeObj.badgeText}`} /></span>}
+                              
+                              {summary.magenStatus === 'full' && (
+                                <span title="מגן מלא מופעל!" className="cursor-default">
+                                  <Shield className={`w-4 h-4 ${themeObj.badgeText}`} fill="currentColor" />
+                                </span>
+                              )}
+                              
+                              {summary.magenStatus === 'partial' && (
+                                <span title="מגן חלקי מופעל" className="cursor-default opacity-50">
+                                  <Shield className={`w-4 h-4 ${themeObj.badgeText}`} />
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-baseline gap-1.5 pr-1 mt-2" dir="ltr">
@@ -2049,7 +2107,7 @@ export default function App() {
                 // If it's a new course, create it in the database first
                 if (!coursesMap[newCourseCode]) {
                   if (token) {
-                    const newSyl = { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false };
+                    const newSyl = { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false, lab_report_weight: 0, lab_report_keep: 0, lab_report_magen: false };
                     const res = await fetch(`${API_BASE_URL}/courses/${newCourseCode}`, {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -2060,7 +2118,7 @@ export default function App() {
                     setCoursesMap(prev => ({ ...prev, [newCourseCode]: newSyl }));
                   } else {
                     // Guest Mode Fallback
-                    setCoursesMap(prev => ({ ...prev, [newCourseCode]: { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, exam_weight: 0, exam_magen: false } }));
+                    setCoursesMap(prev => ({ ...prev, [newCourseCode]: { name: newCourseName, hw_weight: 0, hw_keep: 0, hw_magen: false, ww_weight: 0, ww_keep: 0, ww_magen: false, lab_report_weight: 0, lab_report_keep: 0, lab_report_magen: false, exam_weight: 0, exam_magen: false } }));
                   }
                 }
 
