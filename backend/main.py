@@ -1473,45 +1473,57 @@ def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session 
 
 @app.post("/api/v2/users/me/progress/update")
 def update_degree_progress(req: ProgressUpdateReq, db: Session = Depends(get_db),
-                           current_user: DBUser = Depends(get_current_user)):
-    # 1. Stash current state for the "Undo" feature
-    current_user.previous_total_credits = current_user.total_credits
-    current_user.previous_weighted_sum = current_user.weighted_sum
+                           current_user: dict = Depends(get_current_user)):
+    # Fetch the actual SQLAlchemy database object
+    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
 
-    # 2. Apply the new math
+    # Stash the current state for the "Undo" feature (using 'or 0.0' to prevent NoneType math errors on fresh users)
+    db_user.previous_total_credits = db_user.total_credits or 0.0
+    db_user.previous_weighted_sum = db_user.weighted_sum or 0.0
+
+    # Apply the new math
     if req.is_redo:
         if req.old_score is None:
             raise HTTPException(status_code=400, detail="old_score is required for a redo")
-        # Credits stay the same, only the weighted sum delta is applied
         delta = (req.new_score - req.old_score) * req.credits
-        current_user.weighted_sum += delta
+        db_user.weighted_sum = (db_user.weighted_sum or 0.0) + delta
     else:
         # Brand-new course
-        current_user.total_credits += req.credits
-        current_user.weighted_sum += (req.new_score * req.credits)
+        db_user.total_credits = (db_user.total_credits or 0.0) + req.credits
+        db_user.weighted_sum = (db_user.weighted_sum or 0.0) + (req.new_score * req.credits)
 
     db.commit()
-    db.refresh(current_user)
-    return current_user
+    db.refresh(db_user)
+    return db_user
 
 
 @app.post("/api/v2/users/me/progress/undo")
-def undo_degree_progress(db: Session = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
+def undo_degree_progress(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     # Restore the stashed state
-    current_user.total_credits = current_user.previous_total_credits
-    current_user.weighted_sum = current_user.previous_weighted_sum
+    db_user.total_credits = db_user.previous_total_credits or 0.0
+    db_user.weighted_sum = db_user.previous_weighted_sum or 0.0
     db.commit()
-    db.refresh(current_user)
-    return current_user
+    db.refresh(db_user)
+    return db_user
 
 
 @app.post("/api/v2/users/me/progress/reset")
-def reset_degree_progress(db: Session = Depends(get_db), current_user: DBUser = Depends(get_current_user)):
+def reset_degree_progress(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     # Nuke everything back to zero
-    current_user.total_credits = 0.0
-    current_user.weighted_sum = 0.0
-    current_user.previous_total_credits = 0.0
-    current_user.previous_weighted_sum = 0.0
+    db_user.total_credits = 0.0
+    db_user.weighted_sum = 0.0
+    db_user.previous_total_credits = 0.0
+    db_user.previous_weighted_sum = 0.0
     db.commit()
-    db.refresh(current_user)
-    return current_user
+    db.refresh(db_user)
+    return db_user
