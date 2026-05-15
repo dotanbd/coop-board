@@ -125,6 +125,7 @@ class DBAssignment(Base):
     courseCode = Column(String, ForeignKey("courses.code"))
     type = Column(String)
     deadline = Column(String)
+    recommended_deadline = Column(String, nullable=True)
     isOptional = Column(Boolean, default=False)
     attachments = relationship("DBAttachment", back_populates="assignment", cascade="all, delete-orphan")
     user_id = Column(Integer, ForeignKey("users.id"))
@@ -190,6 +191,7 @@ class AssignmentCreate(BaseModel):
     courseCode: str
     type: str
     deadline: str
+    recommended_deadline: Optional[str] = None
     isOptional: bool = False
 
 
