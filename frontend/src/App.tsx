@@ -1730,7 +1730,7 @@ export default function App() {
                             <label className="flex items-center gap-4 cursor-pointer flex-1">
                               <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
                               <div className={`w-8 h-8 rounded-[0.8rem] flex items-center justify-center p-[2px] transition-all duration-200 ${courseTheme.dot} ${visibleCourses.includes(code) ? 'shadow-md scale-105' : 'opacity-70 hover:opacity-100'}`}>
-                                <div className={`w-full h-full rounded-[0.6rem] transition-colors duration-200 flex items-center justify-center ${visibleCourses.includes(code) ? 'bg-transparent' : 'bg-white dark:bg-slate-800'}`}>
+                                <div className={`w-full h-full rounded-[0.8rem] transition-colors duration-200 flex items-center justify-center ${visibleCourses.includes(code) ? 'bg-transparent' : 'bg-white dark:bg-slate-800'}`}>
                                 </div>
                               </div>
                               <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
