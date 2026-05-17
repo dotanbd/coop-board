@@ -27,7 +27,7 @@ def main():
 
     db = SessionLocal()
     try:
-        one_year_ago = datetime.utcnow() - timedelta(days=365)
+        one_year_ago = datetime.utcnow() - timedelta(days=10)
         all_courses = db.query(DBCourse).all()
 
         active_courses = []
@@ -36,7 +36,7 @@ def main():
         print("🔍 Scanning courses for activity...")
 
         for course in all_courses:
-            # ✨ THE PARALLEL UNIVERSE SAFEGUARD
+            # Personal assignments safeguard
             if course.code == "9990999":
                 continue
 
