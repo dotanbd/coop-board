@@ -269,6 +269,18 @@ def get_db():
         db.close()
 
 
+def touch_course_vitality(db: Session, course_code: str):
+    """Updates the last_edited timestamp for a course to keep it active."""
+    # Don't track the personal 'My Tasks' pseudo-course
+    if course_code == "9990999":
+        return
+
+    course = db.query(DBCourse).filter(DBCourse.code == course_code).first()
+    if course:
+        course.last_edited = datetime.utcnow()
+        db.add(course)
+
+
 # --- Authentication Dependencies ---
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
@@ -452,7 +464,7 @@ def update_course(course_code: str, course_data: dict, current_user: dict = Depe
             )
             db.add(audit_log)
     else:
-        # Snapshot existing course before updating safely
+        # Snapshot existing courses before updating safely
         old_data = {key: getattr(course, key) for key in valid_data.keys()}
 
         for key, value in valid_data.items():
@@ -469,6 +481,8 @@ def update_course(course_code: str, course_data: dict, current_user: dict = Depe
                 status="PENDING"
             )
             db.add(audit_log)
+
+    touch_course_vitality(db, course_code)
 
     db.commit()
     return {"success": True}
@@ -509,6 +523,8 @@ def update_course_code(old_code: str, payload: CourseCodeUpdate, admin: DBUser =
     # Safely destroy the old course now that nothing depends on it
     db.delete(course)
 
+    touch_course_vitality(db, new_code)
+
     # Commit the entire transaction atomically
     db.commit()
 
@@ -541,7 +557,7 @@ def get_assignments(optional_user: dict = Depends(get_optional_user), db: Sessio
 
     pending_ids = [int(log[0].split(":")[0]) for log in pending_logs if ":" in log[0]]
 
-    # ✨ 2. Build the base query, dynamically hiding the pending deletes
+    #  Build the base query, dynamically hiding the pending deletes
     query = db.query(DBAssignment)
     if pending_ids:
         query = query.filter(DBAssignment.id.notin_(pending_ids))
@@ -638,7 +654,7 @@ def create_assignment(assignment: AssignmentCreate, current_user: dict = Depends
 
     db_course = db.query(DBCourse).filter(DBCourse.code == assignment.courseCode).first()
     if db_course:
-        db_course.last_edited = datetime.utcnow()
+        touch_course_vitality(db, assignment.courseCode)
 
     db.commit()
     db.refresh(new_assignment)
@@ -682,7 +698,7 @@ def update_assignment(assignment_id: int, assignment: AssignmentCreate,
 
     db_course = db.query(DBCourse).filter(DBCourse.code == assignment.courseCode).first()
     if db_course:
-        db_course.last_edited = datetime.utcnow()
+        touch_course_vitality(db, assignment.courseCode)
 
     db.commit()
     db.refresh(db_assignment)
@@ -753,7 +769,7 @@ def delete_assignment(assignment_id: int, current_user: dict = Depends(get_write
 
     db_course = db.query(DBCourse).filter(DBCourse.code == db_assignment.courseCode).first()
     if db_course:
-        db_course.last_edited = datetime.utcnow()
+        touch_course_vitality(db, str(db_assignment.courseCode))
 
     db.commit()
     return {"success": True}
@@ -894,6 +910,8 @@ async def upload_attachment(assignment_id: int, file: UploadFile = File(...), ca
     new_attachment = DBAttachment(assignment_id=assignment_id, user_id=current_user["id"], filename=file.filename,
                                   object_name=object_name, category=category)
     db.add(new_attachment)
+
+    touch_course_vitality(db, str(assignment.courseCode))
     db.commit()
     db.refresh(new_attachment)
     return {"id": new_attachment.id, "filename": new_attachment.filename, "category": new_attachment.category}
@@ -998,7 +1016,7 @@ def get_summaries(courseCode: str, optional_user: dict = Depends(get_optional_us
                 DBSummaryLike.user_id == optional_user["id"]
             ).first() is not None
 
-        # ✨ Fetch uploader details!
+        # Fetch uploader details
         uploader = db.query(DBUser).filter(DBUser.id == s.uploader_id).first()
 
         results.append({
@@ -1053,6 +1071,8 @@ async def upload_summary(courseCode: str = Form(...), filename: str = Form(...),
         )
         db.add(audit_log)
 
+    touch_course_vitality(db, courseCode)
+
     db.commit()
     db.refresh(new_summary)
     return {"success": True, "id": new_summary.id}
@@ -1093,6 +1113,7 @@ async def update_summary(summary_id: int, filename: str = Form(...), file: Optio
         )
         db.add(audit_log)
 
+    touch_course_vitality(db, str(summary.courseCode))
     db.commit()
     return {"success": True}
 
@@ -1136,6 +1157,7 @@ def toggle_summary_like(summary_id: int, current_user: dict = Depends(get_curren
         new_like = DBSummaryLike(user_id=current_user["id"], summary_id=summary_id)
         db.add(new_like)
 
+    touch_course_vitality(db, str(summary.courseCode))
     db.commit()
     return {"success": True}
 
@@ -1157,6 +1179,7 @@ def delete_summary(summary_id: int, current_user: dict = Depends(get_current_use
 
     db.query(DBSummaryLike).filter(DBSummaryLike.summary_id == summary_id).delete()
     db.delete(summary)
+    touch_course_vitality(db, str(summary.courseCode))
     db.commit()
     return {"success": True}
 
@@ -1272,11 +1295,11 @@ def approve_change(log_id: int, admin: DBUser = Depends(get_admin_user), db: Ses
         db_assignment = db.query(DBAssignment).filter(DBAssignment.id == real_id).first()
 
         if db_assignment:
-            # 1. Sweep user grades
+            # Sweep user grades
             db.query(DBUserAssignment).filter(DBUserAssignment.assignment_id == real_id).delete(
                 synchronize_session=False)
 
-            # 2. Sweep attachments, likes, and MinIO files
+            # Sweep attachments, likes, and MinIO files
             for attachment in db_assignment.attachments:
                 db.query(DBAttachmentLike).filter(DBAttachmentLike.attachment_id == attachment.id).delete(
                     synchronize_session=False)
@@ -1286,19 +1309,19 @@ def approve_change(log_id: int, admin: DBUser = Depends(get_admin_user), db: Ses
                     pass
                 db.delete(attachment)
 
-            # 3. Sweep old audit logs (but spare this current ticket until the end!)
+            # Sweep old audit logs (but spare this current ticket until the end!)
             db.query(DBAuditLog).filter(
                 DBAuditLog.entity_type == "ASSIGNMENT",
                 DBAuditLog.entity_id.like(f"{real_id}:%"),
                 DBAuditLog.id != log.id
             ).delete(synchronize_session=False)
 
-            # 4. Trigger course vitality
+            # Trigger course vitality
             db_course = db.query(DBCourse).filter(DBCourse.code == db_assignment.courseCode).first()
             if db_course:
                 db_course.last_edited = datetime.utcnow()
 
-            # 5. Delete the assignment
+            # elete the assignment
             db.delete(db_assignment)
 
     db.delete(log)
@@ -1330,7 +1353,6 @@ def revert_change(log_id: int, admin: DBUser = Depends(get_admin_user), db: Sess
             pass
         else:
             raise HTTPException(status_code=400, detail="Invalid action for reversion")
-            pass
 
     elif log.entity_type == "COURSE":
         course = db.query(DBCourse).filter(DBCourse.code == log.entity_id).first()
