@@ -1734,9 +1734,18 @@ export default function App() {
                                 onChange={() => toggleVisibleCourse(code)}
                                 className="hidden"
                               />
-                              <div className="relative shrink-0 w-8 h-8 flex items-center justify-center">
-                                <div className={`absolute inset-0 rounded-[0.8rem] transition-all duration-200 ${courseTheme.dot} ${visibleCourses.includes(code) ? 'shadow-md scale-105' : 'opacity-60 group-hover:opacity-100'}`}></div>
-                                <div className={`absolute inset-[2px] rounded-[calc(0.8rem-2px)] bg-white dark:bg-slate-800 transition-opacity duration-200 ${visibleCourses.includes(code) ? 'opacity-0' : 'opacity-100'}`}></div>
+                              <div
+                                className={`relative shrink-0 w-8 h-8 flex items-center justify-center transition-all duration-300 ease-out ${courseTheme.dot} ${visibleCourses.includes(code)
+                                    ? 'rounded-[0.8rem] shadow-md scale-105'
+                                    : 'rounded-full opacity-60 group-hover:opacity-100'
+                                  }`}
+                              >
+                                <div
+                                  className={`absolute inset-[2px] bg-white dark:bg-slate-800 transition-all duration-300 ease-out ${visibleCourses.includes(code)
+                                      ? 'rounded-[calc(0.8rem-2px)] opacity-0 scale-75'
+                                      : 'rounded-full opacity-100 scale-100'
+                                    }`}
+                                ></div>
                               </div>
                               <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100 min-w-0">
                                 <span className={`text-sm font-bold transition-colors ${visibleCourses.includes(code) ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'} line-clamp-1`}>
