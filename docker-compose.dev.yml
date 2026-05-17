@@ -25,7 +25,7 @@ services:
       - FRONTEND_URL=https://dev.myteaspoon.tech
     volumes:
       - ./backend:/app/backend
-      - ./backend/alembic:/app/alembic
+      - ./backend/alembic-dev:/app/alembic
       - ./backend/data-dev:/app/data
     env_file:
       - .env
