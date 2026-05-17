@@ -395,7 +395,13 @@ def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends
         "name": user.name,
         "picture": user.picture,
         "role": user.role,
-        "totalLikesReceived": semester_likes + summary_likes + lifetime
+        "totalLikesReceived": semester_likes + summary_likes + lifetime,
+        "total_credits": getattr(user, 'total_credits', 0.0),
+        "weighted_sum": getattr(user, 'weighted_sum', 0.0),
+        "previous_total_credits": getattr(user, 'previous_total_credits', 0.0),
+        "previous_weighted_sum": getattr(user, 'previous_weighted_sum', 0.0),
+        "binary_credits": getattr(user, 'binary_credits', 0.0),
+        "previous_binary_credits": getattr(user, 'previous_binary_credits', 0.0)
     }
 
 
