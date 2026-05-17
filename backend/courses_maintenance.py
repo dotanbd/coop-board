@@ -33,6 +33,7 @@ def main():
         active_courses = []
         inactive_courses = []
 
+        print(f'beginning of keep: {one_year_ago}')
         print("🔍 Scanning courses for activity...")
 
         for course in all_courses:
@@ -41,7 +42,11 @@ def main():
                 continue
 
             # Using the vitality tracker
+            flag = 1
             if course.last_edited is None or course.last_edited >= one_year_ago:
+                if flag == 1:
+                    print(f'course age: {course.last_edited}')
+                    flag = 0
                 active_courses.append(course)
             else:
                 inactive_courses.append(course)
