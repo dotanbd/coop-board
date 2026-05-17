@@ -106,9 +106,9 @@ class DBCourse(Base):
     code = Column(String, primary_key=True, index=True)
     name = Column(String)
     hw_weight = Column(Integer, default=0)
-    hw_drop = Column(Integer, default=0)
+    hw_keep = Column(Integer, default=0)
     ww_weight = Column(Integer, default=0)
-    ww_drop = Column(Integer, default=0)
+    ww_keep = Column(Integer, default=0)
     exam_weight = Column(Integer, default=0)
     hw_magen = Column(Boolean, default=False)
     ww_magen = Column(Boolean, default=False)
@@ -196,9 +196,9 @@ class AssignmentCreate(BaseModel):
 class CourseUpdate(BaseModel):
     name: str
     hw_weight: int = 0
-    hw_drop: int = 0
+    hw_keep: int = 0
     ww_weight: int = 0
-    ww_drop: int = 0
+    ww_keep: int = 0
     exam_weight: int = 0
     lab_report_weight: Optional[int] = 0
     lab_report_keep: Optional[int] = 0
@@ -407,9 +407,9 @@ def get_all_courses(db: Session = Depends(get_db)):
         c.code: {
             "name": c.name,
             "hw_weight": c.hw_weight,
-            "hw_drop": c.hw_drop,
+            "hw_keep": c.hw_keep,
             "ww_weight": c.ww_weight,
-            "ww_drop": c.ww_drop,
+            "ww_keep": c.ww_keep,
             "exam_weight": c.exam_weight,
             "hw_magen": c.hw_magen,
             "ww_magen": c.ww_magen,
