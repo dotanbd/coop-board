@@ -915,14 +915,17 @@ export default function App() {
         try {
           const [userRes, userCoursesRes] = await Promise.all([fetch(`${API_BASE_URL}/users/me`, { headers }), fetch(`${API_BASE_URL}/users/me/courses`, { headers })]);
           if (userRes.ok) {
-            setUserProfile(await userRes.json()); const dbCourses = await userCoursesRes.json(); setMyCourses(dbCourses); setVisibleCourses(dbCourses);
+            setUserProfile(await userRes.json());
+            const dbCourses = await userCoursesRes.json();
+            setMyCourses(dbCourses);
+            setVisibleCourses([]);
           } else throw new Error("Unauthorized");
         } catch { localStorage.removeItem('teaspoon_jwt'); setToken(null); }
       } else {
         const localCourses = JSON.parse(localStorage.getItem('guest_courses') || '[]');
         const localCompletions = JSON.parse(localStorage.getItem('guest_completions') || '[]');
         const localGrades = JSON.parse(localStorage.getItem('guest_grades') || '{}');
-        setMyCourses(localCourses); setVisibleCourses(localCourses);
+        setMyCourses(localCourses); setVisibleCourses([]);
         fetchedAssignments = fetchedAssignments.map(a => ({ ...a, isCompleted: localCompletions.includes(a.id), grade: localGrades[a.id] ?? null }));
       }
       setAssignments(fetchedAssignments.map(a => ({
@@ -969,7 +972,9 @@ export default function App() {
       }
 
       setMyCourses(updated);
-      setVisibleCourses(prev => [...prev, code]);
+      if (visibleCourses.length > 0) {
+        setVisibleCourses(prev => [...prev, code]);
+      }
     }
 
     setSearchQuery('');
@@ -1260,7 +1265,7 @@ export default function App() {
   const handleCalendarSync = () => {
     let calendarUrl = '';
     if (token) { calendarUrl = `${API_BASE_URL}/calendar/feed?token=${token}`; }
-    else if (visibleCourses.length > 0) { calendarUrl = `${API_BASE_URL}/calendar/feed?courses=${visibleCourses.join(',')}`; }
+    else if (myCourses.length > 0) { calendarUrl = `${API_BASE_URL}/calendar/feed?courses=${myCourses.join(',')}`; }
     else { alert("אין קורסים מסומנים לסנכרון."); return; }
     navigator.clipboard.writeText(calendarUrl).then(() => { setIsCalendarCopied(true); setTimeout(() => setIsCalendarCopied(false), 2000); }).catch(() => { alert("שגיאה בהעתקת הקישור ליומן. אנא נסה שוב."); });
   };
@@ -1319,7 +1324,7 @@ export default function App() {
   const searchResults = Object.entries(coursesMap).filter(([code, syl]) => { if (!searchQuery) return false; return code.includes(searchQuery) || (syl.name && syl.name.toLowerCase().includes(searchQuery.toLowerCase())); }).slice(0, 5);
 
   const filteredAssignments = assignments.filter(a => {
-    if (!visibleCourses.includes(a.courseCode)) return false;
+    if (visibleCourses.length > 0 && !visibleCourses.includes(a.courseCode)) return false;
     if (activeTypeFilter !== 'All' && a.type !== activeTypeFilter) return false;
     if (hideCompleted && a.isCompleted) return false;
 
@@ -1723,10 +1728,17 @@ export default function App() {
                           <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
                             <label className="flex items-center gap-4 cursor-pointer flex-1">
                               <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
-                              <div className={`w-8 h-8 rounded-[0.8rem] flex items-center justify-center font-black text-white shadow-sm transition-transform ${visibleCourses.includes(code) ? courseTheme.dot : 'bg-slate-200 dark:bg-slate-700 opacity-50 scale-90'}`}>
+                              <div
+                                className={`w-8 h-8 rounded-[0.8rem] flex items-center justify-center transition-all duration-200 ${visibleCourses.includes(code)
+                                  ? `${courseTheme.dot} text-white shadow-md scale-105`
+                                  : `border-2 ${courseTheme.dot.replace('bg-', 'border-')} bg-transparent opacity-70 hover:opacity-100`
+                                  }`}
+                              >
                               </div>
                               <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
-                                <span className="text-sm font-bold text-slate-800 dark:text-slate-200 line-clamp-1">{coursesMap[code]?.name || 'קורס מותאם'}</span>
+                                <span className={`text-sm font-bold transition-colors ${visibleCourses.includes(code) ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'} line-clamp-1`}>
+                                  {coursesMap[code]?.name || 'קורס מותאם'}
+                                </span>
                                 <span className="text-[11px] font-semibold text-slate-400" dir="ltr">{code}</span>
                               </div>
                             </label>
@@ -1752,7 +1764,8 @@ export default function App() {
               {/* Personal Progress Block */}
               {(() => {
                 // Calculate progress on the fly for visible courses (excluding personal tasks)
-                const progressCourses = visibleCourses.filter(c => c !== '9990999');
+                const activeCourses = visibleCourses.length > 0 ? visibleCourses : myCourses;
+                const progressCourses = activeCourses.filter(c => c !== '9990999');
                 const progressAssignments = assignments.filter(a =>
                   progressCourses.includes(a.courseCode) &&
                   a.type !== 'other'
@@ -1869,35 +1882,35 @@ export default function App() {
                   </button>
 
                   <div className="relative z-[60] flex-1 sm:flex-none" ref={filterMenuRef}>
-                      
-                      <button onClick={() => setOpenFilter(prev => prev ? null : 'status')} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold shadow-sm border border-slate-200/50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                         <Filter className="w-4 h-4" /> סינון
-                      </button>
-                      
-                      {/* Filter Menus Container */}
-                      {openFilter && (
-                        <div className="absolute top-full mt-2 left-0 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 flex flex-col gap-4 min-w-[280px]">
-                          
-                          {/* Type Filter */}
-                          <div>
-                            <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
-                            <div className="flex flex-wrap gap-2">
-                               {['All', 'Assignment', 'Webwork', 'Exam', 'lab_report', 'other'].map(type => (
-                                 <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>
-                                   {typeTranslations[type]}
-                                 </button>
-                               ))}
-                            </div>
+
+                    <button onClick={() => setOpenFilter(prev => prev ? null : 'status')} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold shadow-sm border border-slate-200/50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                      <Filter className="w-4 h-4" /> סינון
+                    </button>
+
+                    {/* Filter Menus Container */}
+                    {openFilter && (
+                      <div className="absolute top-full mt-2 left-0 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl p-4 flex flex-col gap-4 min-w-[280px]">
+
+                        {/* Type Filter */}
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
+                          <div className="flex flex-wrap gap-2">
+                            {['All', 'Assignment', 'Webwork', 'Exam', 'lab_report', 'other'].map(type => (
+                              <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>
+                                {typeTranslations[type]}
+                              </button>
+                            ))}
                           </div>
-                          
-                          {/* Status Filter */}
-                          <div>
-                            <label className="text-xs font-bold text-slate-500 mb-2 block">סטטוס:</label>
-                            <div className="flex gap-2">
-                               <button onClick={() => setHideCompleted(false)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${!hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>הכל</button>
-                               <button onClick={() => setHideCompleted(true)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>לא בוצעו</button>
-                            </div>
+                        </div>
+
+                        {/* Status Filter */}
+                        <div>
+                          <label className="text-xs font-bold text-slate-500 mb-2 block">סטטוס:</label>
+                          <div className="flex gap-2">
+                            <button onClick={() => setHideCompleted(false)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${!hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>הכל</button>
+                            <button onClick={() => setHideCompleted(true)} className={`flex-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${hideCompleted ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>לא בוצעו</button>
                           </div>
+                        </div>
 
                         {/* Dates Filter */}
                         <div className="border-t border-slate-100 dark:border-slate-700 pt-4 mt-1">
@@ -2058,11 +2071,11 @@ export default function App() {
                     )}
 
               {/* Grade Summary Component */}
-              {visibleCourses.length > 0 && assignments.some(a => a.grade !== null) && (
+              {(visibleCourses.length > 0 ? visibleCourses : myCourses).length > 0 && assignments.some(a => a.grade !== null) && (
                 <div className="mt-8 pt-8 border-t border-slate-200/60 dark:border-slate-700">
                   <h3 className="text-lg font-bold text-[#1a202c] dark:text-slate-50 mb-4 flex items-center gap-2"><Calculator className="w-5 h-5 text-slate-500" /> ציונים מצטברים עד כה</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {visibleCourses.map(code => {
+                    {(visibleCourses.length > 0 ? visibleCourses : myCourses).map(code => {
                       const summary = calculateCourseGrade(code);
                       if (!summary) return null;
                       const themeObj = getCourseTheme(code);
