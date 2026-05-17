@@ -41,10 +41,10 @@ def main():
                 continue
 
             # Using the vitality tracker
-            if course.last_edited is not None and course.last_edited >= one_year_ago:
-                active_courses.append(course)
-            else:
+            if course.last_edited is None: # and course.last_edited >= one_year_ago:
                 inactive_courses.append(course)
+            else:
+                active_courses.append(course)
 
         print(f"\n📊 Audit Complete:")
         print(f"   - Active Courses (Last 365 days): {len(active_courses)}")
