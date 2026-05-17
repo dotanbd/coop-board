@@ -24,7 +24,9 @@ services:
       - GOOGLE_REDIRECT_URI=https://api-dev.myteaspoon.tech/api/v2/auth/callback
       - FRONTEND_URL=https://dev.myteaspoon.tech
     volumes:
+      - ./backend:/app/backend
       - ./backend/data-dev:/app/data
+      - ./backend/alembic-dev:/app/alembic
     env_file:
       - .env
     restart: always
