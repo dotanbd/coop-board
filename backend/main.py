@@ -19,7 +19,7 @@ from fastapi.security import OAuth2PasswordBearer
 from fastapi.responses import StreamingResponse
 import mimetypes
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update
+from sqlalchemy import create_engine, Column, Integer, String, Boolean, ForeignKey, Table, update, Float
 from sqlalchemy import or_, and_, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
@@ -94,19 +94,28 @@ class DBUser(Base):
     picture = Column(String)
     role = Column(String, default="student")
     followed_courses = relationship("DBCourse", secondary=user_courses)
+    total_credits = Column(Float, default=0.0)
+    weighted_sum = Column(Float, default=0.0)
+    previous_total_credits = Column(Float, default=0.0)
+    previous_weighted_sum = Column(Float, default=0.0)
+    binary_credits = Column(Float, default=0.0)
+    previous_binary_credits = Column(Float, default=0.0)
 
 class DBCourse(Base):
     __tablename__ = "courses"
     code = Column(String, primary_key=True, index=True)
     name = Column(String)
     hw_weight = Column(Integer, default=0)
-    hw_drop = Column(Integer, default=0)
+    hw_keep = Column(Integer, default=0)
     ww_weight = Column(Integer, default=0)
-    ww_drop = Column(Integer, default=0)
+    ww_keep = Column(Integer, default=0)
     exam_weight = Column(Integer, default=0)
     hw_magen = Column(Boolean, default=False)
     ww_magen = Column(Boolean, default=False)
     exam_magen = Column(Boolean, default=False)
+    lab_report_weight = Column(Integer, default=0)
+    lab_report_keep = Column(Integer, default=0)
+    lab_report_magen = Column(Boolean, default=False)
     last_edited = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class DBAssignment(Base):
@@ -116,7 +125,7 @@ class DBAssignment(Base):
     courseCode = Column(String, ForeignKey("courses.code"))
     type = Column(String)
     deadline = Column(String)
-    isOptional = Column(Boolean, default=False)
+    recommended_deadline = Column(String, nullable=True)
     attachments = relationship("DBAttachment", back_populates="assignment", cascade="all, delete-orphan")
     user_id = Column(Integer, ForeignKey("users.id"))
 
@@ -181,19 +190,22 @@ class AssignmentCreate(BaseModel):
     courseCode: str
     type: str
     deadline: str
-    isOptional: bool = False
+    recommended_deadline: Optional[str] = None
 
 
 class CourseUpdate(BaseModel):
     name: str
     hw_weight: int = 0
-    hw_drop: int = 0
+    hw_keep: int = 0
     ww_weight: int = 0
-    ww_drop: int = 0
+    ww_keep: int = 0
     exam_weight: int = 0
+    lab_report_weight: Optional[int] = 0
+    lab_report_keep: Optional[int] = 0
     hw_magen: bool = False
     ww_magen: bool = False
     exam_magen: bool = False
+    lab_report_magen: Optional[bool] = False
 
 
 class AttachmentUpdate(BaseModel):
@@ -206,6 +218,15 @@ class GradeUpdate(BaseModel):
 
 class CourseCodeUpdate(BaseModel):
     new_code: str
+
+
+class ProgressUpdateReq(BaseModel):
+    is_redo: bool
+    is_pass_fail: bool = False
+    credits: float
+    new_score: Optional[float] = None
+    old_score: Optional[float] = None
+    old_was_pass_fail: bool = False
 
 
 # --- App Setup ---
@@ -374,7 +395,13 @@ def get_me(current_user: dict = Depends(get_current_user), db: Session = Depends
         "name": user.name,
         "picture": user.picture,
         "role": user.role,
-        "totalLikesReceived": semester_likes + summary_likes + lifetime
+        "totalLikesReceived": semester_likes + summary_likes + lifetime,
+        "total_credits": getattr(user, 'total_credits', 0.0),
+        "weighted_sum": getattr(user, 'weighted_sum', 0.0),
+        "previous_total_credits": getattr(user, 'previous_total_credits', 0.0),
+        "previous_weighted_sum": getattr(user, 'previous_weighted_sum', 0.0),
+        "binary_credits": getattr(user, 'binary_credits', 0.0),
+        "previous_binary_credits": getattr(user, 'previous_binary_credits', 0.0)
     }
 
 
@@ -386,9 +413,9 @@ def get_all_courses(db: Session = Depends(get_db)):
         c.code: {
             "name": c.name,
             "hw_weight": c.hw_weight,
-            "hw_drop": c.hw_drop,
+            "hw_keep": c.hw_keep,
             "ww_weight": c.ww_weight,
-            "ww_drop": c.ww_drop,
+            "ww_keep": c.ww_keep,
             "exam_weight": c.exam_weight,
             "hw_magen": c.hw_magen,
             "ww_magen": c.ww_magen,
@@ -577,7 +604,7 @@ def get_assignments(optional_user: dict = Depends(get_optional_user), db: Sessio
             "courseCode": a.courseCode,
             "type": a.type,
             "deadline": a.deadline,
-            "isOptional": a.isOptional,
+            "recommended_deadline": getattr(a, 'recommended_deadline', None),
             "isCompleted": user_data.get(a.id, {}).get("completed", False),
             "grade": user_data.get(a.id, {}).get("grade", None),
             "attachments": attachments
@@ -631,7 +658,7 @@ def update_assignment(assignment_id: int, assignment: AssignmentCreate,
         "courseCode": db_assignment.courseCode,
         "type": db_assignment.type,
         "deadline": db_assignment.deadline,
-        "isOptional": db_assignment.isOptional
+        "recommended_deadline": getattr(db_assignment, 'recommended_deadline', None)
     }
 
     # Always apply changes optimistically
@@ -1458,3 +1485,81 @@ def get_leaderboard(current_user: dict = Depends(get_current_user), db: Session 
         "semester": process_board(semester_board),
         "all_time": process_board(all_time_board)
     }
+
+
+@app.post("/api/v2/users/me/progress/update")
+def update_degree_progress(req: ProgressUpdateReq, db: Session = Depends(get_db),
+                           current_user: dict = Depends(get_current_user)):
+    # Fetch the actual SQLAlchemy database object
+    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Stash the current state for the "Undo" feature (using 'or 0.0' to prevent NoneType math errors on fresh users)
+    db_user.previous_total_credits = db_user.total_credits or 0.0
+    db_user.previous_weighted_sum = db_user.weighted_sum or 0.0
+    db_user.previous_binary_credits = db_user.binary_credits or 0.0
+
+    # Apply the new math
+    if req.is_redo:
+        # Subtract the old course
+        if req.old_was_pass_fail:
+            db_user.binary_credits = (db_user.binary_credits or 0.0) - req.credits
+        else:
+            if req.old_score is None:
+                raise HTTPException(status_code=400, detail="old_score required")
+            db_user.total_credits = (db_user.total_credits or 0.0) - req.credits
+            db_user.weighted_sum = (db_user.weighted_sum or 0.0) - (req.old_score * req.credits)
+
+        # Add the new course
+        if req.is_pass_fail:
+            db_user.binary_credits = (db_user.binary_credits or 0.0) + req.credits
+        else:
+            if req.new_score is None:
+                raise HTTPException(status_code=400, detail="new_score required")
+            db_user.total_credits = (db_user.total_credits or 0.0) + req.credits
+            db_user.weighted_sum = (db_user.weighted_sum or 0.0) + (req.new_score * req.credits)
+
+    else:
+        # Brand new course
+        if req.is_pass_fail:
+            db_user.binary_credits = (db_user.binary_credits or 0.0) + req.credits
+        else:
+            if req.new_score is None:
+                raise HTTPException(status_code=400, detail="new_score required")
+            db_user.total_credits = (db_user.total_credits or 0.0) + req.credits
+            db_user.weighted_sum = (db_user.weighted_sum or 0.0) + (req.new_score * req.credits)
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+@app.post("/api/v2/users/me/progress/undo")
+def undo_degree_progress(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_user.total_credits = db_user.previous_total_credits or 0.0
+    db_user.weighted_sum = db_user.previous_weighted_sum or 0.0
+    db_user.binary_credits = db_user.previous_binary_credits or 0.0
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/api/v2/users/me/progress/reset")
+def reset_degree_progress(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+    db_user = db.query(DBUser).filter(DBUser.id == current_user['id']).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_user.total_credits = 0.0
+    db_user.weighted_sum = 0.0
+    db_user.binary_credits = 0.0
+    db_user.previous_total_credits = 0.0
+    db_user.previous_weighted_sum = 0.0
+    db_user.previous_binary_credits = 0.0
+    db.commit()
+    db.refresh(db_user)
+    return db_user
