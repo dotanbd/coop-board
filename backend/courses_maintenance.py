@@ -83,8 +83,10 @@ def main():
             print("\n🛡️  DRY RUN MODE (No data was changed)")
             if inactive_courses:
                 print("The following courses are flagged for complete deep-clean removal:")
-                for c in inactive_courses:
-                    print(f"   ❌ {c.code} - {c.name}")
+                '''for c in inactive_courses:
+                    print(f"   ❌ {c.code} - {c.name}")'''
+                for c in active_courses:
+                    print(f"✅ keeping course: {c.code} - {c.name}")
                 print("\nTo permanently wipe these and all traces, run the script with the --prune flag.")
             else:
                 print("No inactive courses found. Your database is perfectly clean!")
