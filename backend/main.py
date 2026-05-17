@@ -598,6 +598,7 @@ def get_assignments(optional_user: dict = Depends(get_optional_user), db: Sessio
             "courseCode": a.courseCode,
             "type": a.type,
             "deadline": a.deadline,
+            "recommended_deadline": getattr(a, 'recommended_deadline', None),
             "isCompleted": user_data.get(a.id, {}).get("completed", False),
             "grade": user_data.get(a.id, {}).get("grade", None),
             "attachments": attachments
@@ -651,6 +652,7 @@ def update_assignment(assignment_id: int, assignment: AssignmentCreate,
         "courseCode": db_assignment.courseCode,
         "type": db_assignment.type,
         "deadline": db_assignment.deadline,
+        "recommended_deadline": getattr(db_assignment, 'recommended_deadline', None)
     }
 
     # Always apply changes optimistically
