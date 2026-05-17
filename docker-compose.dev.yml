@@ -59,7 +59,3 @@ networks:
   npm_network:
     external: true
     name: npm_default
-
-volumes:
-  - ./:/app
-  - ./backend/data-dev:/app/data
