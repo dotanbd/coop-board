@@ -1881,8 +1881,8 @@ export default function App() {
                           {/* Type Filter */}
                           <div>
                             <label className="text-xs font-bold text-slate-500 mb-2 block">סוג מטלה:</label>
-                            <div className="flex gap-2">
-                               {['All', 'Assignment', 'Webwork', 'Exam'].map(type => (
+                            <div className="flex flex-wrap gap-2">
+                               {['All', 'Assignment', 'Webwork', 'Exam', 'lab_report', 'other'].map(type => (
                                  <button key={type} onClick={() => setActiveTypeFilter(type)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${activeTypeFilter === type ? 'bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400' : 'bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-400'}`}>
                                    {typeTranslations[type]}
                                  </button>
