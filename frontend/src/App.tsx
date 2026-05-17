@@ -1737,7 +1737,7 @@ export default function App() {
                               <div className="relative shrink-0 w-8 h-8 flex items-center justify-center z-0">
                                 <div
                                   className={`absolute transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${courseTheme.dot} ${visibleCourses.includes(code)
-                                      ? '-top-2.5 -bottom-2.5 -right-2.5 -left-1.5 rounded-r-xl rounded-l-[0.8rem] shadow-sm'
+                                      ? '-top-4.5 -bottom-4.5 -right-4.5 -left-2 rounded-r-xl rounded-l-[0.8rem] shadow-sm'
                                       : 'inset-0 rounded-[0.8rem] opacity-70 group-hover:opacity-100'
                                     }`}
                                 ></div>
