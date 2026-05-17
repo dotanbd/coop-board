@@ -41,10 +41,10 @@ def main():
                 continue
 
             # Using the vitality tracker
-            if course.last_edited is None: # and course.last_edited >= one_year_ago:
-                inactive_courses.append(course)
-            else:
+            if course.last_edited is not None and course.last_edited >= one_year_ago:
                 active_courses.append(course)
+            else:
+                inactive_courses.append(course)
 
         print(f"\n📊 Audit Complete:")
         print(f"   - Active Courses (Last 365 days): {len(active_courses)}")
@@ -54,10 +54,8 @@ def main():
             print("\n🛡️  DRY RUN MODE (No data was changed)")
             if inactive_courses:
                 print("The following courses are flagged for complete deep-clean removal:")
-                '''for c in inactive_courses:
-                    print(f"   ❌ {c.code} - {c.name}")'''
-                for c in active_courses:
-                    print(f'keeping: {course.code} - {course.name}, last edited: {course.last_edited}')
+                for c in inactive_courses:
+                    print(f"   ❌ {c.code} - {c.name}")
                 print("\nTo permanently wipe these and all traces, run the script with the --prune flag.")
             else:
                 print("No inactive courses found. Your database is perfectly clean!")
