@@ -1727,7 +1727,7 @@ export default function App() {
                         const courseTheme = getCourseTheme(code);
                         return (
                           <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
-                            <label className="flex items-center gap-4 cursor-pointer flex-1 min-w-0 group relative p-1 -ml-1">
+                            <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0 group relative p-2 rounded-xl">
                               <input
                                 type="checkbox"
                                 checked={visibleCourses.includes(code)}
@@ -1736,13 +1736,15 @@ export default function App() {
                               />
                               <div className="relative shrink-0 w-8 h-8 flex items-center justify-center z-0">
                                 <div
-                                  className={`absolute right-0 top-0 h-full rounded-[0.8rem] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${courseTheme.dot} ${visibleCourses.includes(code)
-                                      ? 'w-12 shadow-md' // Stretches leftward into the gap 
-                                      : 'w-8 opacity-70 group-hover:opacity-100' // Normal squircle
+                                  className={`absolute transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${courseTheme.dot} ${visibleCourses.includes(code)
+                                      ? '-top-2 -bottom-2 -right-2 -left-1.5 rounded-r-xl rounded-l-[0.8rem] shadow-sm'
+                                      : 'inset-0 rounded-[0.8rem] opacity-70 group-hover:opacity-100'
                                     }`}
                                 ></div>
                               </div>
-                              <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100 min-w-0 relative z-10">
+
+                              {/* Text Container */}
+                              <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100 min-w-0 relative z-10 mr-1">
                                 <span className={`text-sm font-bold transition-colors ${visibleCourses.includes(code) ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'} line-clamp-1`}>
                                   {coursesMap[code]?.name || 'קורס מותאם'}
                                 </span>
