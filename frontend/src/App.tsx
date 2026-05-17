@@ -1710,7 +1710,7 @@ export default function App() {
                       <Search className="w-4 h-4 absolute right-4 top-3.5 text-slate-400" />
 
                       {isSearchFocused && searchQuery && (
-                        <div className="absolute z-30 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl max-h-60 overflow-y-auto flex flex-col">
+                        <div className="absolute z-30 w-full mt-2 border border-slate-100 dark:border-slate-700 rounded-xl shadow-xl max-h-60 overflow-y-auto flex flex-col">
                           {searchResults.length > 0 && searchResults.map(([code, syl]) => (
                             <button key={code} onClick={() => handleAddCourse(code)} className="w-full text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 flex flex-col items-start border-b border-slate-50 dark:border-slate-700 last:border-0 transition-colors">
                               <div className="flex justify-between items-center w-full"><span className="text-sm font-bold text-slate-800 dark:text-slate-100">{syl.name}</span>{myCourses.includes(code) && <CheckCircle className="w-4 h-4 text-emerald-500" />}</div>
