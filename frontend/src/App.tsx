@@ -1706,7 +1706,7 @@ export default function App() {
 
                     {/* Search */}
                     <div className="relative mb-6 shrink-0">
-                      <input type="text" placeholder="חיפוש מהיר..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-3 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 border-none text-sm font-medium focus:ring-2 focus:ring-slate-200 outline-none transition-colors dark:text-slate-100" />
+                      <input type="text" placeholder="חיפוש מהיר..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onFocus={() => setIsSearchFocused(true)} onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)} className="w-full pl-4 pr-10 py-3 rounded-2xl bg-[#FAF9F6] dark:bg-slate-900 border-none text-sm font-medium outline-none transition-colors dark:text-slate-100" />
                       <Search className="w-4 h-4 absolute right-4 top-3.5 text-slate-400" />
 
                       {isSearchFocused && searchQuery && (
