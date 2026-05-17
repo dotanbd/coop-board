@@ -27,13 +27,12 @@ def main():
 
     db = SessionLocal()
     try:
-        one_year_ago = datetime.utcnow() - timedelta(days=10)
+        one_year_ago = datetime.utcnow() - timedelta(days=365)
         all_courses = db.query(DBCourse).all()
 
         active_courses = []
         inactive_courses = []
 
-        print(f'beginning of keep: {one_year_ago}')
         print("🔍 Scanning courses for activity...")
 
         for course in all_courses:
@@ -42,11 +41,7 @@ def main():
                 continue
 
             # Using the vitality tracker
-            flag = 1
-            if course.last_edited is None or course.last_edited >= one_year_ago:
-                if flag == 1:
-                    print(f'course age: {course.last_edited}')
-                    flag = 0
+            if course.last_edited is not None and course.last_edited >= one_year_ago:
                 active_courses.append(course)
             else:
                 inactive_courses.append(course)
