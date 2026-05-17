@@ -1727,14 +1727,19 @@ export default function App() {
                         const courseTheme = getCourseTheme(code);
                         return (
                           <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
-                            <label className="flex items-center gap-4 cursor-pointer flex-1">
-                              <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
-                              <div className={`relative shrink-0 w-8 h-8 rounded-[0.8rem] transition-all duration-200 ${courseTheme.dot} ${visibleCourses.includes(code) ? 'shadow-md scale-105' : 'opacity-70 hover:opacity-100'}`}>
-                                <div className={`absolute inset-[2px] rounded-[0.6rem] transition-colors duration-200 flex items-center justify-center ${visibleCourses.includes(code) ? 'bg-transparent' : 'bg-white dark:bg-slate-800'}`}>
-                                </div>
+                            <label className="flex items-center gap-4 cursor-pointer flex-1 min-w-0 group">
+                              <input
+                                type="checkbox"
+                                checked={visibleCourses.includes(code)}
+                                onChange={() => toggleVisibleCourse(code)}
+                                className="hidden"
+                              />
+                              <div className="relative shrink-0 w-8 h-8 flex items-center justify-center">
+                                <div className={`absolute inset-0 rounded-[0.8rem] transition-all duration-200 ${courseTheme.dot} ${visibleCourses.includes(code) ? 'shadow-md scale-105' : 'opacity-60 group-hover:opacity-100'}`}></div>
+                                <div className={`absolute inset-[2px] rounded-[calc(0.8rem-2px)] bg-white dark:bg-slate-800 transition-opacity duration-200 ${visibleCourses.includes(code) ? 'opacity-0' : 'opacity-100'}`}></div>
                               </div>
-                              <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
-                                <span className={`text-sm font-bold transition-colors ${visibleCourses.includes(code) ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'} line-clamp-1`}>
+                              <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100 min-w-0">
+                                <span className={`text-sm font-bold transition-colors ${visibleCourses.includes(code) ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'} line-clamp-1`}>
                                   {coursesMap[code]?.name || 'קורס מותאם'}
                                 </span>
                                 <span className="text-[11px] font-semibold text-slate-400" dir="ltr">{code}</span>
