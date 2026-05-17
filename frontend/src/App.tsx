@@ -1324,7 +1324,8 @@ export default function App() {
   const searchResults = Object.entries(coursesMap).filter(([code, syl]) => { if (!searchQuery) return false; return code.includes(searchQuery) || (syl.name && syl.name.toLowerCase().includes(searchQuery.toLowerCase())); }).slice(0, 5);
 
   const filteredAssignments = assignments.filter(a => {
-    if (visibleCourses.length > 0 && !visibleCourses.includes(a.courseCode)) return false;
+    const activeCourses = visibleCourses.length > 0 ? visibleCourses : myCourses;
+    if (!activeCourses.includes(a.courseCode)) return false;
     if (activeTypeFilter !== 'All' && a.type !== activeTypeFilter) return false;
     if (hideCompleted && a.isCompleted) return false;
 
@@ -1728,12 +1729,9 @@ export default function App() {
                           <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
                             <label className="flex items-center gap-4 cursor-pointer flex-1">
                               <input type="checkbox" checked={visibleCourses.includes(code)} onChange={() => toggleVisibleCourse(code)} className="hidden" />
-                              <div
-                                className={`w-8 h-8 rounded-[0.8rem] flex items-center justify-center transition-all duration-200 ${visibleCourses.includes(code)
-                                  ? `${courseTheme.dot} text-white shadow-md scale-105`
-                                  : `border-2 ${courseTheme.dot.replace('bg-', 'border-')} bg-transparent opacity-70 hover:opacity-100`
-                                  }`}
-                              >
+                              <div className={`w-8 h-8 rounded-[0.8rem] flex items-center justify-center p-[2px] transition-all duration-200 ${courseTheme.dot} ${visibleCourses.includes(code) ? 'shadow-md scale-105' : 'opacity-70 hover:opacity-100'}`}>
+                                <div className={`w-full h-full rounded-[0.6rem] transition-colors duration-200 flex items-center justify-center ${visibleCourses.includes(code) ? 'bg-transparent' : 'bg-white dark:bg-slate-800'}`}>
+                                </div>
                               </div>
                               <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100">
                                 <span className={`text-sm font-bold transition-colors ${visibleCourses.includes(code) ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'} line-clamp-1`}>
