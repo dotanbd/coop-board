@@ -1727,27 +1727,22 @@ export default function App() {
                         const courseTheme = getCourseTheme(code);
                         return (
                           <div key={code} className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl hover:shadow-md transition-all group">
-                            <label className="flex items-center gap-4 cursor-pointer flex-1 min-w-0 group">
+                            <label className="flex items-center gap-4 cursor-pointer flex-1 min-w-0 group relative p-1 -ml-1">
                               <input
                                 type="checkbox"
                                 checked={visibleCourses.includes(code)}
                                 onChange={() => toggleVisibleCourse(code)}
                                 className="hidden"
                               />
-                              <div
-                                className={`relative shrink-0 w-8 h-8 flex items-center justify-center transition-all duration-300 ease-out ${courseTheme.dot} ${visibleCourses.includes(code)
-                                    ? 'rounded-[0.8rem] shadow-md scale-105'
-                                    : 'rounded-full opacity-60 group-hover:opacity-100'
-                                  }`}
-                              >
+                              <div className="relative shrink-0 w-8 h-8 flex items-center justify-center z-0">
                                 <div
-                                  className={`absolute inset-[2px] bg-white dark:bg-slate-800 transition-all duration-300 ease-out ${visibleCourses.includes(code)
-                                      ? 'rounded-[calc(0.8rem-2px)] opacity-0 scale-75'
-                                      : 'rounded-full opacity-100 scale-100'
+                                  className={`absolute right-0 top-0 h-full rounded-[0.8rem] transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${courseTheme.dot} ${visibleCourses.includes(code)
+                                      ? 'w-12 shadow-md' // Stretches leftward into the gap 
+                                      : 'w-8 opacity-70 group-hover:opacity-100' // Normal squircle
                                     }`}
                                 ></div>
                               </div>
-                              <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100 min-w-0">
+                              <div className="flex flex-col flex-1 opacity-90 group-hover:opacity-100 min-w-0 relative z-10">
                                 <span className={`text-sm font-bold transition-colors ${visibleCourses.includes(code) ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'} line-clamp-1`}>
                                   {coursesMap[code]?.name || 'קורס מותאם'}
                                 </span>
