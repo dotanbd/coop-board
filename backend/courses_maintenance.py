@@ -39,7 +39,7 @@ def main():
 
         for course in all_courses:
             # 1. Check if course has ANY assignments (which includes summaries)
-            has_assignments = db.query(DBAssignment).filter(DBAssignment.course_code == course.code).first() is not None
+            has_assignments = db.query(DBAssignment).filter(DBAssignment.courseCode == course.code).first() is not None
 
             has_summaries = db.query(DBSummary).filter(DBSummary.courseCode == course.code).first() is not None
 
