@@ -30,35 +30,6 @@ def main():
         one_year_ago = datetime.utcnow() - timedelta(days=365)
         all_courses = db.query(DBCourse).all()
 
-        # =====================================================================
-        # TEMPORARY PHASE 1: SAFEGUARD ACTIVE COURSES (Remove after first run)
-        # =====================================================================
-        print("🛠️  Phase 1: Safeguarding active courses with relational data...")
-        now = datetime.utcnow()
-        safeguarded_count = 0
-
-        for course in all_courses:
-            # 1. Check if course has ANY assignments (which includes summaries)
-            has_assignments = db.query(DBAssignment).filter(DBAssignment.courseCode == course.code).first() is not None
-
-            has_summaries = db.query(DBSummary).filter(DBSummary.courseCode == course.code).first() is not None
-
-            # 2. Check if course is in ANY user's myCourses list
-            # NOTE: If your user_courses table links by ID instead of code, change .c.course_code to .c.course_id
-            has_users = db.execute(
-                user_courses.select().where(user_courses.c.course_code == course.code)
-            ).fetchone() is not None
-
-            # If the course is currently in use, update its timestamp to NOW
-            if has_assignments or has_users or has_summaries:
-                if course.last_edited is None or course.last_edited < one_year_ago:
-                    course.last_edited = now
-                    safeguarded_count += 1
-
-        db.commit()
-        print(f"✅ Safely updated 'last_edited' for {safeguarded_count} populated courses.\n")
-        # =====================================================================
-
         active_courses = []
         inactive_courses = []
 
@@ -83,10 +54,8 @@ def main():
             print("\n🛡️  DRY RUN MODE (No data was changed)")
             if inactive_courses:
                 print("The following courses are flagged for complete deep-clean removal:")
-                '''for c in inactive_courses:
-                    print(f"   ❌ {c.code} - {c.name}")'''
-                for c in active_courses:
-                    print(f"✅ keeping course: {c.code} - {c.name}")
+                for c in inactive_courses:
+                    print(f"   ❌ {c.code} - {c.name}")
                 print("\nTo permanently wipe these and all traces, run the script with the --prune flag.")
             else:
                 print("No inactive courses found. Your database is perfectly clean!")
