@@ -176,6 +176,35 @@ const getCourseTheme = (courseCode: string): CourseTheme => {
   return courseThemes[Math.abs(hash) % courseThemes.length];
 };
 
+const formatLogDate = (val: any) => {
+  if (!val) return 'ריק';
+  try {
+    return new Intl.DateTimeFormat('he-IL', {
+      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    }).format(new Date(val));
+  } catch {
+    return String(val);
+  }
+};
+
+const translateField = (key: string) => {
+  const dictionary: Record<string, string> = {
+    title: 'כותרת',
+    description: 'תיאור',
+    type: 'סוג מטלה',
+    deadline: 'תאריך הגשה',
+    recommended_deadline: 'תאריך מומלץ (מדומה)',
+    course_code: 'קוד קורס',
+    is_active: 'סטטוס',
+    color: 'צבע',
+    name: 'שם הקורס'
+  };
+  return dictionary[key] || key;
+};
+
+// Helper to determine if a field is a date
+const isDateField = (key: string) => key.toLowerCase().includes('date') || key.toLowerCase().includes('deadline');
+
 // ==========================================
 // ADMIN DASHBOARD COMPONENT
 // ==========================================
@@ -450,108 +479,147 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
             )}
             <div className="space-y-4">
               {displayedLogs.map(log => {
-                let parsedOld = null;
-                let parsedNew = null;
+                let parsedOld: Record<string, any> | null = null;
+                let parsedNew: Record<string, any> | null = null;
 
-                try {
-                  parsedOld = log.old_data ? JSON.parse(log.old_data) : null;
-                } catch {
-                  parsedOld = null;
-                }
+                try { parsedOld = log.old_data ? JSON.parse(log.old_data) : null; } catch { parsedOld = null; }
+                try { parsedNew = log.new_data ? JSON.parse(log.new_data) : null; } catch { parsedNew = null; }
 
-                try {
-                  parsedNew = log.new_data ? JSON.parse(log.new_data) : null;
-                } catch {
-                  parsedNew = null;
-                }
+                // Attempt to extract the course code based on your entity_id pattern (e.g., "ASSIGNMENT:044102:123")
+                const courseCode = log.entity_type === 'COURSE'
+                  ? log.entity_id
+                  : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : null);
+
+                // Attempt to get the course name if coursesMap is available in your file
+                const courseName = courseCode && typeof coursesMap !== 'undefined' ? coursesMap[courseCode]?.name : '';
 
                 return (
-                  <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 md:p-5 bg-white dark:bg-slate-800/50 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                    <div className="flex-1">
+                  <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 md:p-5 bg-white dark:bg-slate-800/50 shadow-sm flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+
+                      {/* 1. Header Area: Action, Course Code, Course Name, and Timestamp */}
                       <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">{log.action}</span>
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                          {log.entity_type === 'COURSE'
-                            ? `קורס: ${log.entity_id}`
-                            : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : `${log.entity_type} #${log.entity_id}`)
-                          }
-                          {log.entity_type === 'SUMMARY' && log.action === 'CREATE' && (
-                            <a
-                              href={`${API_BASE_URL}/admin/summaries/${log.entity_id.split(':')[0]}/preview?token=${token}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors border border-emerald-200 dark:border-emerald-800"
-                            >
-                              <BookOpen className="w-3 h-3" /> צפה בקובץ
-                            </a>
-                          )}
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${log.action === 'CREATE' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
+                            log.action === 'DELETE' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' :
+                              'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
+                          }`}>
+                          {log.action}
                         </span>
-                        <span className="text-xs text-slate-400" dir="ltr">{new Date(log.created_at).toLocaleString('he-IL')}</span>
+
+                        {courseCode && (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 tracking-wider">
+                            {courseCode}
+                          </span>
+                        )}
+
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-xs">
+                          {courseName || (log.entity_type === 'COURSE' ? 'קורס חדש' : `${log.entity_type} #${log.entity_id.split(':').pop()}`)}
+                        </span>
+
+                        {log.entity_type === 'SUMMARY' && log.action === 'CREATE' && (
+                          <a
+                            href={`${API_BASE_URL}/admin/summaries/${log.entity_id.split(':')[0]}/preview?token=${token}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-0.5 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors border border-emerald-200 dark:border-emerald-800"
+                          >
+                            <BookOpen className="w-3 h-3" /> צפה בקובץ
+                          </a>
+                        )}
+                        <span className="text-xs text-slate-400 mr-auto" dir="ltr">{new Date(log.created_at).toLocaleString('he-IL')}</span>
                       </div>
 
-                      <div className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+                      {/* Subheader: User Info */}
+                      <div className="text-sm text-slate-600 dark:text-slate-300 mb-4 border-b border-slate-100 dark:border-slate-700/50 pb-3">
                         בוצע ע"י: <span className="font-bold">{log.user_name}</span> <span className="text-xs opacity-70" dir="ltr">({log.user_email})</span>
                       </div>
 
-                      {log.entity_type === 'COURSE' && log.action === 'CREATE' ? (
-                        <div className="flex items-stretch gap-2 sm:gap-4 overflow-hidden">
-                          <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded text-xs">
-                            <div className="font-bold text-blue-700 dark:text-blue-400 mb-1">קורס חדש שנוסף:</div>
-                            {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">שם הקורס: {parsedNew.name}<br />קוד הקורס: {log.entity_id.split(':')[0]}</div>}
+                      {/* 2. Payload Area: Dynamic mapping based on action */}
+                      <div className="flex flex-col gap-3 overflow-hidden">
+
+                        {/* UPDATE ACTION - Granular Comparison */}
+                        {log.action === 'UPDATE' && (
+                          <div className="flex flex-col gap-2 w-full">
+                            <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">שינויים שבוצעו:</div>
+                            {(parsedNew ? Object.keys(parsedNew) : []).map(key => {
+                              const oldV = parsedOld?.[key];
+                              const newV = parsedNew?.[key];
+
+                              // Skip if values are identical
+                              if (JSON.stringify(oldV) === JSON.stringify(newV)) return null;
+
+                              const isRecDeadline = key === 'recommended_deadline';
+                              const displayOld = isDateField(key) && oldV ? formatLogDate(oldV) : (oldV ?? 'ריק');
+                              const displayNew = isDateField(key) && newV ? formatLogDate(newV) : (newV ?? 'ריק');
+
+                              return (
+                                <div key={key} className={`flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 rounded-lg border text-sm ${isRecDeadline
+                                    ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50 shadow-sm'
+                                    : 'bg-slate-50 border-slate-100 dark:bg-slate-800/40 dark:border-slate-700/50'
+                                  }`}>
+                                  <span className={`font-semibold min-w-[130px] ${isRecDeadline ? 'text-amber-800 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                                    {translateField(key)}:
+                                  </span>
+                                  <div className="flex items-center gap-2 flex-wrap flex-1">
+                                    {oldV !== undefined && (
+                                      <>
+                                        <span className="text-red-500 dark:text-red-400 line-through opacity-80">{displayOld}</span>
+                                        <ArrowLeft className="w-3.5 h-3.5 text-slate-400 rtl:rotate-180" />
+                                      </>
+                                    )}
+                                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">{displayNew}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-4 overflow-hidden">
-                          {/* UPDATE ACTION - Shows Before and After */}
-                          {log.action === 'UPDATE' && (
-                            <>
-                              <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs opacity-80">
-                                <div className="font-bold text-red-700 dark:text-red-400 mb-1">המידע המקורי:</div>
-                                {parsedOld && <div className="text-slate-600 dark:text-slate-400">
-                                  {log.entity_type === 'COURSE' ? `שם קורס: ${parsedOld.name}` : <>שם: {parsedOld.title}<br />מועד: {parsedOld.deadline}</>}
-                                </div>}
-                              </div>
-                              <div className="hidden sm:flex items-center justify-center text-slate-300"><ArrowLeft className="w-4 h-4" /></div>
-                              <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 p-3 rounded text-xs">
-                                <div className="font-bold text-emerald-700 dark:text-emerald-400 mb-1">השינוי המוצע:</div>
-                                {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">
-                                  {log.entity_type === 'COURSE' ? `שם קורס: ${parsedNew.name}` : <>שם: {parsedNew.title}<br />מועד: {parsedNew.deadline}</>}
-                                </div>}
-                              </div>
-                            </>
-                          )}
+                        )}
 
-                          {/* CREATE ACTION - Shows Only New Data */}
-                          {log.action === 'CREATE' && (
-                            <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded text-xs">
-                              <div className="font-bold text-blue-700 dark:text-blue-400 mb-1">נוצר פריט חדש:</div>
-                              {parsedNew && <div className="text-slate-800 dark:text-slate-200 font-medium">
-                                {log.entity_type === 'COURSE' ? `שם קורס: ${parsedNew.name}` : <>שם: {parsedNew.title}<br />מועד: {parsedNew.deadline}</>}
-                              </div>}
+                        {/* CREATE ACTION - Dynamic Grid */}
+                        {log.action === 'CREATE' && (
+                          <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded-lg text-xs">
+                            <div className="font-bold text-blue-700 dark:text-blue-400 mb-2">נתוני הפריט החדש:</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-slate-800 dark:text-slate-200 font-medium">
+                              {parsedNew && Object.entries(parsedNew).map(([key, val]) => {
+                                if (!val || key === 'id' || key === 'course_id' || key === 'course_code') return null;
+                                return (
+                                  <div key={key} className="truncate">
+                                    <span className="text-slate-500 dark:text-slate-400">{translateField(key)}:</span> {isDateField(key) ? formatLogDate(val) : String(val)}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          )}
+                          </div>
+                        )}
 
-                          {/* DELETE ACTION - Shows Only Old Data with Warning */}
-                          {log.action === 'DELETE' && (
-                            <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded text-xs">
-                              <div className="font-bold text-red-700 dark:text-red-400 mb-1 flex items-center gap-1">
-                                <AlertCircle className="w-3.5 h-3.5" /> בקשת מחיקה לפריט:
-                              </div>
-                              {parsedOld && <div className="text-slate-600 dark:text-slate-400 font-medium line-through mt-1">
-                                שם: {parsedOld.title} <br /> מועד: {parsedOld.deadline}
-                              </div>}
+                        {/* DELETE ACTION - Dynamic Grid */}
+                        {log.action === 'DELETE' && (
+                          <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded-lg text-xs">
+                            <div className="font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-1.5">
+                              <AlertCircle className="w-3.5 h-3.5" /> בקשת מחיקה לפריט עם הנתונים הבאים:
                             </div>
-                          )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-slate-600 dark:text-slate-400 font-medium line-through opacity-80">
+                              {parsedOld && Object.entries(parsedOld).map(([key, val]) => {
+                                if (!val || key === 'id' || key === 'course_id' || key === 'course_code') return null;
+                                return (
+                                  <div key={key} className="truncate">
+                                    <span className="opacity-70">{translateField(key)}:</span> {isDateField(key) ? formatLogDate(val) : String(val)}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
 
-                        </div>
-                      )}
+                      </div>
                     </div>
 
+                    {/* 3. Action Buttons Column */}
                     <div className="shrink-0 flex flex-col gap-2 border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-slate-700 pt-4 lg:pt-0 lg:pr-4 min-w-[140px]">
-                      <button onClick={() => handleApproveLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-sm font-bold transition-colors">
+                      <button onClick={() => handleApproveLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-sm font-bold transition-colors shadow-sm">
                         <Check className="w-4 h-4" /> אישור
                       </button>
-                      <button onClick={() => handleRevertLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white rounded-lg text-sm font-medium transition-colors text-slate-700 dark:text-slate-200">
+                      <button onClick={() => handleRevertLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-slate-900 dark:hover:text-white rounded-lg text-sm font-medium transition-colors text-slate-700 dark:text-slate-200">
                         <X className="w-4 h-4" /> דחייה
                       </button>
                       <button onClick={() => handleRejectAndBlock(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-200 dark:border-red-900/50 rounded-lg text-xs font-bold transition-colors mt-1">
@@ -1737,8 +1805,8 @@ export default function App() {
                               <div className="relative shrink-0 w-8 h-8 flex items-center justify-center z-0">
                                 <div
                                   className={`absolute transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${courseTheme.dot} ${visibleCourses.includes(code)
-                                      ? '-top-2.5 -bottom-2.5 -right-2.5 -left-1.5 rounded-r-xl rounded-l-[0.8rem] shadow-sm'
-                                      : 'inset-0 rounded-[0.8rem] opacity-70 group-hover:opacity-100'
+                                    ? '-top-2.5 -bottom-2.5 -right-2.5 -left-1.5 rounded-r-xl rounded-l-[0.8rem] shadow-sm'
+                                    : 'inset-0 rounded-[0.8rem] opacity-70 group-hover:opacity-100'
                                     }`}
                                 ></div>
                               </div>
