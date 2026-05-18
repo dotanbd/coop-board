@@ -256,16 +256,6 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
     return entityId.trim();
   };
 
-  const getCourseLabel = (entityId: string) => {
-    if (!entityId) return "";
-    if (entityId.includes(':')) {
-      alert(entityId.split(':')[1]);
-      return entityId.split(':')[1];
-    }
-    const courseCode = entityId.trim();
-    return coursesMap[courseCode]?.name ? `${courseCode} - ${coursesMap[courseCode].name}` : courseCode;
-  };
-
   // 1. Automatically find unique course codes that have pending items
   const pendingCourseCodes = useMemo(() => {
     // Assuming your logs have a status like 'pending' or 'awaiting_approval'
@@ -493,7 +483,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                 try { parsedOld = log.old_data ? JSON.parse(log.old_data) : null; } catch { parsedOld = null; }
                 try { parsedNew = log.new_data ? JSON.parse(log.new_data) : null; } catch { parsedNew = null; }
 
-                const courseLabel = getCourseLabel(log.entity_id);
+                const courseCode = extractCourseCode(log.entity_id);
 
                 // Extract Assignment/Summary Title
                 const itemTitle = parsedNew?.title || parsedOld?.title || '';
@@ -514,7 +504,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
 
                         {/* STRICT COURSE PILL */}
                         <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 tracking-wider truncate max-w-[250px] sm:max-w-sm border border-indigo-200 dark:border-indigo-800/50">
-                          {courseLabel}
+                          {courseCode} - {coursesMap[courseCode]?.name || 'קורס לא מזוהה'}
                         </span>
 
                         {/* SUMMARY PREVIEW BUTTON */}
