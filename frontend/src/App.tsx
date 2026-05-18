@@ -485,31 +485,40 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                 try { parsedOld = log.old_data ? JSON.parse(log.old_data) : null; } catch { parsedOld = null; }
                 try { parsedNew = log.new_data ? JSON.parse(log.new_data) : null; } catch { parsedNew = null; }
 
+                // Extract exact Course Code
                 const courseCode = log.entity_type === 'COURSE'
                   ? log.entity_id
                   : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : null);
 
-                const courseName = courseCode && typeof coursesMap !== 'undefined' ? coursesMap[courseCode]?.name : '';
+                // Extract Course Name (Fallback to the parsed data if it's a brand new course)
+                const courseName = (courseCode && typeof coursesMap !== 'undefined' && coursesMap[courseCode]?.name)
+                  || parsedNew?.name
+                  || parsedOld?.name
+                  || '';
+
+                // Extract Assignment/Summary Title
+                const itemTitle = parsedNew?.title || parsedOld?.title || '';
 
                 return (
-                  <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 md:p-5 bg-white dark:bg-slate-800/50 shadow-sm flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                  <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 md:p-5 bg-white dark:bg-slate-800/50 shadow-sm flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
 
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                      {/* Header Area: Action Pill, Course Pill, Timestamp */}
+                      <div className="flex flex-wrap items-center gap-2 mb-4">
+                        {/* ACTION PILL */}
                         <span className={`text-xs font-bold px-2 py-0.5 rounded ${log.action === 'CREATE' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
-                            log.action === 'DELETE' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' :
-                              'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
+                          log.action === 'DELETE' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' :
+                            'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
                           }`}>
                           {log.action}
                         </span>
 
-                        {/* UNIFIED COURSE TAG */}
-                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 tracking-wider truncate max-w-[250px] sm:max-w-sm">
-                          {courseCode
-                            ? `${courseCode}${courseName ? ` - ${courseName}` : ''}`
-                            : (log.entity_type === 'COURSE' ? 'קורס חדש' : `${log.entity_type} #${log.entity_id.split(':').pop()}`)}
+                        {/* STRICT COURSE PILL */}
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 tracking-wider truncate max-w-[250px] sm:max-w-sm border border-indigo-200 dark:border-indigo-800/50">
+                          {courseCode ? `${courseCode}${courseName ? ` - ${courseName}` : ''}` : 'קורס כללי'}
                         </span>
 
+                        {/* SUMMARY PREVIEW BUTTON */}
                         {log.entity_type === 'SUMMARY' && log.action === 'CREATE' && (
                           <a
                             href={`${API_BASE_URL}/admin/summaries/${log.entity_id.split(':')[0]}/preview?token=${token}`}
@@ -517,17 +526,30 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-0.5 rounded-md hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors border border-emerald-200 dark:border-emerald-800"
                           >
-                            <BookOpen className="w-3 h-3" /> צפה בקובץ
+                            <BookOpen className="w-3.5 h-3.5" /> צפה בקובץ
                           </a>
                         )}
+
                         <span className="text-xs text-slate-400 mr-auto" dir="ltr">{new Date(log.created_at).toLocaleString('he-IL')}</span>
                       </div>
 
-                      {/* Subheader: User Info */}
-                      <div className="text-sm text-slate-600 dark:text-slate-300 mb-4 border-b border-slate-100 dark:border-slate-700/50 pb-3">
-                        בוצע ע"י: <span className="font-bold">{log.user_name}</span> <span className="text-xs opacity-70" dir="ltr">({log.user_email})</span>
+                      {/* Subheader Area: Item Title (H2) & User Info */}
+                      <div className="mb-4 border-b border-slate-100 dark:border-slate-700/50 pb-4">
+
+                        {/* ITEM TITLE (H2) */}
+                        {log.entity_type !== 'COURSE' && (
+                          <h2 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1.5">
+                            {itemTitle || `${log.entity_type === 'ASSIGNMENT' ? 'מטלה' : 'סיכום'} #${log.entity_id.split(':').pop()}`}
+                          </h2>
+                        )}
+
+                        {/* USER INFO */}
+                        <div className="text-sm text-slate-600 dark:text-slate-300">
+                          בוצע ע"י: <span className="font-bold">{log.user_name}</span> <span className="text-xs opacity-70" dir="ltr">({log.user_email})</span>
+                        </div>
                       </div>
 
+                      {/* Payload Area */}
                       <div className="flex flex-col gap-3 overflow-hidden">
 
                         {/* UPDATE ACTION */}
@@ -546,8 +568,8 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
 
                               return (
                                 <div key={key} className={`flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 rounded-lg border text-sm ${isRecDeadline
-                                    ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50 shadow-sm'
-                                    : 'bg-slate-50 border-slate-100 dark:bg-slate-800/40 dark:border-slate-700/50'
+                                  ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/50 shadow-sm'
+                                  : 'bg-slate-50 border-slate-100 dark:bg-slate-800/40 dark:border-slate-700/50'
                                   }`}>
                                   <span className={`font-semibold min-w-[130px] ${isRecDeadline ? 'text-amber-800 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
                                     {translateField(key)}:
