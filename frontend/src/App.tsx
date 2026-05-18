@@ -247,15 +247,22 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
 
     // Check if it's the complex format: "123:044102 - Course Name"
     if (entityId.includes(':')) {
-      // 1. Split at the colon and take the right side -> "044102 - Course Name"
+      // Split at the colon and take the right side -> "044102 - Course Name"
       const afterColon = entityId.split(':')[1];
-
-      // 2. Split at the hyphen and take the left side -> "044102"
+      // Split at the hyphen and take the left side -> "044102"
       return afterColon.split(' - ')[0].trim();
     }
-
     // If there's no colon, it's already the simple format: "044102"
     return entityId.trim();
+  };
+
+  const getCourseLabel = (entityId: string) => {
+    if (!entityId) return "";
+    if (entityId.includes(':')) {
+      return entityId.split(':')[1];
+    }
+    const courseCode = entityId.trim();
+    return coursesMap[courseCode]?.name ? `${courseCode} - ${coursesMap[courseCode].name}` : courseCode;
   };
 
   // 1. Automatically find unique course codes that have pending items
@@ -485,13 +492,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                 try { parsedOld = log.old_data ? JSON.parse(log.old_data) : null; } catch { parsedOld = null; }
                 try { parsedNew = log.new_data ? JSON.parse(log.new_data) : null; } catch { parsedNew = null; }
 
-                // Extract exact Course Code
-                const courseCode = log.entity_type === 'COURSE'
-                  ? log.entity_id
-                  : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : '');
-
-                // Extract Course Name (Fallback to the parsed data if it's a brand new course)
-                const courseName = coursesMap[courseCode]?.name? coursesMap[courseCode]?.name : '';
+                const courseLabel = getCourseLabel(log.entity_id);
 
                 // Extract Assignment/Summary Title
                 const itemTitle = parsedNew?.title || parsedOld?.title || '';
@@ -512,7 +513,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
 
                         {/* STRICT COURSE PILL */}
                         <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 tracking-wider truncate max-w-[250px] sm:max-w-sm border border-indigo-200 dark:border-indigo-800/50">
-                          {courseCode} - {courseName}
+                          {courseLabel}
                         </span>
 
                         {/* SUMMARY PREVIEW BUTTON */}
