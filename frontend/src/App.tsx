@@ -488,10 +488,10 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                 // Extract exact Course Code
                 const courseCode = log.entity_type === 'COURSE'
                   ? log.entity_id
-                  : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : null);
+                  : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : '');
 
                 // Extract Course Name (Fallback to the parsed data if it's a brand new course)
-                let courseName = courseCode && typeof coursesMap !== 'undefined' ? coursesMap[courseCode]?.name : '';
+                let courseName = coursesMap[courseCode]?.name? coursesMap[courseCode]?.name : '';
                 if (!courseName && log.entity_type === 'COURSE') {
                   courseName = parsedNew?.name || parsedOld?.name || '';
                 }
