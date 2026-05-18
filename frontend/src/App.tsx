@@ -259,6 +259,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
   const getCourseLabel = (entityId: string) => {
     if (!entityId) return "";
     if (entityId.includes(':')) {
+      console.log(entityId.split(':')[1]);
       return entityId.split(':')[1];
     }
     const courseCode = entityId.trim();
