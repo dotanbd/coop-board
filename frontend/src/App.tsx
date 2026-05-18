@@ -1846,18 +1846,51 @@ export default function App() {
                 // Calculate progress on the fly for visible courses (excluding personal tasks)
                 const activeCourses = visibleCourses.length > 0 ? visibleCourses : myCourses;
                 const progressCourses = activeCourses.filter(c => c !== '9990999');
-                const progressAssignments = assignments.filter(a =>
-                  progressCourses.includes(a.courseCode) &&
-                  a.type !== 'other'
-                );
-                const totalProgressAssignments = progressAssignments.length;
-                const completedProgressAssignments = progressAssignments.filter(a => a.isCompleted).length;
+                
+                let totalProgressAssignments = 0;
+                let completedProgressAssignments = 0;
+
+                // Loop through each active course to apply syllabus-specific rules
+                progressCourses.forEach(c => {
+                  const code = typeof c === 'string' ? c : (c as any).code; // Safety check in case myCourses holds objects
+                  
+                  // 1. Get assignments for this specific course
+                  const courseAssignments = assignments.filter(a => a.courseCode === code && a.type !== 'other');
+                  
+                  let courseRequired = courseAssignments.length;
+                  let courseCompleted = courseAssignments.filter(a => a.isCompleted).length;
+
+                  // 2. Fetch specific course data from map
+                  const courseData = typeof coursesMap !== 'undefined' ? coursesMap[code] : null;
+
+                  if (courseData) {
+                    const hasWwKeep = courseData.ww_keep !== null && courseData.ww_keep !== undefined;
+                    const hasHwKeep = courseData.hw_keep !== null && courseData.hw_keep !== undefined;
+
+                    // If the course has explicit "keep" values defined
+                    if (hasWwKeep || hasHwKeep) {
+                      const totalKeep = (courseData.ww_keep || 0) + (courseData.hw_keep || 0);
+                      
+                      if (totalKeep > 0) {
+                        courseRequired = totalKeep;
+                      }
+                    }
+                  }
+
+                  // 3. Cap completed count (Prevents a student doing 5 assignments in a "keep 4" course from skewing the total)
+                  courseCompleted = Math.min(courseCompleted, courseRequired);
+
+                  // 4. Add to the global tally
+                  totalProgressAssignments += courseRequired;
+                  completedProgressAssignments += courseCompleted;
+                });
+
                 const progressPercentage = totalProgressAssignments === 0 ? 0 : Math.round((completedProgressAssignments / totalProgressAssignments) * 100);
 
                 return (
                   <div className="mb-8 pb-8 border-b border-slate-200/60 dark:border-slate-700 relative group/progress">
 
-                    {/* Header (Removed static mb-4 so the collapse is flush) */}
+                    {/* Header */}
                     <div className="flex justify-between items-center">
                       <h2 className="text-xl font-black text-[#1a202c] dark:text-white">מצב התקדמות</h2>
 
@@ -1871,11 +1904,11 @@ export default function App() {
                       </button>
                     </div>
 
-                    {/* ✨ The Animated Wrapper: CSS Grid 0fr to 1fr Trick! */}
+                    {/* The Animated Wrapper: CSS Grid 0fr to 1fr Trick! */}
                     <div className={`grid transition-all duration-500 ease-in-out ${isProgressMinimized ? 'grid-rows-[0fr] opacity-0' : 'grid-rows-[1fr] opacity-100'}`}>
                       <div className="overflow-hidden">
 
-                        {/* Inner Grid Container (Added pt-4 here instead of mb-4 on header) */}
+                        {/* Inner Grid Container */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 pb-1">
 
                           {/* Assignments Progress */}
