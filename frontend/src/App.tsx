@@ -512,7 +512,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
 
                         {/* STRICT COURSE PILL */}
                         <span className="text-xs font-bold px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 tracking-wider truncate max-w-[250px] sm:max-w-sm border border-indigo-200 dark:border-indigo-800/50">
-                          {courseCode ? `${courseCode}${courseName ? ` - ${courseName}` : ''}` : 'קורס כללי'}
+                          {courseCode} - {courseName}
                         </span>
 
                         {/* SUMMARY PREVIEW BUTTON */}
