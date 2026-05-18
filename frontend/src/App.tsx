@@ -193,8 +193,8 @@ const translateField = (key: string) => {
     description: 'תיאור',
     type: 'סוג מטלה',
     deadline: 'תאריך הגשה',
-    recommended_deadline: 'תאריך מומלץ (מדומה)',
-    course_code: 'קוד קורס',
+    recommended_deadline: 'תאריך מומלץ)',
+    courseCode: 'קוד קורס',
     is_active: 'סטטוס',
     color: 'צבע',
     name: 'שם הקורס'
@@ -485,19 +485,16 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                 try { parsedOld = log.old_data ? JSON.parse(log.old_data) : null; } catch { parsedOld = null; }
                 try { parsedNew = log.new_data ? JSON.parse(log.new_data) : null; } catch { parsedNew = null; }
 
-                // Attempt to extract the course code based on your entity_id pattern (e.g., "ASSIGNMENT:044102:123")
                 const courseCode = log.entity_type === 'COURSE'
                   ? log.entity_id
                   : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : null);
 
-                // Attempt to get the course name if coursesMap is available in your file
                 const courseName = courseCode && typeof coursesMap !== 'undefined' ? coursesMap[courseCode]?.name : '';
 
                 return (
                   <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 md:p-5 bg-white dark:bg-slate-800/50 shadow-sm flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
 
-                      {/* 1. Header Area: Action, Course Code, Course Name, and Timestamp */}
                       <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className={`text-xs font-bold px-2 py-0.5 rounded ${log.action === 'CREATE' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400' :
                             log.action === 'DELETE' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400' :
@@ -506,14 +503,11 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                           {log.action}
                         </span>
 
-                        {courseCode && (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 tracking-wider">
-                            {courseCode}
-                          </span>
-                        )}
-
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-xs">
-                          {courseName || (log.entity_type === 'COURSE' ? 'קורס חדש' : `${log.entity_type} #${log.entity_id.split(':').pop()}`)}
+                        {/* UNIFIED COURSE TAG */}
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300 tracking-wider truncate max-w-[250px] sm:max-w-sm">
+                          {courseCode
+                            ? `${courseCode}${courseName ? ` - ${courseName}` : ''}`
+                            : (log.entity_type === 'COURSE' ? 'קורס חדש' : `${log.entity_type} #${log.entity_id.split(':').pop()}`)}
                         </span>
 
                         {log.entity_type === 'SUMMARY' && log.action === 'CREATE' && (
@@ -534,10 +528,9 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                         בוצע ע"י: <span className="font-bold">{log.user_name}</span> <span className="text-xs opacity-70" dir="ltr">({log.user_email})</span>
                       </div>
 
-                      {/* 2. Payload Area: Dynamic mapping based on action */}
                       <div className="flex flex-col gap-3 overflow-hidden">
 
-                        {/* UPDATE ACTION - Granular Comparison */}
+                        {/* UPDATE ACTION */}
                         {log.action === 'UPDATE' && (
                           <div className="flex flex-col gap-2 w-full">
                             <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">שינויים שבוצעו:</div>
@@ -545,7 +538,6 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                               const oldV = parsedOld?.[key];
                               const newV = parsedNew?.[key];
 
-                              // Skip if values are identical
                               if (JSON.stringify(oldV) === JSON.stringify(newV)) return null;
 
                               const isRecDeadline = key === 'recommended_deadline';
@@ -564,7 +556,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                                     {oldV !== undefined && (
                                       <>
                                         <span className="text-red-500 dark:text-red-400 line-through opacity-80">{displayOld}</span>
-                                        <ArrowLeft className="w-3.5 h-3.5 text-slate-400 rtl:rotate-180" />
+                                        <ArrowLeft className="w-3.5 h-3.5 text-slate-400" />
                                       </>
                                     )}
                                     <span className="text-emerald-600 dark:text-emerald-400 font-bold">{displayNew}</span>
@@ -575,7 +567,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                           </div>
                         )}
 
-                        {/* CREATE ACTION - Dynamic Grid */}
+                        {/* CREATE ACTION */}
                         {log.action === 'CREATE' && (
                           <div className="flex-1 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 p-3 rounded-lg text-xs">
                             <div className="font-bold text-blue-700 dark:text-blue-400 mb-2">נתוני הפריט החדש:</div>
@@ -592,7 +584,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                           </div>
                         )}
 
-                        {/* DELETE ACTION - Dynamic Grid */}
+                        {/* DELETE ACTION */}
                         {log.action === 'DELETE' && (
                           <div className="flex-1 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-3 rounded-lg text-xs">
                             <div className="font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-1.5">
@@ -614,7 +606,7 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                       </div>
                     </div>
 
-                    {/* 3. Action Buttons Column */}
+                    {/* Action Buttons */}
                     <div className="shrink-0 flex flex-col gap-2 border-t lg:border-t-0 lg:border-r border-slate-100 dark:border-slate-700 pt-4 lg:pt-0 lg:pr-4 min-w-[140px]">
                       <button onClick={() => handleApproveLog(log.id)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-sm font-bold transition-colors shadow-sm">
                         <Check className="w-4 h-4" /> אישור
