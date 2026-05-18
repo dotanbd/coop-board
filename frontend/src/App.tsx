@@ -491,10 +491,10 @@ const AdminDashboard = ({ token, logs, setLogs, coursesMap }: { token: string, l
                   : (log.entity_id.includes(':') ? log.entity_id.split(':')[1] : null);
 
                 // Extract Course Name (Fallback to the parsed data if it's a brand new course)
-                const courseName = (courseCode && typeof coursesMap !== 'undefined' && coursesMap[courseCode]?.name)
-                  || parsedNew?.name
-                  || parsedOld?.name
-                  || '';
+                let courseName = courseCode && typeof coursesMap !== 'undefined' ? coursesMap[courseCode]?.name : '';
+                if (!courseName && log.entity_type === 'COURSE') {
+                  courseName = parsedNew?.name || parsedOld?.name || '';
+                }
 
                 // Extract Assignment/Summary Title
                 const itemTitle = parsedNew?.title || parsedOld?.title || '';
