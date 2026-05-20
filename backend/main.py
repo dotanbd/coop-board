@@ -53,6 +53,14 @@ s3_client = boto3.client(
     config=Config(signature_version='s3v4')
 )
 
+s3_public_client = boto3.client(
+    's3',
+    endpoint_url=MINIO_PUBLIC_URL,
+    aws_access_key_id=MINIO_ACCESS_KEY,
+    aws_secret_access_key=MINIO_SECRET_KEY,
+    config=Config(signature_version='s3v4')
+)
+
 # Ensure both buckets exist on startup
 for bucket in [BUCKET_NAME, SUMMARIES_BUCKET]:
     try:
@@ -962,7 +970,7 @@ def get_fresh_download_link(attachment_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="File not found")
 
     try:
-        fresh_url = s3_client.generate_presigned_url(
+        fresh_url = s3_public_client.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET_NAME, 'Key': attachment.object_name},
             ExpiresIn=60
