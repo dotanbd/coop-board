@@ -71,6 +71,16 @@ for bucket in [BUCKET_NAME, SUMMARIES_BUCKET]:
         except Exception as e:
             print(f"Warning: Could not create MinIO bucket {bucket} on startup. ({e})")
 
+
+for bucket in [BUCKET_NAME, SUMMARIES_BUCKET]:
+    try:
+        s3_public_client.head_bucket(Bucket=bucket)
+    except ClientError:
+        try:
+            s3_public_client.create_bucket(Bucket=bucket)
+        except Exception as e:
+            print(f"Warning: Could not create MinIO bucket {bucket} on startup. ({e})")
+
 # --- Database Setup ---
 DB_FILE_NAME = os.getenv("DB_FILE", "teaspoon_v1.db")
 # Tell SQLAlchemy to use the dynamic filename
