@@ -744,7 +744,7 @@ export default function App() {
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [editingFileId, setEditingFileId] = useState<number | null>(null);
   const [editFileName, setEditFileName] = useState<string>('');
-  
+
   // --- Secure JIT Download State & Handler ---
   const [downloadingAttachmentId, setDownloadingAttachmentId] = useState<number | null>(null);
 
@@ -754,7 +754,7 @@ export default function App() {
 
     // 1. Instantly open a blank tab (Crucial to bypass popup blockers)
     const newTab = window.open('', '_blank');
-    
+
     if (!newTab) {
       alert("הדפדפן חסם את פתיחת החלון. אנא אשר חלונות קופצים (Pop-ups) עבור אתר זה.");
       return;
@@ -762,25 +762,25 @@ export default function App() {
 
     try {
       setDownloadingAttachmentId(att.id);
-      
+
       // 2. Ask backend to mint a fresh 60-second HMAC URL
       const res = await fetch(`${API_BASE_URL}/attachments/${att.id}/generate-link`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (!res.ok) throw new Error("Failed to generate secure link");
-      
+
       const data = await res.json();
-      
+
       // 3. Redirect the blank tab to the freshly generated API proxy URL
-      const fullUrl = data.url.startsWith('http') 
-        ? data.url 
+      const fullUrl = data.url.startsWith('http')
+        ? data.url
         : `${API_BASE_URL.replace('/api/v2', '')}${data.url}`;
-        
+
       newTab.location.href = fullUrl;
-      
+
     } catch (error) {
       console.error("Link generation failed:", error);
       newTab.close(); // Prevent user from staring at a dead white page
@@ -1461,61 +1461,61 @@ export default function App() {
   };
 
   const renderAttachment = (att: Attachment, assignmentId: number) => {
-  const isSolution = att.category === 'solution';
-  const colorClasses = isSolution 
-    ? 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300' 
-    : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300';
+    const isSolution = att.category === 'solution';
+    const colorClasses = isSolution
+      ? 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300'
+      : 'text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300';
 
-  return (
-    <div key={att.id} className="flex items-start justify-between bg-slate-50 dark:bg-slate-900/50 rounded p-1.5 border border-slate-100 dark:border-slate-700/50 group/file gap-2">
+    return (
+      <div key={att.id} className="flex items-start justify-between bg-slate-50 dark:bg-slate-900/50 rounded p-1.5 border border-slate-100 dark:border-slate-700/50 group/file gap-2">
 
-      {editingFileId === att.id ? (
-        <div className="flex items-center gap-2 flex-1 ml-1" onClick={e => e.preventDefault()}>
-          <input autoFocus type="text" value={editFileName} onChange={e => setEditFileName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRenameAttachment(assignmentId, att.id)} className="text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 rounded px-1.5 py-0.5 w-full outline-none focus:ring-1 focus:ring-blue-500" />
-          <button onClick={() => handleRenameAttachment(assignmentId, att.id)} className="text-emerald-500 hover:text-emerald-600 p-0.5 shrink-0"><Check className="w-3 h-3" /></button>
-          <button onClick={() => setEditingFileId(null)} className="text-slate-400 hover:text-red-500 p-0.5 shrink-0"><X className="w-3 h-3" /></button>
-        </div>
-      ) : (
-        <button
-          onClick={(e) => handleSafeFileClick(e, att)}
-          disabled={downloadingAttachmentId === att.id}
-          title="פתיחת קובץ בחלון חדש"
-          className={`group flex items-start gap-1.5 flex-1 hover:underline bg-transparent border-none p-0 cursor-pointer disabled:opacity-50 disabled:cursor-wait text-right transition-colors ${colorClasses}`}
-        >
-          {/* Swaps the document icon for a spinner during the brief JIT fetch */}
-          {downloadingAttachmentId === att.id ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 mt-0.5" />
-          ) : (
-            <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
-          )}
-
-          <span className="text-xs break-all leading-relaxed" dir="ltr">
-            {att.filename}
-          </span>
-        </button>
-      )}
-
-      <div className="flex items-start gap-2 shrink-0">
-        {att.category === 'solution' && (
+        {editingFileId === att.id ? (
+          <div className="flex items-center gap-2 flex-1 ml-1" onClick={e => e.preventDefault()}>
+            <input autoFocus type="text" value={editFileName} onChange={e => setEditFileName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRenameAttachment(assignmentId, att.id)} className="text-xs font-medium text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-600 rounded px-1.5 py-0.5 w-full outline-none focus:ring-1 focus:ring-blue-500" />
+            <button onClick={() => handleRenameAttachment(assignmentId, att.id)} className="text-emerald-500 hover:text-emerald-600 p-0.5 shrink-0"><Check className="w-3 h-3" /></button>
+            <button onClick={() => setEditingFileId(null)} className="text-slate-400 hover:text-red-500 p-0.5 shrink-0"><X className="w-3 h-3" /></button>
+          </div>
+        ) : (
           <button
-            onClick={(e) => { e.preventDefault(); handleToggleLike(assignmentId, att.id, att.isLikedByMe); }}
-            className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors ${att.isLikedByMe ? 'text-rose-600 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-400 font-bold' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-rose-500 font-medium'}`}
-            title="סמן פתרון כמועיל"
+            onClick={(e) => handleSafeFileClick(e, att)}
+            disabled={downloadingAttachmentId === att.id}
+            title="פתיחת קובץ בחלון חדש"
+            className={`group flex items-start gap-1.5 flex-1 hover:underline bg-transparent border-none p-0 cursor-pointer disabled:opacity-50 disabled:cursor-wait text-right transition-colors ${colorClasses}`}
           >
-            <Heart className={`w-3.5 h-3.5 ${att.isLikedByMe ? 'fill-current' : ''}`} />
-            <span>{att.likes || 0}</span>
+            {/* Swaps the document icon for a spinner during the brief JIT fetch */}
+            {downloadingAttachmentId === att.id ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 mt-0.5" />
+            ) : (
+              <FileText className="w-3.5 h-3.5 shrink-0 mt-0.5 transition-transform group-hover:scale-110" />
+            )}
+
+            <span className="text-xs break-all leading-relaxed" dir="ltr">
+              {att.filename}
+            </span>
           </button>
         )}
-        {!editingFileId && token && (userProfile?.id === att.uploader_id || userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
-          <div className="flex gap-1 opacity-0 group-hover/file:opacity-100 transition-opacity mt-0.5">
-            <button onClick={(e) => { e.preventDefault(); setEditingFileId(att.id); setEditFileName(att.filename.replace(/\.[^/.]+$/, "")); }} className="text-slate-400 hover:text-blue-500" title="שינוי שם"><Edit className="w-3.5 h-3.5" /></button>
-            <button onClick={(e) => { e.preventDefault(); handleDeleteAttachment(assignmentId, att.id); }} className="text-slate-400 hover:text-red-500" title="מחיקה"><XCircle className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
+
+        <div className="flex items-start gap-2 shrink-0">
+          {att.category === 'solution' && (
+            <button
+              onClick={(e) => { e.preventDefault(); handleToggleLike(assignmentId, att.id, att.isLikedByMe); }}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors ${att.isLikedByMe ? 'text-rose-600 bg-rose-100 dark:bg-rose-900/40 dark:text-rose-400 font-bold' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-rose-500 font-medium'}`}
+              title="סמן פתרון כמועיל"
+            >
+              <Heart className={`w-3.5 h-3.5 ${att.isLikedByMe ? 'fill-current' : ''}`} />
+              <span>{att.likes || 0}</span>
+            </button>
+          )}
+          {!editingFileId && token && (userProfile?.id === att.uploader_id || userProfile?.role === 'admin' || userProfile?.role === 'owner') && (
+            <div className="flex gap-1 opacity-0 group-hover/file:opacity-100 transition-opacity mt-0.5">
+              <button onClick={(e) => { e.preventDefault(); setEditingFileId(att.id); setEditFileName(att.filename.replace(/\.[^/.]+$/, "")); }} className="text-slate-400 hover:text-blue-500" title="שינוי שם"><Edit className="w-3.5 h-3.5" /></button>
+              <button onClick={(e) => { e.preventDefault(); handleDeleteAttachment(assignmentId, att.id); }} className="text-slate-400 hover:text-red-500" title="מחיקה"><XCircle className="w-3.5 h-3.5" /></button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans pb-12 transition-colors duration-200" dir="rtl">
@@ -1911,17 +1911,17 @@ export default function App() {
                 // Calculate progress on the fly for visible courses (excluding personal tasks)
                 const activeCourses = visibleCourses.length > 0 ? visibleCourses : myCourses;
                 const progressCourses = activeCourses.filter(c => c !== '9990999');
-                
+
                 let totalProgressAssignments = 0;
                 let completedProgressAssignments = 0;
 
                 // Loop through each active course to apply syllabus-specific rules
                 progressCourses.forEach(c => {
                   const code = typeof c === 'string' ? c : (c as any).code; // Safety check in case myCourses holds objects
-                  
+
                   // 1. Get assignments for this specific course
                   const courseAssignments = assignments.filter(a => a.courseCode === code && a.type !== 'other');
-                  
+
                   let courseRequired = courseAssignments.length;
                   let courseCompleted = courseAssignments.filter(a => a.isCompleted).length;
 
@@ -1935,7 +1935,7 @@ export default function App() {
                     // If the course has explicit "keep" values defined
                     if (hasWwKeep || hasHwKeep) {
                       const totalKeep = (courseData.ww_keep || 0) + (courseData.hw_keep || 0);
-                      
+
                       if (totalKeep > 0) {
                         courseRequired = totalKeep;
                       }
@@ -2219,8 +2219,15 @@ export default function App() {
                                       </div>
                                     )}
 
-                                    <div className="max-h-32 overflow-y-auto space-y-1">
-                                      {assignment.attachments?.map(att => renderAttachment(att, assignment.id))}
+                                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1 standard-scrollbar">
+                                      {/* Create a cloned array, sort it, then map it */}
+                                      {[...(assignment.attachments || [])].sort((a, b) => {
+                                        // Assignments always go to the top
+                                        if (a.category === 'assignment' && b.category !== 'assignment') return -1;
+                                        if (b.category === 'assignment' && a.category !== 'assignment') return 1;
+                                        return (b.likes || 0) - (a.likes || 0);
+                                      }).map(att => renderAttachment(att, assignment.id))}
+
                                       {(!assignment.attachments || assignment.attachments.length === 0) && uploadingId !== assignment.id && (
                                         <div className="text-xs text-center text-slate-400 py-2">אין קבצים מצורפים</div>
                                       )}
