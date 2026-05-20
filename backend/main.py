@@ -24,7 +24,6 @@ from sqlalchemy import or_, and_, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from dotenv import load_dotenv
-from sqlalchemy.sql.functions import current_user
 
 # Load environment variables from .env file
 load_dotenv()
@@ -51,17 +50,6 @@ s3_client = boto3.client(
     aws_access_key_id=MINIO_ACCESS_KEY,
     aws_secret_access_key=MINIO_SECRET_KEY,
     config=Config(signature_version='s3v4')
-)
-
-s3_public_client = boto3.client(
-    's3',
-    endpoint_url=MINIO_PUBLIC_URL,
-    aws_access_key_id=MINIO_ACCESS_KEY,
-    aws_secret_access_key=MINIO_SECRET_KEY,
-    config=Config(
-        signature_version='s3v4',
-        s3={'addressing_style': 'path'}
-    )
 )
 
 # Ensure both buckets exist on startup
@@ -965,23 +953,54 @@ def delete_attachment(attachment_id: int, current_user: dict = Depends(get_curre
     return {"success": True}
 
 
+@app.get("/api/v2/attachments/{attachment_id}/generate-link")
+def generate_download_link(attachment_id: int, current_user: dict = Depends(get_current_user)):
+    """Mints a fresh 60-second HMAC signature for the proxy download endpoint."""
+
+    # 1. Set expiration to exactly 60 seconds from right now
+    expires = int(time.time()) + 60
+
+    # 2. Cryptographically sign the payload exactly as the proxy expects it
+    message = f"{attachment_id}:{expires}".encode()
+    sig = hmac.new(APP_SECRET, message, hashlib.sha256).hexdigest()
+
+    # 3. Construct the relative secure URL
+    download_url = f"/api/v2/attachments/{attachment_id}/download?expires={expires}&sig={sig}"
+
+    return {"url": download_url}
+
+
 @app.get("/api/v2/attachments/{attachment_id}/download")
-def get_fresh_download_link(attachment_id: int, db: Session = Depends(get_db)):
-    """Generates a fresh, 60-second presigned URL for an attachment on the fly."""
-    attachment = db.query(DBAttachment).filter(DBAttachment.id == attachment_id).first()
-    if not attachment:
-        raise HTTPException(status_code=404, detail="File not found")
+def download_attachment(attachment_id: int, expires: int, sig: str, db: Session = Depends(get_db)):
+    # Check if the link has expired
+    if int(time.time()) > expires:
+        raise HTTPException(status_code=403, detail="Download link has expired. Please refresh the page.")
+
+    # Cryptographically verify that nobody tampered with the ID or timestamp
+    expected_message = f"{attachment_id}:{expires}".encode()
+    expected_sig = hmac.new(APP_SECRET, expected_message, hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(sig, expected_sig):
+        raise HTTPException(status_code=403, detail="Invalid or tampered download signature.")
+
+    att = db.query(DBAttachment).filter(DBAttachment.id == attachment_id).first()
+    if not att:
+        raise HTTPException(status_code=404, detail="Attachment not found")
 
     try:
-        fresh_url = s3_public_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': BUCKET_NAME, 'Key': attachment.object_name},
-            ExpiresIn=60
+        s3_response = s3_client.get_object(Bucket=BUCKET_NAME, Key=att.object_name)
+
+        content_type, _ = mimetypes.guess_type(att.filename)
+        encoded_filename = quote(att.filename)
+
+        return StreamingResponse(
+            file_stream(s3_response),
+            media_type=content_type or "application/octet-stream",
+            headers={"Content-Disposition": f"inline; filename*=utf-8''{encoded_filename}"}
         )
-        return {"url": fresh_url}
     except Exception as e:
-        print(f"Error generating fresh link: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate download link")
+        print(f"MinIO Download Error: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving file from storage")
 
 
 # --- Summaries Routes ---
