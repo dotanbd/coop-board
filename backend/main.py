@@ -58,7 +58,10 @@ s3_public_client = boto3.client(
     endpoint_url=MINIO_PUBLIC_URL,
     aws_access_key_id=MINIO_ACCESS_KEY,
     aws_secret_access_key=MINIO_SECRET_KEY,
-    config=Config(signature_version='s3v4')
+    config=Config(
+        signature_version='s3v4',
+        s3={'addressing_style': 'path'}
+    )
 )
 
 # Ensure both buckets exist on startup
@@ -68,16 +71,6 @@ for bucket in [BUCKET_NAME, SUMMARIES_BUCKET]:
     except ClientError:
         try:
             s3_client.create_bucket(Bucket=bucket)
-        except Exception as e:
-            print(f"Warning: Could not create MinIO bucket {bucket} on startup. ({e})")
-
-
-for bucket in [BUCKET_NAME, SUMMARIES_BUCKET]:
-    try:
-        s3_public_client.head_bucket(Bucket=bucket)
-    except ClientError:
-        try:
-            s3_public_client.create_bucket(Bucket=bucket)
         except Exception as e:
             print(f"Warning: Could not create MinIO bucket {bucket} on startup. ({e})")
 
